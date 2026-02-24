@@ -10,70 +10,70 @@
  * - ASSISTANTE : Saisie et consultation limitée
  */
 
-export type Role = 
-  | 'SUPER_ADMIN' 
-  | 'ADMIN' 
-  | 'COMPTABLE' 
-  | 'GESTIONNAIRE' 
-  | 'MAGASINIER' 
+export type Role =
+  | 'SUPER_ADMIN'
+  | 'ADMIN'
+  | 'COMPTABLE'
+  | 'GESTIONNAIRE'
+  | 'MAGASINIER'
   | 'ASSISTANTE'
 
-export type Permission = 
+export type Permission =
   // Dashboard
   | 'dashboard:view'
-  
+
   // Produits
   | 'produits:view'
   | 'produits:create'
   | 'produits:edit'
   | 'produits:delete'
-  
+
   // Stocks
   | 'stocks:view'
   | 'stocks:entree'
   | 'stocks:sortie'
   | 'stocks:init'
-  
+
   // Ventes
   | 'ventes:view'
   | 'ventes:create'
   | 'ventes:edit'
   | 'ventes:delete'
   | 'ventes:annuler'
-  
+
   // Achats
   | 'achats:view'
   | 'achats:create'
   | 'achats:edit'
   | 'achats:delete'
-  
+
   // Dépenses
   | 'depenses:view'
   | 'depenses:create'
   | 'depenses:edit'
   | 'depenses:delete'
-  
+
   // Charges
   | 'charges:view'
   | 'charges:create'
   | 'charges:edit'
   | 'charges:delete'
-  
+
   // Comptabilité
   | 'comptabilite:view'
   | 'comptabilite:rapports'
   | 'comptabilite:export'
-  
+
   // Utilisateurs
   | 'users:view'
   | 'users:create'
   | 'users:edit'
   | 'users:delete'
-  
+
   // Paramètres
   | 'parametres:view'
   | 'parametres:edit'
-  
+
   // Sauvegardes
   | 'sauvegardes:view'
   | 'sauvegardes:create'
@@ -98,7 +98,7 @@ export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     'parametres:view', 'parametres:edit',
     'sauvegardes:view', 'sauvegardes:create', 'sauvegardes:restore', 'sauvegardes:delete',
   ],
-  
+
   ADMIN: [
     // Gestion opérationnelle complète
     'dashboard:view',
@@ -113,7 +113,7 @@ export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     'parametres:view', 'parametres:edit',
     'sauvegardes:view', 'sauvegardes:create',
   ],
-  
+
   COMPTABLE: [
     // Accès comptable et consultation
     'dashboard:view',
@@ -125,7 +125,7 @@ export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     'charges:view', 'charges:create', 'charges:edit',
     'comptabilite:view', 'comptabilite:rapports', 'comptabilite:export',
   ],
-  
+
   GESTIONNAIRE: [
     // Gestion des opérations commerciales
     'dashboard:view',
@@ -136,7 +136,7 @@ export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     'depenses:view', 'depenses:create',
     'charges:view', 'charges:create',
   ],
-  
+
   MAGASINIER: [
     // Gestion des stocks uniquement
     'dashboard:view',
@@ -145,7 +145,7 @@ export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     'ventes:view',
     'achats:view',
   ],
-  
+
   ASSISTANTE: [
     // Saisie et consultation limitée
     'dashboard:view',
@@ -158,25 +158,29 @@ export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
 }
 
 /**
- * Vérifie si un rôle a une permission donnée
+ * Vérifie si un rôle (ou une liste de permissions custom) a une permission donnée.
+ * Si customPermissions est fourni et non vide, il remplace les permissions du rôle.
  */
-export function hasPermission(role: Role, permission: Permission): boolean {
+export function hasPermission(role: Role, permission: Permission, customPermissions?: string[]): boolean {
+  if (customPermissions && customPermissions.length > 0) {
+    return customPermissions.includes(permission)
+  }
   const permissions = ROLE_PERMISSIONS[role] || []
   return permissions.includes(permission)
 }
 
 /**
- * Vérifie si un rôle a au moins une des permissions données
+ * Vérifie si un rôle (ou une liste de permissions custom) a au moins une des permissions données.
  */
-export function hasAnyPermission(role: Role, permissions: Permission[]): boolean {
-  return permissions.some(perm => hasPermission(role, perm))
+export function hasAnyPermission(role: Role, permissions: Permission[], customPermissions?: string[]): boolean {
+  return permissions.some(perm => hasPermission(role, perm, customPermissions))
 }
 
 /**
- * Vérifie si un rôle a toutes les permissions données
+ * Vérifie si un rôle (ou une liste de permissions custom) a toutes les permissions données.
  */
-export function hasAllPermissions(role: Role, permissions: Permission[]): boolean {
-  return permissions.every(perm => hasPermission(role, perm))
+export function hasAllPermissions(role: Role, permissions: Permission[], customPermissions?: string[]): boolean {
+  return permissions.every(perm => hasPermission(role, perm, customPermissions))
 }
 
 /**

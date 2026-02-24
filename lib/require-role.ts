@@ -33,7 +33,8 @@ export function requirePermission(
   if (!session) {
     return NextResponse.json({ error: 'Non autorisé.' }, { status: 401 })
   }
-  if (!hasPermission(session.role as Role, permission)) {
+  // On passe maintenant les permissions personnalisées de la session à hasPermission
+  if (!hasPermission(session.role as Role, permission, session.permissions)) {
     return NextResponse.json(
       { error: 'Droits insuffisants pour cette action.' },
       { status: 403 }

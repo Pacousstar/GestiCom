@@ -341,7 +341,7 @@ export async function printDocument(templateId: number | null, type: 'VENTE' | '
 /**
  * Template par défaut (HTML structuré pour le style d'impression)
  */
-function getDefaultTemplate(type: 'VENTE' | 'ACHAT'): string {
+export function getDefaultTemplate(type: 'VENTE' | 'ACHAT'): string {
   const isVente = type === 'VENTE'
   return `
 <div class="print-header">

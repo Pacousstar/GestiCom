@@ -20,7 +20,7 @@ export interface PendingSync {
 }
 
 const SYNC_QUEUE_KEY = 'gesticom_sync_queue'
-const MAX_RETRIES = 3
+const MAX_RETRIES = 50 // Augmenté pour éviter la perte de données
 
 /**
  * Ajouter une opération à la file d'attente
@@ -28,17 +28,17 @@ const MAX_RETRIES = 3
 export function addToSyncQueue(pending: Omit<PendingSync, 'id' | 'timestamp' | 'retries'>): string {
   const queue = getSyncQueue()
   const id = `sync_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-  
+
   const pendingSync: PendingSync = {
     ...pending,
     id,
     timestamp: Date.now(),
     retries: 0,
   }
-  
+
   queue.push(pendingSync)
   saveSyncQueue(queue)
-  
+
   return id
 }
 
@@ -47,7 +47,7 @@ export function addToSyncQueue(pending: Omit<PendingSync, 'id' | 'timestamp' | '
  */
 export function getSyncQueue(): PendingSync[] {
   if (typeof window === 'undefined') return []
-  
+
   try {
     const stored = localStorage.getItem(SYNC_QUEUE_KEY)
     return stored ? JSON.parse(stored) : []
@@ -62,7 +62,7 @@ export function getSyncQueue(): PendingSync[] {
  */
 function saveSyncQueue(queue: PendingSync[]): void {
   if (typeof window === 'undefined') return
-  
+
   try {
     localStorage.setItem(SYNC_QUEUE_KEY, JSON.stringify(queue))
   } catch (e) {
@@ -87,51 +87,53 @@ export async function syncAll(): Promise<{ success: number; failed: number; erro
   if (queue.length === 0) {
     return { success: 0, failed: 0, errors: [] }
   }
-  
+
   let success = 0
   let failed = 0
   const errors: string[] = []
   const remaining: PendingSync[] = []
-  
+
   for (const pending of queue) {
     try {
+      // Si on a déjà dépassé le nombre d'essais pour une erreur bloquante (ex 400), on garde mais on ne retente pas forcement
+      // Pour l'instant on retente tout tant que < MAX_RETRIES
+
       const response = await fetch(pending.endpoint, {
         method: pending.method,
         headers: { 'Content-Type': 'application/json' },
         body: pending.method !== 'DELETE' ? JSON.stringify(pending.data) : undefined,
       })
-      
+
       if (response.ok) {
         success++
-        // Ne pas retirer de la queue, sera retiré après confirmation
+        // Succès : on ne l'ajoute plus à remaining -> il est retiré de la queue
       } else {
         const errorData = await response.json().catch(() => ({ error: 'Erreur inconnue' }))
         pending.lastError = errorData.error || 'Erreur serveur'
         pending.retries++
-        
-        if (pending.retries < MAX_RETRIES) {
-          remaining.push(pending)
-        } else {
-          failed++
-          errors.push(`${pending.entity} ${pending.action}: ${pending.lastError}`)
-        }
+
+        // On garde TOUJOURS l'élément en cas d'échec, même si MAX_RETRIES atteint
+        remaining.push(pending)
+
+        failed++
+        errors.push(`${pending.entity} ${pending.action}: ${pending.lastError}`)
       }
     } catch (error) {
       pending.lastError = error instanceof Error ? error.message : 'Erreur réseau'
       pending.retries++
-      
-      if (pending.retries < MAX_RETRIES) {
-        remaining.push(pending)
-      } else {
-        failed++
-        errors.push(`${pending.entity} ${pending.action}: ${pending.lastError}`)
-      }
+
+      // On garde TOUJOURS l'élément en cas d'échec
+      remaining.push(pending)
+
+      failed++
+      // Ne pas spammer les erreurs réseau dans le tableau de retour si on est juste offline
+      // Mais on compte quand même comme failed
     }
   }
-  
-  // Sauvegarder les opérations restantes
+
+  // Sauvegarder les opérations restantes (échecs + non traités)
   saveSyncQueue(remaining)
-  
+
   return { success, failed, errors }
 }
 
@@ -147,14 +149,14 @@ export function isOnline(): boolean {
  * Écouter les changements de connexion
  */
 export function onOnlineChange(callback: (online: boolean) => void): () => void {
-  if (typeof window === 'undefined') return () => {}
-  
+  if (typeof window === 'undefined') return () => { }
+
   const handleOnline = () => callback(true)
   const handleOffline = () => callback(false)
-  
+
   window.addEventListener('online', handleOnline)
   window.addEventListener('offline', handleOffline)
-  
+
   return () => {
     window.removeEventListener('online', handleOnline)
     window.removeEventListener('offline', handleOffline)

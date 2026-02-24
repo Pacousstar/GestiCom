@@ -10,6 +10,7 @@ export type Session = {
   nom: string
   role: string
   entiteId: number
+  permissions?: string[] // Permissions personnalisées (si définies, remplacent les permissions du rôle)
 }
 
 function getSecret(): Uint8Array {
@@ -44,7 +45,8 @@ export async function verifyToken(token: string): Promise<Session | null> {
       login: String(payload.login),
       nom: String(payload.nom ?? payload.login),
       role: String(payload.role),
-      entiteId: Number(payload.entiteId ?? payload.entiteId ?? 0),
+      entiteId: Number(payload.entiteId ?? 0),
+      permissions: Array.isArray(payload.permissions) ? (payload.permissions as string[]) : undefined,
     }
   } catch {
     return null
