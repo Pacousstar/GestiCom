@@ -17,12 +17,19 @@ const nextConfig: NextConfig = {
       "node_modules/@next/swc-win32-x64-gnu/**"
     ]
   },
-  // Exclure le dossier gesticom du build
-  webpack: (config, { isServer }) => {
+  // Exclure le dossier gesticom du build et configurer webpack
+  webpack: (config, { isServer, dev }) => {
     if (!isServer) {
       config.resolve.fallback = {
         ...config.resolve.fallback,
         fs: false,
+      };
+    }
+    // STOPPER LA BOUCLE DE FAST REFRESH: Exclure les modifications SQLite du watcher
+    if (dev) {
+      config.watchOptions = {
+        ...config.watchOptions,
+        ignored: ['**/*.db', '**/*.db-journal', '**/backups/**'],
       };
     }
     return config;
