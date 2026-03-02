@@ -7,7 +7,16 @@ const nextConfig: NextConfig = {
   output: "standalone", // pour livraison Option B : build autonome + lanceur (double-clic)
   // Forcer la racine de traçage = ce projet (évite multiple lockfiles → standalone vide)
   outputFileTracingRoot: path.join(__dirname),
-  outputFileTracingExcludes: { "*": ["GestiCom-Portable/**", "gesticom/**"] },
+  outputFileTracingExcludes: {
+    "*": [
+      "GestiCom-Portable/**",
+      "gesticom/**",
+      "backups/**",
+      "GestiCom-Portable*.zip",
+      "backup-*.db",
+      "node_modules/@next/swc-win32-x64-gnu/**"
+    ]
+  },
   // Exclure le dossier gesticom du build
   webpack: (config, { isServer }) => {
     if (!isServer) {

@@ -14,15 +14,18 @@ type Widget = {
 }
 
 const AVAILABLE_WIDGETS: Widget[] = [
-  { id: 'transactions', name: 'Transactions du jour', icon: '💰', visible: true, order: 1 },
-  { id: 'produits', name: 'Produits en stock', icon: '📦', visible: true, order: 2 },
-  { id: 'mouvements', name: 'Mouvements du jour', icon: '🔄', visible: true, order: 3 },
-  { id: 'clients', name: 'Clients actifs', icon: '👥', visible: true, order: 4 },
-  { id: 'ca', name: 'Évolution CA', icon: '📈', visible: true, order: 5 },
-  { id: 'stock', name: 'Mouvements de stock', icon: '📊', visible: true, order: 6 },
-  { id: 'repartition', name: 'Répartition par catégorie', icon: '🥧', visible: true, order: 7 },
-  { id: 'topProduits', name: 'Top produits', icon: '🏆', visible: true, order: 8 },
-  { id: 'actions', name: 'Actions rapides', icon: '⚡', visible: true, order: 9 },
+  { id: 'caJour', name: 'CA du Jour', icon: '💵', visible: true, order: 1 },
+  { id: 'soldeCaisse', name: 'Solde Caisse', icon: '💼', visible: true, order: 2 },
+  { id: 'soldeBanque', name: 'Solde Banque', icon: '🏦', visible: true, order: 3 },
+  { id: 'transactions', name: 'Transactions du jour', icon: '💰', visible: true, order: 4 },
+  { id: 'produits', name: 'Produits en stock', icon: '📦', visible: true, order: 5 },
+  { id: 'mouvements', name: 'Mouvements du jour', icon: '🔄', visible: true, order: 6 },
+  { id: 'clients', name: 'Clients actifs', icon: '👥', visible: true, order: 7 },
+  { id: 'ca', name: 'Évolution CA', icon: '📈', visible: true, order: 8 },
+  { id: 'stock', name: 'Mouvements de stock', icon: '📊', visible: true, order: 9 },
+  { id: 'repartition', name: 'Répartition par catégorie', icon: '🥧', visible: true, order: 10 },
+  { id: 'topProduits', name: 'Top produits', icon: '🏆', visible: true, order: 11 },
+  { id: 'actions', name: 'Actions rapides', icon: '⚡', visible: true, order: 12 },
 ]
 
 export default function DashboardPreferencesPage() {
@@ -225,11 +228,10 @@ export default function DashboardPreferencesPage() {
                 onDragStart={() => handleDragStart(widget)}
                 onDragOver={handleDragOver}
                 onDrop={() => handleDrop(widget)}
-                className={`flex items-center gap-3 rounded-lg border-2 p-4 transition-all ${
-                  draggedWidget?.id === widget.id
+                className={`flex items-center gap-3 rounded-lg border-2 p-4 transition-all ${draggedWidget?.id === widget.id
                     ? 'border-orange-500 bg-orange-50 opacity-50'
                     : 'border-gray-200 bg-white hover:border-orange-300 hover:shadow-md cursor-move'
-                }`}
+                  }`}
               >
                 <GripVertical className="h-5 w-5 text-gray-400" />
                 <span className="text-2xl">{widget.icon}</span>
@@ -238,11 +240,10 @@ export default function DashboardPreferencesPage() {
                 </div>
                 <button
                   onClick={() => handleToggleWidget(widget.id)}
-                  className={`rounded-lg p-2 transition-colors ${
-                    widget.visible
+                  className={`rounded-lg p-2 transition-colors ${widget.visible
                       ? 'bg-green-100 text-green-700 hover:bg-green-200'
                       : 'bg-gray-100 text-gray-400 hover:bg-gray-200'
-                  }`}
+                    }`}
                   title={widget.visible ? 'Masquer' : 'Afficher'}
                 >
                   {widget.visible ? <Eye className="h-5 w-5" /> : <EyeOff className="h-5 w-5" />}

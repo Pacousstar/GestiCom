@@ -4,10 +4,13 @@ import { getSession } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 import { logModification, getIpAddress, getUserAgent } from '@/lib/audit'
 import { getEntiteId } from '@/lib/get-entite-id'
+import { requirePermission } from '@/lib/require-role'
 
 export async function POST(request: NextRequest) {
   const session = await getSession()
   if (!session) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+  const forbidden = requirePermission(session, 'stocks:entree')
+  if (forbidden) return forbidden
 
   try {
     const body = await request.json()
@@ -40,7 +43,7 @@ export async function POST(request: NextRequest) {
     if (!magasin || !produit) {
       return NextResponse.json({ error: 'Magasin ou produit introuvable.' }, { status: 400 })
     }
-    
+
     // Vérifier que le magasin appartient à l'entité sélectionnée (sauf SUPER_ADMIN)
     if (session.role !== 'SUPER_ADMIN' && magasin.entiteId !== entiteId) {
       return NextResponse.json({ error: 'Ce magasin n\'appartient pas à votre entité.' }, { status: 403 })

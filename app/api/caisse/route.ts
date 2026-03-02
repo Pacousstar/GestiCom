@@ -3,10 +3,12 @@ import { getSession } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 import { comptabiliserCaisse } from '@/lib/comptabilisation'
 import { getEntiteId } from '@/lib/get-entite-id'
+import { requirePermission } from '@/lib/require-role'
 
 export async function GET(request: NextRequest) {
   const session = await getSession()
-  if (!session) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+  const forbidden = requirePermission(session, 'caisse:view')
+  if (forbidden) return forbidden
 
   const limit = Math.min(200, Math.max(1, Number(request.nextUrl.searchParams.get('limit')) || 100))
   const dateDebut = request.nextUrl.searchParams.get('dateDebut')?.trim()
@@ -52,6 +54,8 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   const session = await getSession()
   if (!session) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+  const forbidden = requirePermission(session, 'caisse:create')
+  if (forbidden) return forbidden
 
   try {
     const body = await request.json()
@@ -77,10 +81,10 @@ export async function POST(request: NextRequest) {
     if (!magasin) {
       return NextResponse.json({ error: 'Magasin introuvable.' }, { status: 400 })
     }
-    
+
     // Utiliser l'entité de la session
     const entiteId = await getEntiteId(session)
-    
+
     // Vérifier que le magasin appartient à l'entité sélectionnée (sauf SUPER_ADMIN)
     if (session.role !== 'SUPER_ADMIN' && magasin.entiteId !== entiteId) {
       return NextResponse.json({ error: 'Ce magasin n\'appartient pas à votre entité.' }, { status: 403 })

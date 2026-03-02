@@ -4,23 +4,25 @@ import { getSession } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 import { logCreation, getIpAddress, getUserAgent } from '@/lib/audit'
 import { getEntiteId } from '@/lib/get-entite-id'
+import { requirePermission } from '@/lib/require-role'
 
 export async function GET(request: NextRequest) {
   const session = await getSession()
-  if (!session) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+  const forbidden = requirePermission(session, 'produits:view')
+  if (forbidden) return forbidden
 
   const complet = request.nextUrl.searchParams.get('complet') === '1'
-  
+
   const q = String(request.nextUrl.searchParams.get('q') || '').trim().toLowerCase()
   const where = q
     ? {
-        actif: true,
-        OR: [
-          { code: { contains: q } },
-          { designation: { contains: q } },
-          { categorie: { contains: q } },
-        ],
-      }
+      actif: true,
+      OR: [
+        { code: { contains: q } },
+        { designation: { contains: q } },
+        { categorie: { contains: q } },
+      ],
+    }
     : { actif: true }
 
   // Mode complet : retourner tous les produits sans pagination
@@ -39,15 +41,15 @@ export async function GET(request: NextRequest) {
         createdAt: true,
       },
     })
-    
+
     // Filtre insensible à la casse si sqlite like est sensible
     const filtered = q
       ? produits.filter(
-          (p) =>
-            p.code.toLowerCase().includes(q) ||
-            p.designation.toLowerCase().includes(q) ||
-            p.categorie.toLowerCase().includes(q)
-        )
+        (p) =>
+          p.code.toLowerCase().includes(q) ||
+          p.designation.toLowerCase().includes(q) ||
+          p.categorie.toLowerCase().includes(q)
+      )
       : produits
 
     return NextResponse.json(filtered)
@@ -77,15 +79,15 @@ export async function GET(request: NextRequest) {
     }),
     prisma.produit.count({ where }),
   ])
-  
+
   // Filtre insensible à la casse si sqlite like est sensible
   const filtered = q
     ? produits.filter(
-        (p) =>
-          p.code.toLowerCase().includes(q) ||
-          p.designation.toLowerCase().includes(q) ||
-          p.categorie.toLowerCase().includes(q)
-      )
+      (p) =>
+        p.code.toLowerCase().includes(q) ||
+        p.designation.toLowerCase().includes(q) ||
+        p.categorie.toLowerCase().includes(q)
+    )
     : produits
 
   // Recalculer le total si filtre appliqué
@@ -105,6 +107,8 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   const session = await getSession()
   if (!session) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+  const forbidden = requirePermission(session, 'produits:create')
+  if (forbidden) return forbidden
 
   try {
     const body = await request.json()
@@ -129,21 +133,21 @@ export async function POST(request: NextRequest) {
     if (magasinIdRaw == null || !Number.isInteger(magasinIdRaw) || magasinIdRaw <= 0) {
       return NextResponse.json({ error: 'Le point de vente est obligatoire pour créer un produit.' }, { status: 400 })
     }
-    
+
     const quantiteInitiale = Math.max(0, Number(body?.quantiteInitiale) || 0)
-    
+
     // Vérifier que le magasin existe et appartient à l'entité
     const magasin = await prisma.magasin.findUnique({ where: { id: magasinIdRaw } })
     if (!magasin) {
       return NextResponse.json({ error: 'Point de vente introuvable.' }, { status: 404 })
     }
-    
+
     // Vérifier que le magasin appartient à l'entité sélectionnée (sauf SUPER_ADMIN)
     const entiteId = await getEntiteId(session)
     if (session.role !== 'SUPER_ADMIN' && magasin.entiteId !== entiteId) {
       return NextResponse.json({ error: 'Ce magasin n\'appartient pas à votre entité.' }, { status: 403 })
     }
-    
+
     const p = await prisma.produit.create({
       data: { code, designation, categorie, prixAchat, prixVente, seuilMin, actif: true },
     })

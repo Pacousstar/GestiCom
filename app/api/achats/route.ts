@@ -4,15 +4,18 @@ import { getSession } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 import { comptabiliserAchat } from '@/lib/comptabilisation'
 import { getEntiteId } from '@/lib/get-entite-id'
+import { requirePermission } from '@/lib/require-role'
 
 export async function GET(request: NextRequest) {
   const session = await getSession()
   if (!session) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+  const forbidden = requirePermission(session, 'achats:view')
+  if (forbidden) return forbidden
 
   const page = Math.max(1, Number(request.nextUrl.searchParams.get('page')) || 1)
   const limit = Math.min(100, Math.max(1, Number(request.nextUrl.searchParams.get('limit')) || 20))
   const skip = (page - 1) * limit
-  
+
   const dateDebut = request.nextUrl.searchParams.get('dateDebut')?.trim()
   const dateFin = request.nextUrl.searchParams.get('dateFin')?.trim()
   const where: { date?: { gte: Date; lte: Date }; entiteId?: number } = {}
@@ -56,6 +59,8 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   const session = await getSession()
   if (!session) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+  const forbidden = requirePermission(session, 'achats:create')
+  if (forbidden) return forbidden
 
   try {
     const body = await request.json()
@@ -93,7 +98,7 @@ export async function POST(request: NextRequest) {
 
     const magasin = await prisma.magasin.findUnique({ where: { id: magasinId } })
     if (!magasin) return NextResponse.json({ error: 'Magasin introuvable.' }, { status: 400 })
-    
+
     // Vérifier que le magasin appartient à l'entité sélectionnée (sauf SUPER_ADMIN)
     if (session.role !== 'SUPER_ADMIN' && magasin.entiteId !== entiteId) {
       return NextResponse.json({ error: 'Ce magasin n\'appartient pas à votre entité.' }, { status: 403 })
@@ -165,7 +170,7 @@ export async function POST(request: NextRequest) {
       let st = await prisma.stock.findUnique({
         where: { produitId_magasinId: { produitId: l.produitId, magasinId } },
       })
-      
+
       if (!st) {
         // Le produit n'a pas de stock dans ce magasin, créer un nouveau stock dans le magasin de l'achat
         // Même si le produit a un stock dans un autre magasin, on crée un stock séparé pour ce magasin

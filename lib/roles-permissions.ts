@@ -22,6 +22,10 @@ export type Permission =
   // Dashboard
   | 'dashboard:view'
 
+  // Rapports
+  | 'rapports:view'
+  | 'rapports:ventes'
+
   // Produits
   | 'produits:view'
   | 'produits:create'
@@ -53,6 +57,16 @@ export type Permission =
   | 'depenses:edit'
   | 'depenses:delete'
 
+  // Caisse
+  | 'caisse:view'
+  | 'caisse:create'
+  | 'caisse:delete'
+
+  // Banque
+  | 'banque:view'
+  | 'banque:create'
+  | 'banque:delete'
+
   // Charges
   | 'charges:view'
   | 'charges:create'
@@ -80,6 +94,19 @@ export type Permission =
   | 'sauvegardes:restore'
   | 'sauvegardes:delete'
 
+  // Audit
+  | 'audit:view'
+
+  // Clients & Fournisseurs
+  | 'clients:view'
+  | 'clients:create'
+  | 'clients:edit'
+  | 'clients:delete'
+  | 'fournisseurs:view'
+  | 'fournisseurs:create'
+  | 'fournisseurs:edit'
+  | 'fournisseurs:delete'
+
 /**
  * Définition des permissions par rôle
  */
@@ -93,10 +120,16 @@ export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     'achats:view', 'achats:create', 'achats:edit', 'achats:delete',
     'depenses:view', 'depenses:create', 'depenses:edit', 'depenses:delete',
     'charges:view', 'charges:create', 'charges:edit', 'charges:delete',
+    'caisse:view', 'caisse:create', 'caisse:delete',
+    'banque:view', 'banque:create', 'banque:delete',
     'comptabilite:view', 'comptabilite:rapports', 'comptabilite:export',
     'users:view', 'users:create', 'users:edit', 'users:delete',
     'parametres:view', 'parametres:edit',
     'sauvegardes:view', 'sauvegardes:create', 'sauvegardes:restore', 'sauvegardes:delete',
+    'audit:view',
+    'rapports:view', 'rapports:ventes',
+    'clients:view', 'clients:create', 'clients:edit', 'clients:delete',
+    'fournisseurs:view', 'fournisseurs:create', 'fournisseurs:edit', 'fournisseurs:delete',
   ],
 
   ADMIN: [
@@ -111,7 +144,12 @@ export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     'comptabilite:view', 'comptabilite:rapports',
     'users:view', 'users:create', 'users:edit',
     'parametres:view', 'parametres:edit',
+    'caisse:view', 'caisse:create',
     'sauvegardes:view', 'sauvegardes:create',
+    'audit:view',
+    'rapports:view', 'rapports:ventes',
+    'clients:view', 'clients:create', 'clients:edit',
+    'fournisseurs:view', 'fournisseurs:create', 'fournisseurs:edit',
   ],
 
   COMPTABLE: [
@@ -123,7 +161,10 @@ export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     'achats:view',
     'depenses:view', 'depenses:create', 'depenses:edit',
     'charges:view', 'charges:create', 'charges:edit',
+    'caisse:view',
     'comptabilite:view', 'comptabilite:rapports', 'comptabilite:export',
+    'rapports:view', 'rapports:ventes',
+    'clients:view', 'fournisseurs:view',
   ],
 
   GESTIONNAIRE: [
@@ -134,7 +175,11 @@ export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     'ventes:view', 'ventes:create', 'ventes:edit',
     'achats:view', 'achats:create', 'achats:edit',
     'depenses:view', 'depenses:create',
+    'caisse:view', 'caisse:create',
     'charges:view', 'charges:create',
+    'rapports:view',
+    'clients:view', 'clients:create', 'clients:edit',
+    'fournisseurs:view', 'fournisseurs:create', 'fournisseurs:edit',
   ],
 
   MAGASINIER: [
@@ -144,6 +189,8 @@ export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     'stocks:view', 'stocks:entree', 'stocks:sortie',
     'ventes:view',
     'achats:view',
+    'clients:view',
+    'fournisseurs:view',
   ],
 
   ASSISTANTE: [
@@ -153,7 +200,10 @@ export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     'stocks:view',
     'ventes:view', 'ventes:create',
     'achats:view', 'achats:create',
+    'caisse:view', 'caisse:create',
     'depenses:view', 'depenses:create',
+    'clients:view', 'clients:create',
+    'fournisseurs:view', 'fournisseurs:create',
   ],
 }
 
@@ -162,7 +212,7 @@ export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
  * Si customPermissions est fourni et non vide, il remplace les permissions du rôle.
  */
 export function hasPermission(role: Role, permission: Permission, customPermissions?: string[]): boolean {
-  if (customPermissions && customPermissions.length > 0) {
+  if (customPermissions !== undefined) {
     return customPermissions.includes(permission)
   }
   const permissions = ROLE_PERMISSIONS[role] || []

@@ -43,7 +43,18 @@ export default function CaissePage() {
   const [deletingId, setDeletingId] = useState<number | null>(null)
 
   useEffect(() => {
-    fetch('/api/auth/check').then((r) => r.ok && r.json()).then((d) => d && setUserRole(d.role)).catch(() => {})
+    fetch('/api/auth/check')
+      .then((r) => r.ok && r.json())
+      .then((d) => {
+        if (d) {
+          setUserRole(d.role)
+          // Si l'utilisateur n'a pas la permission de voir la caisse, on peut rediriger ou montrer une erreur
+          if (d.permissions && !d.permissions.includes('caisse:view')) {
+            window.location.href = '/dashboard?error=permission_denied'
+          }
+        }
+      })
+      .catch(() => { })
   }, [])
 
   const fetchOperations = () => {
@@ -297,11 +308,10 @@ export default function CaissePage() {
           <p className="text-sm font-medium text-white/90">Total sorties</p>
           <p className="mt-1 text-2xl font-bold text-white">{totalSorties.toLocaleString('fr-FR')} FCFA</p>
         </div>
-        <div className={`rounded-xl bg-gradient-to-br p-6 shadow-lg transition-all hover:shadow-xl hover:scale-105 ${
-          soldeMouvements >= 0 
-            ? 'from-blue-500 to-cyan-600' 
+        <div className={`rounded-xl bg-gradient-to-br p-6 shadow-lg transition-all hover:shadow-xl hover:scale-105 ${soldeMouvements >= 0
+            ? 'from-blue-500 to-cyan-600'
             : 'from-orange-500 to-red-600'
-        }`}>
+          }`}>
           <p className="text-sm font-medium text-white/90">Solde (entrées − sorties)</p>
           <p className="mt-1 text-2xl font-bold text-white">
             {soldeMouvements.toLocaleString('fr-FR')} FCFA
@@ -344,58 +354,57 @@ export default function CaissePage() {
                   })
                   .map((o) => (
                     <tr key={o.id} className="hover:bg-gray-50">
-                    <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-900">
-                      {new Date(o.date).toLocaleDateString('fr-FR')}
-                    </td>
-                    <td className="whitespace-nowrap px-4 py-3">
-                      <span
-                        className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${
-                          o.type === 'ENTREE' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                        }`}
-                      >
-                        {o.type === 'ENTREE' ? 'Entrée' : 'Sortie'}
-                      </span>
-                    </td>
-                    <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-700">
-                      {o.magasin.code} – {o.magasin.nom}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-700">{o.motif}</td>
-                    <td className={`whitespace-nowrap px-4 py-3 text-right text-sm font-medium ${o.type === 'ENTREE' ? 'text-green-600' : 'text-red-600'}`}>
-                      {o.type === 'ENTREE' ? '+' : '−'} {o.montant.toLocaleString('fr-FR')} FCFA
-                    </td>
-                    <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-500">{o.utilisateur.nom}</td>
-                    <td className="px-4 py-3">
-                      {userRole === 'SUPER_ADMIN' && (
-                        <button
-                          type="button"
-                          onClick={async () => {
-                            if (!confirm('Supprimer cette opération caisse ? Comptabilité mise à jour. Irréversible.')) return
-                            setDeletingId(o.id)
-                            try {
-                              const res = await fetch(`/api/caisse/${o.id}`, { method: 'DELETE' })
-                              if (res.ok) {
-                                fetchOperations()
-                                showSuccess(MESSAGES.CAISSE_SUPPRIMEE)
-                              } else {
-                                const d = await res.json()
-                                showError(res.status === 403 ? (d.error || MESSAGES.RESERVE_SUPER_ADMIN) : (d.error || 'Erreur suppression.'))
-                              }
-                            } catch (e) {
-                              showError(formatApiError(e))
-                            } finally {
-                              setDeletingId(null)
-                            }
-                          }}
-                          disabled={deletingId === o.id}
-                          className="rounded p-1.5 text-red-700 hover:bg-red-100 disabled:opacity-50"
-                          title="Supprimer (Super Admin)"
+                      <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-900">
+                        {new Date(o.date).toLocaleDateString('fr-FR')}
+                      </td>
+                      <td className="whitespace-nowrap px-4 py-3">
+                        <span
+                          className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${o.type === 'ENTREE' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                            }`}
                         >
-                          {deletingId === o.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
-                        </button>
-                      )}
-                    </td>
-                  </tr>
-                ))}
+                          {o.type === 'ENTREE' ? 'Entrée' : 'Sortie'}
+                        </span>
+                      </td>
+                      <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-700">
+                        {o.magasin.code} – {o.magasin.nom}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-700">{o.motif}</td>
+                      <td className={`whitespace-nowrap px-4 py-3 text-right text-sm font-medium ${o.type === 'ENTREE' ? 'text-green-600' : 'text-red-600'}`}>
+                        {o.type === 'ENTREE' ? '+' : '−'} {o.montant.toLocaleString('fr-FR')} FCFA
+                      </td>
+                      <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-500">{o.utilisateur.nom}</td>
+                      <td className="px-4 py-3">
+                        {userRole === 'SUPER_ADMIN' && (
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              if (!confirm('Supprimer cette opération caisse ? Comptabilité mise à jour. Irréversible.')) return
+                              setDeletingId(o.id)
+                              try {
+                                const res = await fetch(`/api/caisse/${o.id}`, { method: 'DELETE' })
+                                if (res.ok) {
+                                  fetchOperations()
+                                  showSuccess(MESSAGES.CAISSE_SUPPRIMEE)
+                                } else {
+                                  const d = await res.json()
+                                  showError(res.status === 403 ? (d.error || MESSAGES.RESERVE_SUPER_ADMIN) : (d.error || 'Erreur suppression.'))
+                                }
+                              } catch (e) {
+                                showError(formatApiError(e))
+                              } finally {
+                                setDeletingId(null)
+                              }
+                            }}
+                            disabled={deletingId === o.id}
+                            className="rounded p-1.5 text-red-700 hover:bg-red-100 disabled:opacity-50"
+                            title="Supprimer (Super Admin)"
+                          >
+                            {deletingId === o.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
               </tbody>
             </table>
           </div>
@@ -473,9 +482,8 @@ export default function CaissePage() {
                 <button
                   type="submit"
                   disabled={saving}
-                  className={`flex-1 inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-white ${
-                    formType === 'ENTREE' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'
-                  } disabled:opacity-50`}
+                  className={`flex-1 inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-white ${formType === 'ENTREE' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'
+                    } disabled:opacity-50`}
                 >
                   {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
                   Enregistrer

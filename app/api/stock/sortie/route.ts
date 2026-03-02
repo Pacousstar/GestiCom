@@ -3,6 +3,7 @@ import { revalidatePath } from 'next/cache'
 import { getSession } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 import { getEntiteId } from '@/lib/get-entite-id'
+import { requirePermission } from '@/lib/require-role'
 
 /**
  * Sortie de stock (hors vente) : casse, don, transfert, correction, etc.
@@ -11,6 +12,8 @@ import { getEntiteId } from '@/lib/get-entite-id'
 export async function POST(request: NextRequest) {
   const session = await getSession()
   if (!session) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+  const forbidden = requirePermission(session, 'stocks:sortie')
+  if (forbidden) return forbidden
 
   try {
     const body = await request.json()
@@ -43,7 +46,7 @@ export async function POST(request: NextRequest) {
     if (!magasin || !produit) {
       return NextResponse.json({ error: 'Magasin ou produit introuvable.' }, { status: 400 })
     }
-    
+
     // Vérifier que le magasin appartient à l'entité sélectionnée (sauf SUPER_ADMIN)
     if (session.role !== 'SUPER_ADMIN' && magasin.entiteId !== entiteId) {
       return NextResponse.json({ error: 'Ce magasin n\'appartient pas à votre entité.' }, { status: 403 })
@@ -92,11 +95,11 @@ export async function POST(request: NextRequest) {
       where: { id: st.id },
       include: { produit: { select: { code: true, designation: true } }, magasin: { select: { code: true } } },
     })
-    
+
     // Invalider le cache pour affichage immédiat
     revalidatePath('/dashboard/stock')
     revalidatePath('/api/stock')
-    
+
     return NextResponse.json(updated)
   } catch (e) {
     console.error('POST /api/stock/sortie:', e)

@@ -12,5 +12,6 @@ export async function GET() {
     nom: session.nom,
     role: session.role,
     entiteId: session.entiteId,
+    permissions: session.permissions,
   })
 }

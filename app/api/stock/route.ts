@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth'
 import { prisma } from '@/lib/db'
+import { requirePermission } from '@/lib/require-role'
 
 export async function GET(request: NextRequest) {
   const session = await getSession()
-  if (!session) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+  const forbidden = requirePermission(session, 'stocks:view')
+  if (forbidden) return forbidden
 
   const magasinId = request.nextUrl.searchParams.get('magasinId')
   const produitId = request.nextUrl.searchParams.get('produitId')
@@ -29,7 +31,7 @@ export async function GET(request: NextRequest) {
     // Retourner TOUS les produits avec leurs stocks (ou null si pas de stock)
     // Si un magasinId est spécifié, on affiche tous les produits avec leur stock dans ce magasin
     // Sinon, on affiche tous les produits avec leur stock dans leur magasin d'origine
-    
+
     if (magasinId) {
       // Cas 1: Magasin spécifié - Afficher tous les produits avec leur stock dans ce magasin
       const m = Number(magasinId)

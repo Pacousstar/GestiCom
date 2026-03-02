@@ -9,6 +9,7 @@ import { fournisseurSchema } from '@/lib/validations'
 import { validateForm } from '@/lib/validation-helpers'
 import Pagination from '@/components/ui/Pagination'
 import { printDocument, generateLignesHTML, type TemplateData } from '@/lib/print-templates'
+import PrintPreview from '@/components/print/PrintPreview'
 import { addToSyncQueue, isOnline } from '@/lib/offline-sync'
 
 type Magasin = { id: number; code: string; nom: string }
@@ -77,7 +78,7 @@ export default function AchatsPage() {
   const [supprimant, setSupprimant] = useState<number | null>(null)
 
   useEffect(() => {
-    fetch('/api/auth/check').then((r) => r.ok && r.json()).then((d) => d && setUserRole(d.role)).catch(() => {})
+    fetch('/api/auth/check').then((r) => r.ok && r.json()).then((d) => d && setUserRole(d.role)).catch(() => { })
   }, [])
 
   const refetchProduits = () => {
@@ -111,7 +112,7 @@ export default function AchatsPage() {
 
   const fetchAchats = (overrideDeb?: string, overrideFin?: string, page?: number) => {
     setLoading(true)
-    const params = new URLSearchParams({ 
+    const params = new URLSearchParams({
       page: String(page ?? currentPage),
       limit: '20'
     })
@@ -188,7 +189,7 @@ export default function AchatsPage() {
     e.preventDefault()
     setSavingFournisseur(true)
     setErr('')
-    
+
     const validationData = {
       nom: fournisseurForm.nom.trim(),
       telephone: fournisseurForm.telephone.trim() || null,
@@ -239,7 +240,9 @@ export default function AchatsPage() {
 
   // Récupérer le templateId par défaut pour ACHAT
   const [defaultTemplateId, setDefaultTemplateId] = useState<number | null>(null)
-  
+  const [printPreviewOpen, setPrintPreviewOpen] = useState(false)
+  const [printData, setPrintData] = useState<TemplateData | null>(null)
+
   useEffect(() => {
     fetch('/api/print-templates?type=ACHAT&actif=true')
       .then((r) => (r.ok ? r.json() : []))
@@ -249,14 +252,14 @@ export default function AchatsPage() {
           setDefaultTemplateId(activeTemplate.id)
         }
       })
-      .catch(() => {})
+      .catch(() => { })
   }, [])
 
   const imprimerAchat = async () => {
     if (!detailAchat) return
     const d = detailAchat
     const date = new Date(d.date)
-    
+
     // Préparer les données pour le template
     const lignesHtml = generateLignesHTML(d.lignes.map((l) => ({
       designation: l.designation,
@@ -264,7 +267,7 @@ export default function AchatsPage() {
       prixUnitaire: l.prixUnitaire,
       montant: l.montant,
     })))
-    
+
     const templateData: TemplateData = {
       NUMERO: d.numero,
       DATE: date.toLocaleDateString('fr-FR'),
@@ -279,13 +282,11 @@ export default function AchatsPage() {
       MODE_PAIEMENT: d.modePaiement,
       OBSERVATION: d.observation || undefined,
     }
-    
-    try {
-      await printDocument(defaultTemplateId, 'ACHAT', templateData)
-    } catch (error) {
-      console.error('Erreur impression:', error)
-      showError('Erreur lors de l\'impression.')
-    }
+
+
+
+    setPrintData(templateData)
+    setPrintPreviewOpen(true)
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -308,7 +309,7 @@ export default function AchatsPage() {
         prixUnitaire: l.prixUnitaire,
       })),
     }
-    
+
     // Vérifier si on est hors-ligne
     if (!isOnline()) {
       // Ajouter à la file d'attente
@@ -494,16 +495,16 @@ export default function AchatsPage() {
               <div>
                 <label className="block text-sm font-medium text-gray-700">Fournisseur (optionnel)</label>
                 <div className="mt-1 flex gap-2">
-                <select
-                  value={formData.fournisseurId}
-                  onChange={(e) => setFormData((f) => ({ ...f, fournisseurId: e.target.value, fournisseurLibre: '' }))}
+                  <select
+                    value={formData.fournisseurId}
+                    onChange={(e) => setFormData((f) => ({ ...f, fournisseurId: e.target.value, fournisseurLibre: '' }))}
                     className="flex-1 rounded-lg border border-gray-200 px-3 py-2 focus:border-orange-500 focus:outline-none"
-                >
-                  <option value="">—</option>
-                  {fournisseurs.map((f) => (
-                    <option key={f.id} value={f.id}>{f.nom}</option>
-                  ))}
-                </select>
+                  >
+                    <option value="">—</option>
+                    {fournisseurs.map((f) => (
+                      <option key={f.id} value={f.id}>{f.nom}</option>
+                    ))}
+                  </select>
                   <button
                     type="button"
                     onClick={() => setShowCreateFournisseur(true)}
@@ -611,8 +612,8 @@ export default function AchatsPage() {
                       )
                     })
                     .map((p) => (
-                    <option key={p.id} value={p.id}>{p.code} – {p.designation}</option>
-                  ))}
+                      <option key={p.id} value={p.id}>{p.code} – {p.designation}</option>
+                    ))}
                 </select>
               </div>
               <div className="mb-3 flex flex-wrap gap-2">
@@ -728,12 +729,11 @@ export default function AchatsPage() {
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-600">{a.modePaiement}</td>
                     <td className="px-4 py-3">
-                      <span className={`rounded px-2 py-0.5 text-xs font-medium ${
-                        a.statutPaiement === 'PAYE' ? 'bg-green-100 text-green-800' :
+                      <span className={`rounded px-2 py-0.5 text-xs font-medium ${a.statutPaiement === 'PAYE' ? 'bg-green-100 text-green-800' :
                         a.statutPaiement === 'PARTIEL' ? 'bg-amber-100 text-amber-800' :
-                        a.statutPaiement === 'CREDIT' ? 'bg-orange-100 text-orange-800' :
-                        'bg-gray-100 text-gray-700'
-                      }`}>
+                          a.statutPaiement === 'CREDIT' ? 'bg-orange-100 text-orange-800' :
+                            'bg-gray-100 text-gray-700'
+                        }`}>
                         {a.statutPaiement === 'PAYE' ? 'Payé' : a.statutPaiement === 'PARTIEL' ? 'Partiel' : a.statutPaiement === 'CREDIT' ? 'Crédit' : '—'}
                       </span>
                     </td>
@@ -817,11 +817,10 @@ export default function AchatsPage() {
                 <div><span className="font-medium text-gray-700">Fournisseur :</span> <span className="text-gray-900">{detailAchat.fournisseur?.nom || detailAchat.fournisseurLibre || '—'}</span></div>
                 <div><span className="font-medium text-gray-700">Paiement :</span> <span className="text-gray-900">{detailAchat.modePaiement}</span></div>
                 <div><span className="font-medium text-gray-700">Statut paiement :</span>
-                  <span className={`ml-1 rounded px-2 py-0.5 text-xs font-medium ${
-                    detailAchat.statutPaiement === 'PAYE' ? 'bg-green-100 text-green-800' :
+                  <span className={`ml-1 rounded px-2 py-0.5 text-xs font-medium ${detailAchat.statutPaiement === 'PAYE' ? 'bg-green-100 text-green-800' :
                     detailAchat.statutPaiement === 'PARTIEL' ? 'bg-amber-100 text-amber-800' :
-                    detailAchat.statutPaiement === 'CREDIT' ? 'bg-orange-100 text-orange-800' : 'bg-gray-100 text-gray-700'
-                  }`}>
+                      detailAchat.statutPaiement === 'CREDIT' ? 'bg-orange-100 text-orange-800' : 'bg-gray-100 text-gray-700'
+                    }`}>
                     {detailAchat.statutPaiement === 'PAYE' ? 'Payé' : detailAchat.statutPaiement === 'PARTIEL' ? 'Partiel' : detailAchat.statutPaiement === 'CREDIT' ? 'Crédit' : '—'}
                   </span>
                 </div>
@@ -910,6 +909,16 @@ export default function AchatsPage() {
             {err && <p className="mt-2 text-sm text-red-600">{err}</p>}
           </div>
         </div>
+      )}
+
+      {printData && (
+        <PrintPreview
+          isOpen={printPreviewOpen}
+          onClose={() => setPrintPreviewOpen(false)}
+          type="ACHAT"
+          data={printData}
+          defaultTemplateId={defaultTemplateId}
+        />
       )}
     </div>
   )

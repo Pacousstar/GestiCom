@@ -40,13 +40,14 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Mettre à jour le token avec la nouvelle entité
+    // Mettre à jour le token avec la nouvelle entité en préservant les permissions
     const token = await createToken({
       userId: session.userId,
       login: session.login,
       nom: session.nom,
       role: session.role,
       entiteId: entiteId,
+      permissions: session.permissions,
     })
 
     const c = await cookies()

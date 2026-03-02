@@ -84,7 +84,7 @@ export default function DiagnosticButton() {
               <h2 className="text-xl font-bold text-gray-900">Diagnostic Comptabilité SYSCOHADA</h2>
               <button
                 onClick={() => setOpen(false)}
-                className="text-gray-400 hover:text-gray-600"
+                className="text-gray-900 hover:text-gray-900"
               >
                 <X className="h-6 w-6" />
               </button>
@@ -104,7 +104,7 @@ export default function DiagnosticButton() {
                     ) : (
                       <AlertCircle className="h-5 w-5 text-red-600" />
                     )}
-                    <span className="text-sm font-medium">
+                    <span className="text-sm font-medium text-gray-900">
                       {data.etat.initialise ? 'Initialisé' : 'Non initialisé'}
                     </span>
                   </div>
@@ -114,7 +114,7 @@ export default function DiagnosticButton() {
                     ) : (
                       <AlertCircle className="h-5 w-5 text-orange-600" />
                     )}
-                    <span className="text-sm font-medium">
+                    <span className="text-sm font-medium text-gray-900">
                       {data.etat.pret ? 'Prêt' : 'À compléter'}
                     </span>
                   </div>
@@ -122,9 +122,9 @@ export default function DiagnosticButton() {
                     {data.etat.aDesEcritures ? (
                       <CheckCircle2 className="h-5 w-5 text-green-600" />
                     ) : (
-                      <AlertCircle className="h-5 w-5 text-gray-400" />
+                      <AlertCircle className="h-5 w-5 text-gray-900" />
                     )}
-                    <span className="text-sm font-medium">
+                    <span className="text-sm font-medium text-gray-900">
                       {data.etat.aDesEcritures ? `${data.ecritures.total} écritures` : 'Aucune écriture'}
                     </span>
                   </div>
@@ -135,12 +135,12 @@ export default function DiagnosticButton() {
               <div className="rounded-lg border border-gray-200 p-4">
                 <h3 className="text-lg font-bold text-gray-900 mb-3">Plan de Comptes</h3>
                 <div className="space-y-2">
-                  <p className="text-sm text-gray-600">
+                  <p className="text-sm text-gray-900">
                     <span className="font-semibold">{data.planComptes.total}</span> comptes actifs
                   </p>
                   {data.planComptes.parClasse.length > 0 && (
                     <div className="text-sm">
-                      <span className="font-medium">Par classe :</span>
+                      <span className="font-bold text-gray-900">Par classe :</span>
                       <div className="mt-1 flex flex-wrap gap-2">
                         {data.planComptes.parClasse.map((c) => (
                           <span key={c.classe} className="px-2 py-1 bg-gray-100 rounded text-gray-900">
@@ -167,12 +167,12 @@ export default function DiagnosticButton() {
               <div className="rounded-lg border border-gray-200 p-4">
                 <h3 className="text-lg font-bold text-gray-900 mb-3">Journaux</h3>
                 <div className="space-y-2">
-                  <p className="text-sm text-gray-600">
+                  <p className="text-sm text-gray-900">
                     <span className="font-semibold">{data.journaux.total}</span> journaux actifs
                   </p>
                   {data.journaux.liste.length > 0 && (
                     <div className="text-sm">
-                      <span className="font-medium">Journaux :</span>
+                      <span className="font-bold text-gray-900">Journaux :</span>
                       <div className="mt-1 flex flex-wrap gap-2">
                         {data.journaux.liste.map((j) => (
                           <span key={j.code} className="px-2 py-1 bg-purple-100 rounded text-purple-700">
@@ -199,15 +199,15 @@ export default function DiagnosticButton() {
               <div className="rounded-lg border border-gray-200 p-4">
                 <h3 className="text-lg font-bold text-gray-900 mb-3">Écritures Comptables</h3>
                 <div className="space-y-3">
-                  <p className="text-sm text-gray-600">
+                  <p className="text-sm text-gray-900">
                     <span className="font-semibold">{data.ecritures.total}</span> écritures au total
                   </p>
                   {data.ecritures.parJournal.length > 0 && (
                     <div>
-                      <p className="text-sm font-medium mb-1">Par journal :</p>
+                      <p className="text-sm font-bold text-gray-900 mb-1">Par journal :</p>
                       <div className="space-y-1">
                         {data.ecritures.parJournal.map((e) => (
-                          <div key={e.journal} className="text-sm text-gray-700">
+                          <div key={e.journal} className="text-sm text-gray-900">
                             <span className="font-medium">{e.journal}</span> ({e.libelle}): {e.nombre} écritures
                           </div>
                         ))}
@@ -216,7 +216,7 @@ export default function DiagnosticButton() {
                   )}
                   {data.ecritures.parType.length > 0 && (
                     <div>
-                      <p className="text-sm font-medium mb-1">Par type :</p>
+                      <p className="text-sm font-bold text-gray-900 mb-1">Par type :</p>
                       <div className="flex flex-wrap gap-2">
                         {data.ecritures.parType.map((e) => (
                           <span key={e.type} className="px-2 py-1 bg-green-100 rounded text-green-700 text-sm">
@@ -228,16 +228,16 @@ export default function DiagnosticButton() {
                   )}
                   {data.ecritures.dernieres.length > 0 && (
                     <div>
-                      <p className="text-sm font-medium mb-2">5 dernières écritures :</p>
+                      <p className="text-sm font-bold text-gray-900 mb-2">5 dernières écritures :</p>
                       <div className="overflow-x-auto">
-                        <table className="min-w-full text-xs">
-                          <thead className="bg-gray-50">
+                        <table className="min-w-full text-xs text-gray-900">
+                          <thead className="bg-gray-200 text-gray-900">
                             <tr>
-                              <th className="px-2 py-1 text-left">Date</th>
-                              <th className="px-2 py-1 text-left">Journal</th>
-                              <th className="px-2 py-1 text-left">Compte</th>
-                              <th className="px-2 py-1 text-right">Débit</th>
-                              <th className="px-2 py-1 text-right">Crédit</th>
+                              <th className="px-2 py-1 text-left font-bold">Date</th>
+                              <th className="px-2 py-1 text-left font-bold">Journal</th>
+                              <th className="px-2 py-1 text-left font-bold">Compte</th>
+                              <th className="px-2 py-1 text-right font-bold">Débit</th>
+                              <th className="px-2 py-1 text-right font-bold">Crédit</th>
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-gray-200 bg-white">

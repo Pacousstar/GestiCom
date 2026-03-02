@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
 
     const user = await prisma.utilisateur.findFirst({
       where: { login, actif: true },
-      select: { id: true, login: true, nom: true, role: true, motDePasse: true, entiteId: true },
+      select: { id: true, login: true, nom: true, role: true, motDePasse: true, entiteId: true, permissionsPersonnalisees: true },
     })
 
     if (!user) {
@@ -39,12 +39,26 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Identifiants incorrects.' }, { status: 401 })
     }
 
+    // Parser les permissions personnalisées (stockées en JSON dans la BDD)
+    let customPermissions: string[] | undefined
+    if (user.permissionsPersonnalisees) {
+      try {
+        const parsed = JSON.parse(user.permissionsPersonnalisees)
+        if (Array.isArray(parsed)) {
+          customPermissions = parsed as string[]
+        }
+      } catch {
+        // Ignorer les permissions malformées
+      }
+    }
+
     const token = await createToken({
       userId: user.id,
       login: user.login,
       nom: user.nom,
       role: user.role,
       entiteId: user.entiteId,
+      permissions: customPermissions,
     })
 
     const c = await cookies()

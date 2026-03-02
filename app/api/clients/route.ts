@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { revalidatePath } from 'next/cache'
 import { getSession } from '@/lib/auth'
 import { prisma } from '@/lib/db'
+import { requirePermission } from '@/lib/require-role'
 
 type ClientDelegate = {
   findMany: (args: object) => Promise<Array<{ id: number; nom: string; telephone: string | null; type: string; plafondCredit: number | null; actif: boolean }>>
@@ -12,12 +13,13 @@ const clientRepo = (prisma as unknown as { client: ClientDelegate }).client
 
 export async function GET(request: NextRequest) {
   const session = await getSession()
-  if (!session) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+  const forbidden = requirePermission(session, 'clients:view')
+  if (forbidden) return forbidden
 
   const page = Math.max(1, Number(request.nextUrl.searchParams.get('page')) || 1)
   const limit = Math.min(100, Math.max(1, Number(request.nextUrl.searchParams.get('limit')) || 20))
   const skip = (page - 1) * limit
-  
+
   const q = String(request.nextUrl.searchParams.get('q') || '').trim().toLowerCase()
   const list = await clientRepo.findMany({
     where: { actif: true },
@@ -26,10 +28,10 @@ export async function GET(request: NextRequest) {
   })
   const filtered = q
     ? list.filter(
-        (c) =>
-          c.nom.toLowerCase().includes(q) ||
-          (c.telephone || '').toLowerCase().includes(q)
-      )
+      (c) =>
+        c.nom.toLowerCase().includes(q) ||
+        (c.telephone || '').toLowerCase().includes(q)
+    )
     : list
 
   const total = filtered.length
@@ -71,7 +73,8 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   const session = await getSession()
-  if (!session) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+  const forbidden = requirePermission(session, 'clients:create')
+  if (forbidden) return forbidden
 
   try {
     const body = await request.json()
@@ -90,11 +93,11 @@ export async function POST(request: NextRequest) {
     const c = await clientRepo.create({
       data: { nom, telephone, type, plafondCredit, ncc, actif: true },
     })
-    
+
     // Invalider le cache pour affichage immédiat
     revalidatePath('/dashboard/clients')
     revalidatePath('/api/clients')
-    
+
     return NextResponse.json(c)
   } catch (e) {
     console.error('POST /api/clients:', e)

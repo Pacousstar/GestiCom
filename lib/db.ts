@@ -14,7 +14,7 @@ if (process.env.NODE_ENV !== 'production' && process.platform === 'win32') {
     try {
       const url = fs.readFileSync(prodPath, 'utf8').trim()
       if (url) process.env.DATABASE_URL = url
-    } catch (_) {}
+    } catch (_) { }
   }
 }
 // Production (portable) : URL = C:\GestiCom-Portable\database_url.txt (priorité), sinon LOCALAPPDATA, puis .database_url.
@@ -63,8 +63,8 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 export const prisma = globalForPrisma.prisma ?? new PrismaClient({
-  log: process.env.NODE_ENV === 'production' ? ['error'] : undefined,
-  // Optimisations pour SQLite
+  log: process.env.NODE_ENV === 'production' ? ['error'] : ['error', 'warn'], // Moins de logs verbeux
+  // Optimisations pour SQLite sur Windows
   datasources: {
     db: {
       url: process.env.DATABASE_URL,

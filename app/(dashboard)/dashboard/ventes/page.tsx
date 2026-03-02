@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { ShoppingCart, Plus, Loader2, Trash2, XCircle, Eye, FileSpreadsheet, Printer, X, Search } from 'lucide-react'
 import { printDocument, generateLignesHTML, type TemplateData } from '@/lib/print-templates'
+import PrintPreview from '@/components/print/PrintPreview'
 import { useToast } from '@/hooks/useToast'
 import { formatApiError } from '@/lib/validation-helpers'
 import { MESSAGES } from '@/lib/messages'
@@ -95,10 +96,13 @@ export default function VentesPage() {
   const [ajoutStockSaving, setAjoutStockSaving] = useState(false)
 
   // Récupérer le templateId par défaut pour VENTE
+  // Récupérer le templateId par défaut pour VENTE
   const [defaultTemplateId, setDefaultTemplateId] = useState<number | null>(null)
+  const [printPreviewOpen, setPrintPreviewOpen] = useState(false)
+  const [printData, setPrintData] = useState<TemplateData | null>(null)
 
   useEffect(() => {
-    fetch('/api/auth/check').then((r) => r.ok && r.json()).then((d) => d && setUserRole(d.role)).catch(() => {})
+    fetch('/api/auth/check').then((r) => r.ok && r.json()).then((d) => d && setUserRole(d.role)).catch(() => { })
   }, [])
 
   useEffect(() => {
@@ -110,7 +114,7 @@ export default function VentesPage() {
           setDefaultTemplateId(activeTemplate.id)
         }
       })
-      .catch(() => {})
+      .catch(() => { })
   }, [])
 
   const imprimerVente = async () => {
@@ -125,7 +129,7 @@ export default function VentesPage() {
       prixUnitaire: l.prixUnitaire,
       montant: l.montant,
     })))
-    
+
     const templateData: TemplateData = {
       NUMERO: d.numero,
       DATE: date.toLocaleDateString('fr-FR'),
@@ -140,13 +144,11 @@ export default function VentesPage() {
       MODE_PAIEMENT: d.modePaiement,
       OBSERVATION: d.observation || undefined,
     }
-    
-    try {
-      await printDocument(defaultTemplateId, 'VENTE', templateData)
-    } catch (error) {
-      console.error('Erreur impression:', error)
-      showError('Erreur lors de l\'impression.')
-    }
+
+
+
+    setPrintData(templateData)
+    setPrintPreviewOpen(true)
   }
 
   const refetchProduits = () => {
@@ -201,7 +203,7 @@ export default function VentesPage() {
 
   const fetchVentes = (overrideDeb?: string, overrideFin?: string, page?: number) => {
     setLoading(true)
-    const params = new URLSearchParams({ 
+    const params = new URLSearchParams({
       page: String(page ?? currentPage),
       limit: '20'
     })
@@ -294,7 +296,7 @@ export default function VentesPage() {
     if (!magasinId || !lignes.length) return
     setErr('')
     setSubmitting(true)
-    
+
     const requestData = {
       date: formData.date || undefined,
       magasinId,
@@ -308,7 +310,7 @@ export default function VentesPage() {
         prixUnitaire: l.prixUnitaire,
       })),
     }
-    
+
     // Vérifier si on est hors-ligne
     if (!isOnline()) {
       // Ajouter à la file d'attente
@@ -336,7 +338,7 @@ export default function VentesPage() {
       })
       return
     }
-    
+
     try {
       const res = await fetch('/api/ventes', {
         method: 'POST',
@@ -724,8 +726,8 @@ export default function VentesPage() {
                       )
                     })
                     .map((p) => (
-                    <option key={p.id} value={p.id}>{p.code} – {p.designation}</option>
-                  ))}
+                      <option key={p.id} value={p.id}>{p.code} – {p.designation}</option>
+                    ))}
                 </select>
               </div>
               <div className="mb-3 flex flex-wrap gap-2">
@@ -880,8 +882,8 @@ export default function VentesPage() {
                       )
                     })
                     .map((p) => (
-                    <option key={p.id} value={p.id}>{p.code} – {p.designation}</option>
-                  ))}
+                      <option key={p.id} value={p.id}>{p.code} – {p.designation}</option>
+                    ))}
                 </select>
               </div>
               <div className="flex flex-wrap gap-2 items-end">
@@ -990,68 +992,67 @@ export default function VentesPage() {
                 {ventes.map((v) => {
                   const resteAPayer = Math.max(0, Number(v.montantTotal) - (Number(v.montantPaye) || 0))
                   return (
-                  <tr key={v.id} className={v.statut === 'ANNULEE' ? 'bg-gray-100' : 'hover:bg-gray-50'}>
-                    <td className="px-4 py-3 font-mono text-sm text-gray-900">{v.numero}</td>
-                    <td className="px-4 py-3 text-sm text-gray-600">
-                      {new Date(v.date).toLocaleDateString('fr-FR')}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-600">{v.magasin.code}</td>
-                    <td className="px-4 py-3 text-right font-medium text-gray-900">
-                      {Number(v.montantTotal).toLocaleString('fr-FR')} F
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-600">{v.modePaiement}</td>
-                    <td className="px-4 py-3">
-                      <span className={`rounded px-2 py-0.5 text-xs font-medium ${
-                        v.statutPaiement === 'PAYE' ? 'bg-green-100 text-green-800' : 
-                        v.statutPaiement === 'PARTIEL' ? 'bg-yellow-100 text-yellow-800' : 
-                        'bg-orange-100 text-orange-800'
-                      }`}>
-                        {v.statutPaiement === 'PAYE' ? 'Payé' : 
-                         v.statutPaiement === 'PARTIEL' ? 'Partiel' : 
-                         'Crédit'}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-right font-medium text-gray-900">
-                      {resteAPayer > 0 ? `${resteAPayer.toLocaleString('fr-FR')} F` : '-'}
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className={`rounded px-2 py-0.5 text-xs font-medium ${v.statut === 'ANNULEE' ? 'bg-gray-200 text-gray-700' : 'bg-green-100 text-green-800'}`}>
-                        {v.statut === 'ANNULEE' ? 'Annulée' : 'Validée'}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-1">
-                        <button
-                          onClick={() => handleVoirDetail(v.id)}
-                          disabled={loadingDetail === v.id}
-                          className="rounded p-1.5 text-gray-600 hover:bg-gray-100 disabled:opacity-50"
-                          title="Voir le détail"
-                        >
-                          {loadingDetail === v.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Eye className="h-4 w-4" />}
-                        </button>
-                        {v.statut === 'VALIDEE' && (
+                    <tr key={v.id} className={v.statut === 'ANNULEE' ? 'bg-gray-100' : 'hover:bg-gray-50'}>
+                      <td className="px-4 py-3 font-mono text-sm text-gray-900">{v.numero}</td>
+                      <td className="px-4 py-3 text-sm text-gray-600">
+                        {new Date(v.date).toLocaleDateString('fr-FR')}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-600">{v.magasin.code}</td>
+                      <td className="px-4 py-3 text-right font-medium text-gray-900">
+                        {Number(v.montantTotal).toLocaleString('fr-FR')} F
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-600">{v.modePaiement}</td>
+                      <td className="px-4 py-3">
+                        <span className={`rounded px-2 py-0.5 text-xs font-medium ${v.statutPaiement === 'PAYE' ? 'bg-green-100 text-green-800' :
+                          v.statutPaiement === 'PARTIEL' ? 'bg-yellow-100 text-yellow-800' :
+                            'bg-orange-100 text-orange-800'
+                          }`}>
+                          {v.statutPaiement === 'PAYE' ? 'Payé' :
+                            v.statutPaiement === 'PARTIEL' ? 'Partiel' :
+                              'Crédit'}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-right font-medium text-gray-900">
+                        {resteAPayer > 0 ? `${resteAPayer.toLocaleString('fr-FR')} F` : '-'}
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className={`rounded px-2 py-0.5 text-xs font-medium ${v.statut === 'ANNULEE' ? 'bg-gray-200 text-gray-700' : 'bg-green-100 text-green-800'}`}>
+                          {v.statut === 'ANNULEE' ? 'Annulée' : 'Validée'}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-1">
                           <button
-                            onClick={() => handleAnnuler(v)}
-                            disabled={annulant === v.id}
-                            className="rounded p-1.5 text-red-600 hover:bg-red-50 disabled:opacity-50"
-                            title="Annuler la vente"
+                            onClick={() => handleVoirDetail(v.id)}
+                            disabled={loadingDetail === v.id}
+                            className="rounded p-1.5 text-gray-600 hover:bg-gray-100 disabled:opacity-50"
+                            title="Voir le détail"
                           >
-                            <XCircle className="h-4 w-4" />
+                            {loadingDetail === v.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Eye className="h-4 w-4" />}
                           </button>
-                        )}
-                        {userRole === 'SUPER_ADMIN' && (
-                          <button
-                            onClick={() => handleSupprimer(v)}
-                            disabled={supprimant === v.id}
-                            className="rounded p-1.5 text-red-600 hover:bg-red-50 disabled:opacity-50"
-                            title="Supprimer définitivement"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
+                          {v.statut === 'VALIDEE' && (
+                            <button
+                              onClick={() => handleAnnuler(v)}
+                              disabled={annulant === v.id}
+                              className="rounded p-1.5 text-red-600 hover:bg-red-50 disabled:opacity-50"
+                              title="Annuler la vente"
+                            >
+                              <XCircle className="h-4 w-4" />
+                            </button>
+                          )}
+                          {userRole === 'SUPER_ADMIN' && (
+                            <button
+                              onClick={() => handleSupprimer(v)}
+                              disabled={supprimant === v.id}
+                              className="rounded p-1.5 text-red-600 hover:bg-red-50 disabled:opacity-50"
+                              title="Supprimer définitivement"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
                   )
                 })}
               </tbody>
@@ -1089,11 +1090,10 @@ export default function VentesPage() {
                 <div><span className="font-medium text-gray-700">Client :</span> <span className="text-gray-900">{detailVente.client?.nom || detailVente.clientLibre || '—'}</span></div>
                 <div><span className="font-medium text-gray-700">Paiement :</span> <span className="text-gray-900">{detailVente.modePaiement}</span></div>
                 <div><span className="font-medium text-gray-700">Statut paiement :</span>
-                  <span className={`ml-1 rounded px-2 py-0.5 text-xs font-medium ${
-                    detailVente.statutPaiement === 'PAYE' ? 'bg-green-100 text-green-800' :
+                  <span className={`ml-1 rounded px-2 py-0.5 text-xs font-medium ${detailVente.statutPaiement === 'PAYE' ? 'bg-green-100 text-green-800' :
                     detailVente.statutPaiement === 'PARTIEL' ? 'bg-amber-100 text-amber-800' :
-                    detailVente.statutPaiement === 'CREDIT' ? 'bg-orange-100 text-orange-800' : 'bg-gray-100 text-gray-700'
-                  }`}>
+                      detailVente.statutPaiement === 'CREDIT' ? 'bg-orange-100 text-orange-800' : 'bg-gray-100 text-gray-700'
+                    }`}>
                     {detailVente.statutPaiement === 'PAYE' ? 'Payé' : detailVente.statutPaiement === 'PARTIEL' ? 'Partiel' : detailVente.statutPaiement === 'CREDIT' ? 'Crédit' : '—'}
                   </span>
                 </div>
@@ -1220,7 +1220,7 @@ export default function VentesPage() {
                 <X className="h-5 w-5" />
               </button>
             </div>
-            
+
             <div className="mb-4 space-y-2 rounded-lg bg-red-50 p-4">
               <p className="text-sm text-gray-700">
                 <strong>Quantité demandée :</strong> {stockInsuffisantModal.quantiteDemandee} unités
@@ -1316,6 +1316,16 @@ export default function VentesPage() {
             </form>
           </div>
         </div>
+      )}
+
+      {printData && (
+        <PrintPreview
+          isOpen={printPreviewOpen}
+          onClose={() => setPrintPreviewOpen(false)}
+          type="VENTE"
+          data={printData}
+          defaultTemplateId={defaultTemplateId}
+        />
       )}
     </div>
   )

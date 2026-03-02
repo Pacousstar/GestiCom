@@ -8,18 +8,18 @@ import DashboardLayoutClient from './DashboardLayoutClient'
 export const dynamic = 'force-dynamic'
 
 function getEffectivePermissions(role: string, permissionsPersonnalisees: string | null): Permission[] {
-  const fromRole = (ROLE_PERMISSIONS as Record<string, Permission[]>)[role] ?? []
-  let custom: string[] = []
   if (permissionsPersonnalisees) {
     try {
       const parsed = JSON.parse(permissionsPersonnalisees)
-      custom = Array.isArray(parsed) ? parsed : []
+      if (Array.isArray(parsed)) {
+        return parsed as Permission[]
+      }
     } catch {
-      custom = []
+      // Si on n'arrive pas à parser, on fallback sur le rôle
     }
   }
-  const set = new Set<Permission>([...fromRole, ...(custom as Permission[])])
-  return Array.from(set)
+  // Fallback aux permissions du rôle par défaut
+  return (ROLE_PERMISSIONS as Record<string, Permission[]>)[role] ?? []
 }
 
 export default async function DashboardLayout({

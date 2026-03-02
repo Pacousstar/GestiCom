@@ -8,6 +8,12 @@ function timeoutPromise<T>(ms: number, fallback: T): Promise<T> {
   return new Promise((resolve) => setTimeout(() => resolve(fallback), ms))
 }
 
+function toNum(val: unknown): number {
+  if (val === null || val === undefined) return 0
+  const n = Number(val)
+  return isNaN(n) ? 0 : n
+}
+
 export async function GET() {
   try {
     const session = await getSession()
@@ -16,6 +22,8 @@ export async function GET() {
     const now = new Date()
     const debAuj = new Date(now.getFullYear(), now.getMonth(), now.getDate())
     const finAuj = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59)
+    const debHier = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1)
+    const finHier = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1, 23, 59, 59)
 
     const catchZero = (label: string) => (err: unknown) => {
       console.error('[dashboard]', label, err instanceof Error ? err.message : err)
@@ -27,13 +35,17 @@ export async function GET() {
     }
 
     const queries = Promise.all([
+      // 0 - Transactions du jour
       prisma.vente.count({ where: { date: { gte: debAuj, lte: finAuj }, statut: 'VALIDEE' } }).catch(catchZero('vente.count')),
+      // 1 - Mouvements du jour
       prisma.mouvement.count({ where: { date: { gte: debAuj, lte: finAuj } } }).catch(catchZero('mouvement.count')),
+      // 2 - Clients actifs
       prisma.$queryRaw<[{ n: number }]>`SELECT COUNT(*) as n FROM Client WHERE actif = 1`.then((r) => Number(r[0]?.n ?? 0)).catch(catchZero('Client')),
+      // 3 - Produits en stock
       prisma.stock.count({ where: { quantite: { gt: 0 } } }).catch(catchZero('stock.count')),
+      // 4 - Total produits catalogue
       prisma.produit.count({ where: { actif: true } }).catch(catchZero('produit.count')),
-      // Optimisation : filtrer les stocks faibles directement en base avec une requête SQL
-      // au lieu de charger tous les stocks puis filtrer en mémoire
+      // 5 - Stocks faibles
       prisma.$queryRaw<Array<{
         id: number
         quantite: number
@@ -67,6 +79,7 @@ export async function GET() {
           code: r.magasin_code,
         },
       }))).catch(catchEmpty('stock.findMany')),
+      // 6 - Ventes récentes avec montants
       prisma.vente.findMany({
         take: 5,
         orderBy: { date: 'desc' },
@@ -74,15 +87,29 @@ export async function GET() {
           id: true,
           numero: true,
           date: true,
+          montantTotal: true,
           clientLibre: true,
           client: { select: { nom: true } },
         },
       }).catch(catchEmpty('vente.findMany')),
+      // 7 - Répartition par catégorie
       prisma.produit.groupBy({
         by: ['categorie'],
         where: { actif: true },
         _count: { id: true },
       }).catch(catchEmpty('produit.groupBy')),
+      // 8 - CA du jour (supprimé de l'UI)
+      Promise.resolve(0),
+      // 9 - CA hier (supprimé de l'UI)
+      Promise.resolve(0),
+      // 10 - Solde caisse (supprimé de l'UI)
+      Promise.resolve(0),
+      // 11 - Solde banque (supprimé de l'UI)
+      Promise.resolve(0),
+      // 12 - Achats du jour
+      Promise.resolve(0),
+      // 13 - Transactions hier (pour comparaison)
+      prisma.vente.count({ where: { date: { gte: debHier, lte: finHier }, statut: 'VALIDEE' } }).catch(catchZero('vente.count.hier')),
     ])
 
     const timeoutFallback = [
@@ -92,10 +119,12 @@ export async function GET() {
         id: number
         numero: string
         date: Date
+        montantTotal: number
         clientLibre: string | null
         client: { nom: string } | null
       }>,
       [] as { _count: { id: number }; categorie: string }[],
+      0, 0, 0, 0, 0, 0,
     ] as const
 
     const result = await Promise.race([
@@ -112,6 +141,12 @@ export async function GET() {
       lowStock,
       recentSales,
       categories,
+      caJour,
+      caHier,
+      soldeCaisse,
+      soldeBanque,
+      achatsJour,
+      transactionsHier,
     ] = result
 
     const timedOut = result === timeoutFallback
@@ -126,10 +161,16 @@ export async function GET() {
 
     return NextResponse.json({
       transactionsJour,
+      transactionsHier,
       produitsEnStock: stocksAvecQte,
       totalProduitsCatalogue,
       mouvementsJour,
       clientsActifs,
+      caJour,
+      caHier,
+      soldeCaisse,
+      soldeBanque,
+      achatsJour,
       lowStock: Array.isArray(lowStock) ? lowStock.map((s: any) => ({
         name: s.produit?.designation || '',
         stock: s.quantite || 0,
@@ -139,6 +180,7 @@ export async function GET() {
       recentSales: Array.isArray(recentSales) ? recentSales.map((v: any) => ({
         id: v.numero,
         client: v.client?.nom || v.clientLibre || '—',
+        montant: toNum(v.montantTotal),
         time: v.date,
       })) : [],
       repartition,
@@ -150,10 +192,16 @@ export async function GET() {
     // Retourner des valeurs par défaut plutôt qu'une erreur pour que le Dashboard s'affiche
     return NextResponse.json({
       transactionsJour: 0,
+      transactionsHier: 0,
       produitsEnStock: 0,
       totalProduitsCatalogue: 0,
       mouvementsJour: 0,
       clientsActifs: 0,
+      caJour: 0,
+      caHier: 0,
+      soldeCaisse: 0,
+      soldeBanque: 0,
+      achatsJour: 0,
       lowStock: [],
       recentSales: [],
       repartition: [],

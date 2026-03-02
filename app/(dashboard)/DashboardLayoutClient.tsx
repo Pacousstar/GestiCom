@@ -46,23 +46,24 @@ const navigation: Array<{
   roles?: string[]
   permission?: string // si défini : visible si l'utilisateur a cette permission (ex. parametres:view)
 }> = [
-  { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-  { name: 'Produits', href: '/dashboard/produits', icon: Package },
-  { name: 'Stock', href: '/dashboard/stock', icon: Warehouse },
-  { name: 'Ventes', href: '/dashboard/ventes', icon: ShoppingCart },
-  { name: 'Clients', href: '/dashboard/clients', icon: Users },
-  { name: 'Fournisseurs', href: '/dashboard/fournisseurs', icon: Truck },
-  { name: 'Achats', href: '/dashboard/achats', icon: ShoppingBag },
-  { name: 'Caisse', href: '/dashboard/caisse', icon: Wallet },
-  { name: 'Banque', href: '/dashboard/banque', icon: CreditCard },
-  { name: 'Dépenses', href: '/dashboard/depenses', icon: DollarSign },
-  { name: 'Charges', href: '/dashboard/charges', icon: TrendingUp },
-  { name: 'Rapports', href: '/dashboard/rapports', icon: FileText },
-  { name: 'Comptabilité', href: '/dashboard/comptabilite', icon: Calculator, roles: ['SUPER_ADMIN', 'COMPTABLE'] },
-  { name: 'Utilisateurs', href: '/dashboard/utilisateurs', icon: UserPlus, roles: ['SUPER_ADMIN', 'ADMIN'] },
-  { name: 'Journal d\'audit', href: '/dashboard/audit', icon: Activity, roles: ['SUPER_ADMIN', 'ADMIN'] },
-  { name: 'Paramètres', href: '/dashboard/parametres', icon: Settings, roles: ['SUPER_ADMIN', 'ADMIN'], permission: 'parametres:view' },
-]
+    { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, permission: 'dashboard:view' },
+    { name: 'Produits', href: '/dashboard/produits', icon: Package, permission: 'produits:view' },
+    { name: 'Stock', href: '/dashboard/stock', icon: Warehouse, permission: 'stocks:view' },
+    { name: 'Ventes', href: '/dashboard/ventes', icon: ShoppingCart, permission: 'ventes:view' },
+    { name: 'Clients', href: '/dashboard/clients', icon: Users, permission: 'clients:view' },
+    { name: 'Fournisseurs', href: '/dashboard/fournisseurs', icon: Truck, permission: 'fournisseurs:view' },
+    { name: 'Achats', href: '/dashboard/achats', icon: ShoppingBag, permission: 'achats:view' },
+    { name: 'Caisse', href: '/dashboard/caisse', icon: Wallet, permission: 'caisse:view' },
+    { name: 'Banque', href: '/dashboard/banque', icon: CreditCard, permission: 'banque:view' },
+    { name: 'Dépenses', href: '/dashboard/depenses', icon: DollarSign, permission: 'depenses:view' },
+    { name: 'Charges', href: '/dashboard/charges', icon: TrendingUp, permission: 'charges:view' },
+    { name: 'Rapports', href: '/dashboard/rapports', icon: FileText, permission: 'rapports:view' },
+    { name: 'Rapports Ventes', href: '/dashboard/rapports-ventes', icon: TrendingUp, permission: 'rapports:ventes' },
+    { name: 'Comptabilité', href: '/dashboard/comptabilite', icon: Calculator, permission: 'comptabilite:view' },
+    { name: 'Utilisateurs', href: '/dashboard/utilisateurs', icon: UserPlus, permission: 'users:view' },
+    { name: 'Journal d\'audit', href: '/dashboard/audit', icon: Activity, permission: 'audit:view' },
+    { name: 'Paramètres', href: '/dashboard/parametres', icon: Settings, roles: ['SUPER_ADMIN', 'ADMIN'], permission: 'parametres:view' },
+  ]
 
 function initials(nom: string): string {
   const parts = nom.trim().split(/\s+/)
@@ -100,12 +101,13 @@ export default function DashboardLayoutClient({
   const [entiteSelectOpen, setEntiteSelectOpen] = useState(false)
   const [switchingEntite, setSwitchingEntite] = useState(false)
   const entiteSelectRef = useRef<HTMLDivElement>(null)
-  const { toasts, removeToast } = useToast()
+  const { toasts, removeToast, success: showSuccess, error: showError } = useToast()
   const pathname = usePathname()
   const router = useRouter()
   const [isOnline, setIsOnline] = useState(true)
   const [syncQueueLength, setSyncQueueLength] = useState(0)
   const [syncing, setSyncing] = useState(false)
+  const [toutesLues, setToutesLues] = useState(false)
 
   // Charger les notifications et entités
   useEffect(() => {
@@ -119,7 +121,7 @@ export default function DashboardLayoutClient({
   // Surveiller le statut en ligne/hors-ligne
   useEffect(() => {
     setIsOnline(navigator.onLine)
-    
+
     const handleOnline = () => {
       setIsOnline(true)
       syncPendingOperations()
@@ -161,57 +163,31 @@ export default function DashboardLayoutClient({
 
   async function syncPendingOperations() {
     if (typeof window === 'undefined' || !isOnline || syncing) return
-    
+
     try {
-      const queue = JSON.parse(localStorage.getItem('gesticom_sync_queue') || '[]')
-      if (queue.length === 0) return
+      const queueStr = localStorage.getItem('gesticom_sync_queue')
+      if (!queueStr || queueStr === '[]') return
 
       setSyncing(true)
-      const { removeFromSyncQueue } = await import('@/lib/offline-sync')
-      
-      let synced = 0
-      const remaining: typeof queue = []
-      
-      for (const item of queue) {
-        try {
-          const res = await fetch(item.endpoint, {
-            method: item.method,
-            headers: { 'Content-Type': 'application/json' },
-            body: item.method !== 'DELETE' ? JSON.stringify(item.data) : undefined,
-          })
-          
-          if (res.ok) {
-            synced++
-            removeFromSyncQueue(item.id)
-          } else {
-            // Incrémenter les tentatives
-            item.retries = (item.retries || 0) + 1
-            if (item.retries < 3) {
-              remaining.push(item)
-            } else {
-              removeFromSyncQueue(item.id)
-            }
-          }
-        } catch (e) {
-          console.error('Erreur sync:', e)
-          item.retries = (item.retries || 0) + 1
-          if (item.retries < 3) {
-            remaining.push(item)
-          } else {
-            removeFromSyncQueue(item.id)
-          }
-        }
-      }
-      
-      // Sauvegarder les opérations restantes
-      if (remaining.length > 0) {
-        localStorage.setItem('gesticom_sync_queue', JSON.stringify(remaining))
+      const { syncAll } = await import('@/lib/offline-sync')
+
+      const { success, failed, errors } = await syncAll()
+
+      if (success > 0) {
+        showSuccess(`${success} élément(s) synchronisé(s) avec succès.`)
+        checkSyncQueue()
       }
 
-      if (synced > 0) {
-        checkSyncQueue()
-        // Optionnel : afficher une notification
+      if (failed > 0) {
+        showError(`${failed} élément(s) en échec de synchronisation. Vérifiez votre connexion.`)
+        if (errors.length > 0) {
+          console.error('Détail erreurs sync:', errors)
+        }
       }
+
+      // Mettre à jour le compteur quoi qu'il arrive
+      checkSyncQueue()
+
     } catch (e) {
       console.error('Erreur synchronisation:', e)
     } finally {
@@ -296,11 +272,23 @@ export default function DashboardLayoutClient({
         const data = await res.json()
         setNotifications(data.notifications || [])
         setNonLues(data.nonLues || 0)
+        setToutesLues(false) // Réinitialiser à chaque rechargement
       }
     } catch (e) {
       console.error('Erreur chargement notifications:', e)
     } finally {
       setLoadingNotifications(false)
+    }
+  }
+
+  async function marquerToutesLues() {
+    try {
+      await fetch('/api/notifications/marquer-lues', { method: 'PATCH' })
+    } catch (e) {
+      // Silencieux
+    } finally {
+      setToutesLues(true)
+      setNonLues(0)
     }
   }
 
@@ -357,9 +345,8 @@ export default function DashboardLayoutClient({
       )}
 
       <aside
-        className={`fixed top-0 left-0 z-[100] h-full w-64 transform bg-white/95 backdrop-blur-xl shadow-xl transition-transform duration-300 ease-in-out lg:translate-x-0 pointer-events-auto ${
-          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-        }`}
+        className={`fixed top-0 left-0 z-[100] h-full w-64 transform bg-white/95 backdrop-blur-xl shadow-xl transition-transform duration-300 ease-in-out lg:translate-x-0 pointer-events-auto ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+          }`}
       >
         <div className="flex h-full flex-col">
           <div className="flex h-20 items-center justify-between border-b px-4">
@@ -380,27 +367,26 @@ export default function DashboardLayoutClient({
                 return false
               })
               .map((item) => {
-              const isActive = pathname === item.href
-              const Icon = item.icon
-              return (
-                <button
-                  key={item.name}
-                  type="button"
-                  className={`w-full flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium transition-all text-left ${
-                    isActive
+                const isActive = pathname === item.href
+                const Icon = item.icon
+                return (
+                  <button
+                    key={item.name}
+                    type="button"
+                    className={`w-full flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium transition-all text-left ${isActive
                       ? 'bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-md'
                       : 'text-gray-700 hover:bg-gray-100'
-                  }`}
-                  onClick={() => {
-                    setSidebarOpen(false)
-                    if (!isActive) router.push(item.href)
-                  }}
-                >
-                  <Icon className="h-5 w-5 shrink-0" />
-                  {item.name}
-                </button>
-              )
-            })}
+                      }`}
+                    onClick={() => {
+                      setSidebarOpen(false)
+                      if (!isActive) router.push(item.href)
+                    }}
+                  >
+                    <Icon className="h-5 w-5 shrink-0" />
+                    {item.name}
+                  </button>
+                )
+              })}
           </nav>
 
           <div className="border-t p-4">
@@ -487,7 +473,7 @@ export default function DashboardLayoutClient({
                   )}
                 </div>
               )}
-              
+
               {/* Sélecteur d'entité (visible si SUPER_ADMIN ou plusieurs entités) */}
               {(user.role === 'SUPER_ADMIN' || entites.length > 1) && (
                 <div className="relative" ref={entiteSelectRef}>
@@ -536,11 +522,10 @@ export default function DashboardLayoutClient({
                                     }
                                   }}
                                   disabled={switchingEntite || isActive}
-                                  className={`w-full px-4 py-3 text-left transition-colors ${
-                                    isActive
-                                      ? 'bg-orange-50 text-orange-900 font-medium'
-                                      : 'hover:bg-gray-50 text-gray-900'
-                                  } disabled:opacity-50`}
+                                  className={`w-full px-4 py-3 text-left transition-colors ${isActive
+                                    ? 'bg-orange-50 text-orange-900 font-medium'
+                                    : 'hover:bg-gray-50 text-gray-900'
+                                    } disabled:opacity-50`}
                                 >
                                   <div className="flex items-center justify-between">
                                     <div>
@@ -575,7 +560,7 @@ export default function DashboardLayoutClient({
                   title="Notifications"
                 >
                   <Bell className="h-5 w-5 text-gray-600" />
-                  {nonLues > 0 && (
+                  {nonLues > 0 && !toutesLues && (
                     <span className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white">
                       {nonLues > 9 ? '9+' : nonLues}
                     </span>
@@ -588,11 +573,22 @@ export default function DashboardLayoutClient({
                     <div className="border-b border-gray-200 bg-gradient-to-r from-orange-50 to-orange-100 px-4 py-3">
                       <div className="flex items-center justify-between">
                         <h3 className="font-semibold text-gray-900">Notifications</h3>
-                        {nonLues > 0 && (
-                          <span className="rounded-full bg-orange-600 px-2 py-0.5 text-xs font-bold text-white">
-                            {nonLues} nouvelle{nonLues > 1 ? 's' : ''}
-                          </span>
-                        )}
+                        <div className="flex items-center gap-2">
+                          {nonLues > 0 && !toutesLues && (
+                            <span className="rounded-full bg-orange-600 px-2 py-0.5 text-xs font-bold text-white">
+                              {nonLues} nouvelle{nonLues > 1 ? 's' : ''}
+                            </span>
+                          )}
+                          {notifications.length > 0 && !toutesLues && (
+                            <button
+                              onClick={marquerToutesLues}
+                              className="text-xs text-orange-600 hover:text-orange-800 font-medium underline"
+                              title="Marquer toutes comme lues"
+                            >
+                              Tout lire
+                            </button>
+                          )}
+                        </div>
                       </div>
                     </div>
                     <div className="max-h-80 overflow-y-auto">
@@ -616,9 +612,8 @@ export default function DashboardLayoutClient({
                                   setNotificationsOpen(false)
                                 }
                               }}
-                              className={`w-full px-4 py-3 text-left transition-colors hover:bg-gray-50 ${
-                                !notif.lu ? 'bg-orange-50/50' : ''
-                              }`}
+                              className={`w-full px-4 py-3 text-left transition-colors hover:bg-gray-50 ${!notif.lu ? 'bg-orange-50/50' : ''
+                                }`}
                             >
                               <div className="flex items-start gap-3">
                                 <div className="mt-0.5 flex-shrink-0">
