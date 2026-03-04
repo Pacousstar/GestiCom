@@ -1,8 +1,9 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import dynamic from 'next/dynamic'
 import { useSearchParams } from 'next/navigation'
-import { ShoppingCart, Plus, Loader2, Trash2, XCircle, Eye, FileSpreadsheet, Printer, X, Search } from 'lucide-react'
+import { ShoppingCart, Plus, Loader2, Trash2, XCircle, Eye, FileSpreadsheet, Printer, X, Search, Camera } from 'lucide-react'
 import { printDocument, generateLignesHTML, type TemplateData } from '@/lib/print-templates'
 import PrintPreview from '@/components/print/PrintPreview'
 import { useToast } from '@/hooks/useToast'
@@ -11,6 +12,9 @@ import { MESSAGES } from '@/lib/messages'
 import Pagination from '@/components/ui/Pagination'
 import { addToSyncQueue, isOnline } from '@/lib/offline-sync'
 import { formatDate } from '@/lib/format-date'
+
+// Chargement dynamique du scanner (évite les erreurs SSR liées au DOM et à la webcam)
+const BarcodeScanner = dynamic(() => import('@/components/scanner/BarcodeScanner'), { ssr: false })
 
 type Magasin = { id: number; code: string; nom: string }
 type Client = { id: number; nom: string; type: string }
@@ -77,6 +81,9 @@ export default function VentesPage() {
   const [popupAjoutProduit, setPopupAjoutProduit] = useState({ produitId: '', quantite: '1', prixUnitaire: '', recherche: '' })
   const [submitting, setSubmitting] = useState(false)
   const [showCreateClient, setShowCreateClient] = useState(false)
+  // État du scanner code-barres
+  const [scannerOpen, setScannerOpen] = useState(false)
+  const [scannerContext, setScannerContext] = useState<'main' | 'popup'>('main')
   const [clientForm, setClientForm] = useState({
     nom: '',
     telephone: '',
@@ -438,10 +445,41 @@ export default function VentesPage() {
   const onSelectProduit = (id: string) => {
     const p = produits.find((x) => x.id === Number(id))
     if (p) {
-      // Utiliser prixAchat comme prix par défaut si prixVente est 0 ou null
       const prixDefaut = (p.prixVente && p.prixVente > 0) ? p.prixVente : (p.prixAchat ?? 0)
       setAjoutProduit((a) => ({ ...a, produitId: id, prixUnitaire: String(prixDefaut) }))
     }
+  }
+
+  /**
+   * Callback déclenché quand le scanner détecte un code-barres.
+   * Cherche le produit par code et le sélectionne automatiquement dans le formulaire.
+   */
+  const handleBarcodeScan = (code: string) => {
+    setScannerOpen(false)
+    const produit = produits.find(
+      (p) => p.code.trim().toLowerCase() === code.trim().toLowerCase()
+    )
+    if (!produit) {
+      showError(`Produit introuvable pour le code : "${code}". Vérifiez que le code-barres correspond au champ Code du produit.`)
+      return
+    }
+    const prixDefaut = (produit.prixVente && produit.prixVente > 0) ? produit.prixVente : (produit.prixAchat ?? 0)
+    if (scannerContext === 'popup') {
+      setPopupAjoutProduit((a) => ({
+        ...a,
+        produitId: String(produit.id),
+        prixUnitaire: String(prixDefaut),
+        recherche: produit.designation,
+      }))
+    } else {
+      setAjoutProduit((a) => ({
+        ...a,
+        produitId: String(produit.id),
+        prixUnitaire: String(prixDefaut),
+        recherche: produit.designation,
+      }))
+    }
+    showSuccess(`✅ Produit scanné : ${produit.designation}`)
   }
 
   const handleCreateClient = async (e: React.FormEvent) => {
@@ -695,19 +733,31 @@ export default function VentesPage() {
             <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
               <h3 className="mb-3 text-sm font-semibold text-gray-700">Lignes</h3>
               <div className="mb-3 space-y-2">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-                  <input
-                    type="text"
-                    placeholder="Rechercher un produit (code, désignation, catégorie)..."
-                    value={ajoutProduit.recherche || ''}
-                    onChange={(e) => {
-                      const search = e.target.value.toLowerCase()
-                      setAjoutProduit((a) => ({ ...a, recherche: e.target.value }))
-                    }}
-                    onFocus={refetchProduits}
-                    className="w-full rounded-lg border border-gray-200 py-2 pl-10 pr-4 text-sm focus:border-orange-500 focus:outline-none"
-                  />
+                {/* Barre de recherche + bouton scanner */}
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                    <input
+                      type="text"
+                      placeholder="Rechercher un produit (code, désignation, catégorie)..."
+                      value={ajoutProduit.recherche || ''}
+                      onChange={(e) => {
+                        setAjoutProduit((a) => ({ ...a, recherche: e.target.value }))
+                      }}
+                      onFocus={refetchProduits}
+                      className="w-full rounded-lg border border-gray-200 py-2 pl-10 pr-4 text-sm focus:border-orange-500 focus:outline-none"
+                    />
+                  </div>
+                  {/* Bouton scanner code-barres */}
+                  <button
+                    type="button"
+                    onClick={() => { setScannerContext('main'); setScannerOpen(true) }}
+                    className="flex items-center gap-1.5 rounded-lg border-2 border-orange-400 bg-orange-50 px-3 py-2 text-sm font-medium text-orange-700 hover:bg-orange-100 transition-colors"
+                    title="Scanner un code-barres avec la caméra"
+                  >
+                    <Camera className="h-4 w-4" />
+                    <span className="hidden sm:inline">Scanner</span>
+                  </button>
                 </div>
                 <select
                   value={ajoutProduit.produitId}
@@ -1326,6 +1376,14 @@ export default function VentesPage() {
           type="VENTE"
           data={printData}
           defaultTemplateId={defaultTemplateId}
+        />
+      )}
+
+      {/* Modal scanner code-barres — chargé dynamiquement, 100% offline */}
+      {scannerOpen && (
+        <BarcodeScanner
+          onScan={handleBarcodeScan}
+          onClose={() => setScannerOpen(false)}
         />
       )}
     </div>
