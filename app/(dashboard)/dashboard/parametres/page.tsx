@@ -28,7 +28,7 @@ export default function ParametresPage() {
   const [accessDenied, setAccessDenied] = useState(false)
   const [saving, setSaving] = useState(false)
   const [err, setErr] = useState('')
-  const [form, setForm] = useState({ nomEntreprise: '', slogan: '', contact: '', email: '', siteWeb: '', localisation: '', devise: 'FCFA', tvaParDefaut: '0', typeCommerce: 'GENERAL', logo: '' })
+  const [form, setForm] = useState({ nomEntreprise: '', slogan: '', contact: '', email: '', siteWeb: '', localisation: '', devise: 'FCFA', tvaParDefaut: '0', typeCommerce: 'GENERAL', logo: '', piedDePage: '', smtpHost: '', smtpPort: '', smtpUser: '', smtpPass: '', backupAuto: false, backupFrequence: 'QUOTIDIEN', backupDestination: 'LOCAL', backupEmailDest: '' })
   const [uploadingLogo, setUploadingLogo] = useState(false)
 
   const [magasins, setMagasins] = useState<Magasin[]>([])
@@ -85,6 +85,15 @@ export default function ParametresPage() {
           tvaParDefaut: String(p.tvaParDefaut ?? 0),
           typeCommerce: p.typeCommerce ?? 'GENERAL',
           logo: p.logo ?? '',
+          piedDePage: p.piedDePage ?? '',
+          smtpHost: p.smtpHost ?? '',
+          smtpPort: p.smtpPort !== null ? String(p.smtpPort) : '',
+          smtpUser: p.smtpUser ?? '',
+          smtpPass: p.smtpPass ?? '',
+          backupAuto: p.backupAuto ?? false,
+          backupFrequence: p.backupFrequence ?? 'QUOTIDIEN',
+          backupDestination: p.backupDestination ?? 'LOCAL',
+          backupEmailDest: p.backupEmailDest ?? '',
         })
       })
       .catch(() => setData(null))
@@ -207,6 +216,15 @@ export default function ParametresPage() {
           tvaParDefaut: Math.max(0, Number(form.tvaParDefaut) || 0),
           typeCommerce: form.typeCommerce || 'GENERAL',
           logo: form.logo || null,
+          piedDePage: form.piedDePage.trim() || null,
+          smtpHost: form.smtpHost.trim() || null,
+          smtpPort: form.smtpPort ? Number(form.smtpPort) : null,
+          smtpUser: form.smtpUser.trim() || null,
+          smtpPass: form.smtpPass.trim() || null,
+          backupAuto: form.backupAuto,
+          backupFrequence: form.backupFrequence,
+          backupDestination: form.backupDestination,
+          backupEmailDest: form.backupEmailDest.trim() || null,
         }),
       })
       const d = await res.json()
@@ -223,6 +241,15 @@ export default function ParametresPage() {
           tvaParDefaut: String(d.tvaParDefaut ?? 0),
           typeCommerce: d.typeCommerce ?? 'GENERAL',
           logo: d.logo ?? '',
+          piedDePage: d.piedDePage ?? '',
+          smtpHost: d.smtpHost ?? '',
+          smtpPort: d.smtpPort !== null ? String(d.smtpPort) : '',
+          smtpUser: d.smtpUser ?? '',
+          smtpPass: d.smtpPass ?? '',
+          backupAuto: d.backupAuto ?? false,
+          backupFrequence: d.backupFrequence ?? 'QUOTIDIEN',
+          backupDestination: d.backupDestination ?? 'LOCAL',
+          backupEmailDest: d.backupEmailDest ?? '',
         })
       } else setErr(d.error || 'Erreur')
     } catch (e) {
@@ -540,6 +567,18 @@ export default function ParametresPage() {
               className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500/20"
             />
           </div>
+          {/* Ligne 5 : Pied de page */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Pied de page des documents (Factures, Reçus...)</label>
+            <textarea
+              value={form.piedDePage}
+              onChange={(e) => setForm((f) => ({ ...f, piedDePage: e.target.value }))}
+              placeholder="Ex: RCCM: XXXX - NIU: YYYY - Compte Bancaire: ZZZZ"
+              rows={3}
+              className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500/20"
+            />
+            <p className="mt-0.5 text-xs text-gray-500">Ces informations apparaîtront en bas de chaque reçu ou facture imprimée.</p>
+          </div>
           <div>
             <label className="block text-sm font-medium text-gray-700">Logo de l'entreprise</label>
             <div className="mt-1 flex items-center gap-4">
@@ -625,8 +664,114 @@ export default function ParametresPage() {
             </div>
           </div>
         </div>
+
+        <hr className="my-8 border-gray-200" />
+        <div className="space-y-4">
+          <h2 className="text-xl font-semibold text-gray-900">Configuration Email (SMTP)</h2>
+          <p className="text-sm text-gray-500">Configurez votre messagerie pour envoyer directement les factures par email. Exemple avec Gmail: Hôte <code>smtp.gmail.com</code> - Port <code>465</code> (SSL).</p>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Serveur SMTP (Hôte)</label>
+              <input
+                value={form.smtpHost}
+                onChange={(e) => setForm((f) => ({ ...f, smtpHost: e.target.value }))}
+                placeholder="smtp.gmail.com"
+                className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500/20"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Port SMTP</label>
+              <input
+                type="number"
+                value={form.smtpPort}
+                onChange={(e) => setForm((f) => ({ ...f, smtpPort: e.target.value }))}
+                placeholder="465 (SSL) ou 587 (TLS)"
+                className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500/20"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Utilisateur (Email)</label>
+              <input
+                value={form.smtpUser}
+                onChange={(e) => setForm((f) => ({ ...f, smtpUser: e.target.value }))}
+                placeholder="votre.email@gmail.com"
+                className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500/20"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Mot de passe (ou App Password)</label>
+              <input
+                type="password"
+                value={form.smtpPass}
+                onChange={(e) => setForm((f) => ({ ...f, smtpPass: e.target.value }))}
+                placeholder="••••••••"
+                className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500/20"
+              />
+            </div>
+          </div>
+        </div>
+
+        <hr className="my-8 border-gray-200" />
+        <div className="space-y-4">
+          <h2 className="text-xl font-semibold text-gray-900">Sauvegardes Automatiques</h2>
+          <p className="text-sm text-gray-500">Configurez la sauvegarde automatique de vos données pour prévenir toute perte en cas de problème matériel.</p>
+
+          <div className="rounded-lg border border-orange-200 bg-orange-50 p-4">
+            <label className="flex items-center gap-3 font-medium text-orange-900 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={form.backupAuto}
+                onChange={(e) => setForm((f) => ({ ...f, backupAuto: e.target.checked }))}
+                className="h-5 w-5 rounded border-orange-300 text-orange-600 focus:ring-orange-600"
+              />
+              Activer la sauvegarde automatique
+            </label>
+
+            {form.backupAuto && (
+              <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Fréquence</label>
+                  <select
+                    value={form.backupFrequence}
+                    onChange={(e) => setForm((f) => ({ ...f, backupFrequence: e.target.value }))}
+                    className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500/20"
+                  >
+                    <option value="QUOTIDIEN">Quotidienne</option>
+                    <option value="HEBDOMADAIRE">Hebdomadaire</option>
+                    <option value="MENSUEL">Mensuelle</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Destination</label>
+                  <select
+                    value={form.backupDestination}
+                    onChange={(e) => setForm((f) => ({ ...f, backupDestination: e.target.value }))}
+                    className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500/20"
+                  >
+                    <option value="LOCAL">Local uniquement (C:\\gesticom\\backups)</option>
+                    <option value="EMAIL">Envoyer par Email (Nécessite SMTP)</option>
+                    <option value="GDRIVE" disabled>Google Drive (Bientôt)</option>
+                  </select>
+                </div>
+                {form.backupDestination === 'EMAIL' && (
+                  <div className="sm:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700">Email destinataire des sauvegardes</label>
+                    <input
+                      type="email"
+                      value={form.backupEmailDest}
+                      onChange={(e) => setForm((f) => ({ ...f, backupEmailDest: e.target.value }))}
+                      placeholder="admin@moncommerce.com"
+                      className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500/20"
+                    />
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+
         {err && <p className="mt-4 text-sm text-red-600">{err}</p>}
-        <div className="mt-6">
+        <div className="mt-8">
           <button
             type="submit"
             disabled={saving}

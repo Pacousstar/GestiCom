@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { X, Printer, Loader2 } from 'lucide-react'
+import { X, Printer, Loader2, Mail, Send } from 'lucide-react'
 import {
     type TemplateData,
     type PrintTemplate,
@@ -37,7 +37,14 @@ export default function PrintPreview({
         contact: string
         localisation: string
         logo: string | null
-    }>({ nom: '', contact: '', localisation: '', logo: null })
+        piedDePage: string | null
+    }>({ nom: '', contact: '', localisation: '', logo: null, piedDePage: null })
+
+    const [emailModalOpen, setEmailModalOpen] = useState(false)
+    const [emailAddress, setEmailAddress] = useState('')
+    const [emailSending, setEmailSending] = useState(false)
+    const [emailSuccess, setEmailSuccess] = useState('')
+    const [emailError, setEmailError] = useState('')
 
     // Ref pour l'iframe de prévisualisation
     const iframeRef = useRef<HTMLIFrameElement>(null)
@@ -59,6 +66,7 @@ export default function PrintPreview({
                         contact: params['contact'] || '',
                         localisation: params['localisation'] || '',
                         logo: params['logo'] || null,
+                        piedDePage: params['piedDePage'] || null,
                     })
 
                     // Si un defaultTemplateId est fourni, le sélectionner
@@ -124,6 +132,7 @@ export default function PrintPreview({
             previewData.ENTREPRISE_NOM = enterpriseData.nom || previewData.ENTREPRISE_NOM || ''
             previewData.ENTREPRISE_CONTACT = enterpriseData.contact || previewData.ENTREPRISE_CONTACT || ''
             previewData.ENTREPRISE_LOCALISATION = enterpriseData.localisation || previewData.ENTREPRISE_LOCALISATION || ''
+            previewData.ENTREPRISE_PIED_DE_PAGE = enterpriseData.piedDePage || ''
 
             // Traitement du logo
             if (logo) {
@@ -172,6 +181,40 @@ export default function PrintPreview({
             }
         }
     }, [previewHtml])
+
+    const handleSendEmail = async () => {
+        if (!emailAddress) {
+            setEmailError('Veuillez entrer une adresse email.')
+            return
+        }
+        setEmailError('')
+        setEmailSuccess('')
+        setEmailSending(true)
+
+        try {
+            const subject = type === 'VENTE' ? `Facture ${data.NUMERO}` : `Document GestiCom`
+            const res = await fetch('/api/email/send-facture', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    emailDestinataire: emailAddress,
+                    htmlContent: previewHtml,
+                    subject,
+                }),
+            })
+            const d = await res.json()
+            if (res.ok && d.success) {
+                setEmailSuccess('Email envoyé avec succès !')
+                setTimeout(() => setEmailModalOpen(false), 2000)
+            } else {
+                setEmailError(d.error || "Erreur lors de l'envoi")
+            }
+        } catch (e: any) {
+            setEmailError(e.message || 'Erreur réseau')
+        } finally {
+            setEmailSending(false)
+        }
+    }
 
     const handlePrint = async () => {
         await printDocument(selectedTemplateId, type, data)
@@ -228,7 +271,47 @@ export default function PrintPreview({
                             </p>
                         </div>
 
-                        <div className="mt-auto">
+                        <div className="mt-auto flex flex-col gap-3">
+                            {emailModalOpen ? (
+                                <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+                                    <h4 className="mb-2 text-sm font-medium text-gray-900">Envoyer par Email</h4>
+                                    <input
+                                        type="email"
+                                        placeholder="adresse@client.com"
+                                        value={emailAddress}
+                                        onChange={(e) => setEmailAddress(e.target.value)}
+                                        className="mb-2 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-orange-500 focus:outline-none"
+                                    />
+                                    {emailError && <p className="mb-2 text-xs text-red-600">{emailError}</p>}
+                                    {emailSuccess && <p className="mb-2 text-xs text-green-600">{emailSuccess}</p>}
+                                    <div className="flex gap-2">
+                                        <button
+                                            onClick={handleSendEmail}
+                                            disabled={emailSending}
+                                            className="flex flex-1 items-center justify-center gap-1.5 rounded-md bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+                                        >
+                                            {emailSending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                                            Envoyer
+                                        </button>
+                                        <button
+                                            onClick={() => setEmailModalOpen(false)}
+                                            disabled={emailSending}
+                                            className="rounded-md border border-gray-300 bg-gray-50 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100"
+                                        >
+                                            Annuler
+                                        </button>
+                                    </div>
+                                </div>
+                            ) : (
+                                <button
+                                    onClick={() => setEmailModalOpen(true)}
+                                    className="flex w-full items-center justify-center gap-2 rounded-lg border-2 border-blue-600 bg-blue-50 px-4 py-3 font-semibold text-blue-700 shadow-sm hover:bg-blue-100 focus:outline-none"
+                                >
+                                    <Mail className="h-5 w-5" />
+                                    Envoyer par email
+                                </button>
+                            )}
+
                             <button
                                 onClick={handlePrint}
                                 className="flex w-full items-center justify-center gap-2 rounded-lg bg-orange-600 px-4 py-3 font-semibold text-white shadow-sm hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2"

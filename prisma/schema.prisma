@@ -247,6 +247,20 @@ model Parametre {
   tvaParDefaut  Float    @default(0)
   typeCommerce  String   @default("GENERAL") // "GENERAL" | "PHARMACIE" | "RESTAURATION" | "BTP" | "SERVICES" | "IMPORT_EXPORT" | etc.
   logo          String?  // Base64 ou URL du logo
+  piedDePage    String?  // Texte du pied de page sur les documents (RCCM, NIU, compte bancaire, mention légale...)
+
+  // Configuration Email / SMTP
+  smtpHost      String?
+  smtpPort      Int?
+  smtpUser      String?
+  smtpPass      String?
+
+  // Sauvegardes Automatiques
+  backupAuto        Boolean @default(false)
+  backupFrequence   String  @default("QUOTIDIEN") // "QUOTIDIEN" | "HEBDOMADAIRE" | "MENSUEL"
+  backupDestination String  @default("LOCAL")     // "LOCAL" | "EMAIL" | "GDRIVE"
+  backupEmailDest   String? // Si destination = EMAIL
+
   updatedAt     DateTime @updatedAt
 }
 

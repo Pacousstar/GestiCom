@@ -19,7 +19,7 @@ const BarcodeScanner = dynamic(() => import('@/components/scanner/BarcodeScanner
 type Magasin = { id: number; code: string; nom: string }
 type Client = { id: number; nom: string; type: string }
 type Produit = { id: number; code: string; designation: string; categorie?: string; prixVente: number | null; prixAchat?: number | null }
-type Ligne = { produitId: number; designation: string; quantite: number; prixUnitaire: number }
+type Ligne = { produitId: number; designation: string; quantite: number; prixUnitaire: number; tva?: number }
 
 export default function VentesPage() {
   const searchParams = useSearchParams()
@@ -73,12 +73,12 @@ export default function VentesPage() {
     montantPaye: '',
     lignes: [] as Ligne[],
   })
-  const [ajoutProduit, setAjoutProduit] = useState({ produitId: '', quantite: '1', prixUnitaire: '', recherche: '' })
+  const [ajoutProduit, setAjoutProduit] = useState({ produitId: '', quantite: '1', prixUnitaire: '', tva: '', recherche: '' })
   const [dateDebut, setDateDebut] = useState('')
   const [dateFin, setDateFin] = useState('')
   const [addLignesPopupOpen, setAddLignesPopupOpen] = useState(false)
   const [popupLignes, setPopupLignes] = useState<Ligne[]>([])
-  const [popupAjoutProduit, setPopupAjoutProduit] = useState({ produitId: '', quantite: '1', prixUnitaire: '', recherche: '' })
+  const [popupAjoutProduit, setPopupAjoutProduit] = useState({ produitId: '', quantite: '1', prixUnitaire: '', tva: '', recherche: '' })
   const [submitting, setSubmitting] = useState(false)
   const [showCreateClient, setShowCreateClient] = useState(false)
   // État du scanner code-barres
@@ -108,8 +108,10 @@ export default function VentesPage() {
   const [defaultTemplateId, setDefaultTemplateId] = useState<number | null>(null)
   const [printPreviewOpen, setPrintPreviewOpen] = useState(false)
   const [printData, setPrintData] = useState<TemplateData | null>(null)
+  const [tvaParDefaut, setTvaParDefaut] = useState(0)
 
   useEffect(() => {
+    fetch('/api/parametres').then(r => r.ok && r.json()).then(d => { if (d) setTvaParDefaut(Number(d.tvaParDefaut) || 0) }).catch(() => { })
     fetch('/api/auth/check').then((r) => r.ok && r.json()).then((d) => d && setUserRole(d.role)).catch(() => { })
   }, [])
 
@@ -283,21 +285,25 @@ export default function VentesPage() {
     const pid = Number(ajoutProduit.produitId)
     const q = Math.max(1, Math.floor(Number(ajoutProduit.quantite) || 0))
     const pu = Math.max(0, Number(ajoutProduit.prixUnitaire) || 0)
+    const tvaLigne = ajoutProduit.tva !== '' ? Math.max(0, Number(ajoutProduit.tva)) : tvaParDefaut
     const p = Array.isArray(produits) ? produits.find((x) => x.id === pid) : undefined
     if (!p || !q) return
     setFormData((f) => ({
       ...f,
-      lignes: [...f.lignes, { produitId: pid, designation: p.designation, quantite: q, prixUnitaire: pu }],
+      lignes: [...f.lignes, { produitId: pid, designation: p.designation, quantite: q, prixUnitaire: pu, tva: tvaLigne }],
     }))
-    setAjoutProduit({ produitId: '', quantite: '1', prixUnitaire: '', recherche: '' })
+    setAjoutProduit({ produitId: '', quantite: '1', prixUnitaire: '', tva: '', recherche: '' })
   }
 
   const removeLigne = (i: number) => {
     setFormData((f) => ({ ...f, lignes: f.lignes.filter((_, j) => j !== i) }))
   }
 
-  const total = formData.lignes.reduce((s, l) => s + l.quantite * l.prixUnitaire, 0)
-  const popupTotal = popupLignes.reduce((s, l) => s + l.quantite * l.prixUnitaire, 0)
+  const totalHT = formData.lignes.reduce((s, l) => s + l.quantite * l.prixUnitaire, 0)
+  const totalTVA = formData.lignes.reduce((s, l) => s + (l.quantite * l.prixUnitaire) * ((l.tva || 0) / 100), 0)
+  const total = totalHT + totalTVA
+
+  const popupTotal = popupLignes.reduce((s, l) => s + (l.quantite * l.prixUnitaire) * (1 + (l.tva || 0) / 100), 0)
 
   const doEnregistrerVente = async (lignes: Ligne[]) => {
     const magasinId = Number(formData.magasinId)
@@ -316,6 +322,7 @@ export default function VentesPage() {
         produitId: l.produitId,
         quantite: l.quantite,
         prixUnitaire: l.prixUnitaire,
+        tva: l.tva || 0,
       })),
     }
 
@@ -432,10 +439,11 @@ export default function VentesPage() {
     const pid = Number(popupAjoutProduit.produitId)
     const q = Math.max(1, Math.floor(Number(popupAjoutProduit.quantite) || 0))
     const pu = Math.max(0, Number(popupAjoutProduit.prixUnitaire) || 0)
+    const tvaLigne = popupAjoutProduit.tva !== '' ? Math.max(0, Number(popupAjoutProduit.tva)) : tvaParDefaut
     const p = Array.isArray(produits) ? produits.find((x) => x.id === pid) : undefined
     if (!p || !q) return
-    setPopupLignes((prev) => [...prev, { produitId: pid, designation: p.designation, quantite: q, prixUnitaire: pu }])
-    setPopupAjoutProduit({ produitId: '', quantite: '1', prixUnitaire: '', recherche: '' })
+    setPopupLignes((prev) => [...prev, { produitId: pid, designation: p.designation, quantite: q, prixUnitaire: pu, tva: tvaLigne }])
+    setPopupAjoutProduit({ produitId: '', quantite: '1', prixUnitaire: '', tva: '', recherche: '' })
   }
 
   const removePopupLigne = (i: number) => {
@@ -801,47 +809,70 @@ export default function VentesPage() {
                   step="1"
                   value={ajoutProduit.prixUnitaire}
                   onChange={(e) => setAjoutProduit((a) => ({ ...a, prixUnitaire: e.target.value }))}
-                  placeholder="Prix unit."
-                  className="w-28 rounded border border-gray-200 px-2 py-2 text-sm focus:border-orange-500 focus:outline-none"
+                  placeholder="Prix (HT)"
+                  className="w-24 rounded border border-gray-200 px-2 py-2 text-sm focus:border-orange-500 focus:outline-none"
+                />
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={ajoutProduit.tva}
+                  onChange={(e) => setAjoutProduit((a) => ({ ...a, tva: e.target.value }))}
+                  placeholder={`TVA (${tvaParDefaut}%)`}
+                  className="w-20 rounded border border-gray-200 px-2 py-2 text-sm focus:border-orange-500 focus:outline-none bg-gray-50 text-gray-700"
+                  title="TVA par défaut en cas de champ vide"
                 />
                 <button type="button" onClick={addLigne} className="rounded-lg border-2 border-orange-400 bg-orange-100 px-3 py-2 text-sm font-medium text-orange-900 hover:bg-orange-200">
                   Ajouter
                 </button>
               </div>
               {formData.lignes.length > 0 && (
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b text-left text-gray-600">
-                      <th className="pb-2">Désignation</th>
-                      <th className="pb-2 text-right">Qté</th>
-                      <th className="pb-2 text-right">P.U.</th>
-                      <th className="pb-2 text-right">Total</th>
-                      <th></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {formData.lignes.map((l, i) => (
-                      <tr key={i} className="border-b border-gray-100">
-                        <td className="py-2">{l.designation}</td>
-                        <td className="text-right">{l.quantite}</td>
-                        <td className="text-right">{l.prixUnitaire.toLocaleString('fr-FR')} F</td>
-                        <td className="text-right">{(l.quantite * l.prixUnitaire).toLocaleString('fr-FR')} F</td>
-                        <td className="w-10">
-                          <button
-                            type="button"
-                            onClick={() => removeLigne(i)}
-                            title="Supprimer la ligne"
-                            className="rounded p-1.5 text-red-600 hover:bg-red-100 transition-colors"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        </td>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b text-left text-gray-600">
+                        <th className="pb-2">Désignation</th>
+                        <th className="pb-2 text-right">Qté</th>
+                        <th className="pb-2 text-right">P.U. (HT)</th>
+                        <th className="pb-2 text-right">TVA</th>
+                        <th className="pb-2 text-right">Total TTC</th>
+                        <th></th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {formData.lignes.map((l, i) => {
+                        const lTva = l.tva || 0
+                        const lHT = l.quantite * l.prixUnitaire
+                        const lTTC = lHT * (1 + lTva / 100)
+                        return (
+                          <tr key={i} className="border-b border-gray-100">
+                            <td className="py-2">{l.designation}</td>
+                            <td className="text-right">{l.quantite}</td>
+                            <td className="text-right">{l.prixUnitaire.toLocaleString('fr-FR')} F</td>
+                            <td className="text-right">{lTva}%</td>
+                            <td className="text-right font-medium">{lTTC.toLocaleString('fr-FR', { maximumFractionDigits: 0 })} F</td>
+                            <td className="w-10">
+                              <button
+                                type="button"
+                                onClick={() => removeLigne(i)}
+                                title="Supprimer la ligne"
+                                className="rounded p-1.5 text-red-600 hover:bg-red-100 transition-colors"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+                            </td>
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                  </table>
+                </div>
               )}
-              <p className="mt-2 font-medium text-gray-900">Total: {total.toLocaleString('fr-FR')} FCFA</p>
+              <div className="mt-4 flex flex-col items-end text-sm gap-1 border-t border-gray-200 pt-3">
+                <p className="text-gray-600">Total HT : {totalHT.toLocaleString('fr-FR')} F</p>
+                <p className="text-gray-600">Total TVA : {totalTVA.toLocaleString('fr-FR', { maximumFractionDigits: 0 })} F</p>
+                <p className="text-base font-bold text-gray-900 mt-1">Total TTC: {total.toLocaleString('fr-FR', { maximumFractionDigits: 0 })} FCFA</p>
+              </div>
             </div>
 
             {formData.modePaiement === 'CREDIT' && (
@@ -957,8 +988,18 @@ export default function VentesPage() {
                   step="1"
                   value={popupAjoutProduit.prixUnitaire}
                   onChange={(e) => setPopupAjoutProduit((a) => ({ ...a, prixUnitaire: e.target.value }))}
-                  placeholder="Prix unit."
+                  placeholder="Prix (HT)"
                   className="w-24 rounded border border-gray-200 px-2 py-2 text-sm focus:border-orange-500 focus:outline-none"
+                />
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={popupAjoutProduit.tva}
+                  onChange={(e) => setPopupAjoutProduit((a) => ({ ...a, tva: e.target.value }))}
+                  placeholder={`TVA (${tvaParDefaut}%)`}
+                  className="w-20 rounded border border-gray-200 px-2 py-2 text-sm focus:border-orange-500 focus:outline-none bg-gray-50"
+                  title="Laisser vide pour la TVA par défaut"
                 />
                 <button type="button" onClick={addLigneInPopup} className="rounded-lg border-2 border-orange-400 bg-orange-100 px-3 py-2 text-sm font-medium text-orange-900 hover:bg-orange-200">
                   Ajouter
@@ -966,31 +1007,40 @@ export default function VentesPage() {
               </div>
               {popupLignes.length > 0 && (
                 <>
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="border-b text-left text-gray-600">
-                        <th className="pb-2">Désignation</th>
-                        <th className="pb-2 text-right">Qté</th>
-                        <th className="pb-2 text-right">P.U.</th>
-                        <th className="pb-2 text-right">Total</th>
-                        <th className="w-10"></th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {popupLignes.map((l, i) => (
-                        <tr key={i} className="border-b border-gray-100">
-                          <td className="py-2">{l.designation}</td>
-                          <td className="text-right">{l.quantite}</td>
-                          <td className="text-right">{l.prixUnitaire.toLocaleString('fr-FR')} F</td>
-                          <td className="text-right">{(l.quantite * l.prixUnitaire).toLocaleString('fr-FR')} F</td>
-                          <td>
-                            <button type="button" onClick={() => removePopupLigne(i)} className="rounded p-1.5 text-red-600 hover:bg-red-100" title="Supprimer"><Trash2 className="h-4 w-4" /></button>
-                          </td>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b text-left text-gray-600">
+                          <th className="pb-2">Désignation</th>
+                          <th className="pb-2 text-right">Qté</th>
+                          <th className="pb-2 text-right">P.U(HT)</th>
+                          <th className="pb-2 text-right">TVA</th>
+                          <th className="pb-2 text-right">TTC</th>
+                          <th className="w-10"></th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                  <p className="font-medium text-gray-900">Total : {popupTotal.toLocaleString('fr-FR')} FCFA</p>
+                      </thead>
+                      <tbody>
+                        {popupLignes.map((l, i) => {
+                          const lTva = l.tva || 0
+                          const lHT = l.quantite * l.prixUnitaire
+                          const lTTC = lHT * (1 + lTva / 100)
+                          return (
+                            <tr key={i} className="border-b border-gray-100">
+                              <td className="py-2">{l.designation}</td>
+                              <td className="text-right">{l.quantite}</td>
+                              <td className="text-right">{l.prixUnitaire.toLocaleString('fr-FR')} F</td>
+                              <td className="text-right">{lTva}%</td>
+                              <td className="text-right font-medium">{lTTC.toLocaleString('fr-FR', { maximumFractionDigits: 0 })} F</td>
+                              <td>
+                                <button type="button" onClick={() => removePopupLigne(i)} className="rounded p-1.5 text-red-600 hover:bg-red-100" title="Supprimer"><Trash2 className="h-4 w-4" /></button>
+                              </td>
+                            </tr>
+                          )
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                  <p className="mt-3 text-right text-base font-bold text-gray-900">Total : {popupTotal.toLocaleString('fr-FR', { maximumFractionDigits: 0 })} FCFA</p>
                 </>
               )}
             </div>

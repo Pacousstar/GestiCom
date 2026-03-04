@@ -9,20 +9,21 @@ export type TemplateData = {
   ENTREPRISE_CONTACT?: string
   ENTREPRISE_LOCALISATION?: string
   ENTREPRISE_LOGO?: string
-  
+  ENTREPRISE_PIED_DE_PAGE?: string
+
   // Données document
   NUMERO?: string
   DATE?: string
   HEURE?: string
   MAGASIN_CODE?: string
   MAGASIN_NOM?: string
-  
+
   // Données client/fournisseur
   CLIENT_NOM?: string
   CLIENT_TELEPHONE?: string
   FOURNISSEUR_NOM?: string
   FOURNISSEUR_TELEPHONE?: string
-  
+
   // Données lignes
   LIGNES?: string // HTML des lignes de produits
   TOTAL?: string
@@ -255,19 +256,19 @@ export function getPrintStyles(): string {
  */
 export async function printDocument(templateId: number | null, type: 'VENTE' | 'ACHAT', data: TemplateData): Promise<void> {
   if (typeof window === 'undefined') return
-  
+
   try {
     // Récupérer les paramètres de l'entreprise
     const paramsRes = await fetch('/api/parametres')
-    let entrepriseData: { nomEntreprise?: string; contact?: string; localisation?: string; logo?: string | null } = {}
+    let entrepriseData: { nomEntreprise?: string; contact?: string; localisation?: string; logo?: string | null; piedDePage?: string | null } = {}
     if (paramsRes.ok) {
       entrepriseData = await paramsRes.json()
     }
-    
+
     // Récupérer le template
     let templateContent = ''
     let logo = ''
-    
+
     if (templateId) {
       const res = await fetch(`/api/print-templates/${templateId}`)
       if (res.ok) {
@@ -276,17 +277,18 @@ export async function printDocument(templateId: number | null, type: 'VENTE' | '
         logo = template.logo || ''
       }
     }
-    
+
     // Si pas de template, utiliser le template par défaut
     if (!templateContent) {
       templateContent = getDefaultTemplate(type)
     }
-    
+
     // Ajouter les données de l'entreprise aux données du template
     data.ENTREPRISE_NOM = entrepriseData.nomEntreprise || data.ENTREPRISE_NOM || ''
     data.ENTREPRISE_CONTACT = entrepriseData.contact || data.ENTREPRISE_CONTACT || ''
     data.ENTREPRISE_LOCALISATION = entrepriseData.localisation || data.ENTREPRISE_LOCALISATION || ''
-    
+    data.ENTREPRISE_PIED_DE_PAGE = entrepriseData.piedDePage || data.ENTREPRISE_PIED_DE_PAGE || ''
+
     // Ajouter le logo si disponible (priorité au logo du template, sinon logo des paramètres)
     if (logo) {
       data.ENTREPRISE_LOGO = logo.startsWith('data:') ? `<img src="${logo}" alt="Logo" style="max-width: 150px; height: auto; display: block; margin: 0 auto;" />` : logo
@@ -295,17 +297,17 @@ export async function printDocument(templateId: number | null, type: 'VENTE' | '
     } else {
       data.ENTREPRISE_LOGO = ''
     }
-    
+
     // Remplacer les variables
     const html = replaceTemplateVariables(templateContent, data)
-    
+
     // Créer une nouvelle fenêtre pour l'impression
     const printWindow = window.open('', '_blank')
     if (!printWindow) {
       alert('Veuillez autoriser les popups pour imprimer.')
       return
     }
-    
+
     const printStyles = getPrintStyles()
     printWindow.document.write(`
       <!DOCTYPE html>
@@ -322,9 +324,9 @@ export async function printDocument(templateId: number | null, type: 'VENTE' | '
         </body>
       </html>
     `)
-    
+
     printWindow.document.close()
-    
+
     // Attendre que le contenu soit chargé puis imprimer
     printWindow.onload = () => {
       setTimeout(() => {
@@ -372,6 +374,7 @@ export function getDefaultTemplate(type: 'VENTE' | 'ACHAT'): string {
 <div class="print-footer">
   <p>Merci de votre visite !</p>
   <p><strong>{ENTREPRISE_NOM}</strong></p>
+  {ENTREPRISE_PIED_DE_PAGE ? '<p style="margin-top: 8px; font-size: 10px;">{ENTREPRISE_PIED_DE_PAGE}</p>' : ''}
 </div>
 `
 }
@@ -437,27 +440,28 @@ export const PRINT_VARIABLES = {
   '{ENTREPRISE_CONTACT}': 'Contact de l\'entreprise',
   '{ENTREPRISE_LOCALISATION}': 'Localisation de l\'entreprise',
   '{ENTREPRISE_LOGO}': 'Logo de l\'entreprise',
-  
+  '{ENTREPRISE_PIED_DE_PAGE}': 'Pied de page de l\'entreprise',
+
   // Document
   '{NUMERO}': 'Numéro du document',
   '{DATE}': 'Date du document',
   '{HEURE}': 'Heure du document',
-  
+
   // Client/Fournisseur
   '{CLIENT_NOM}': 'Nom du client',
   '{CLIENT_TELEPHONE}': 'Téléphone du client',
   '{FOURNISSEUR_NOM}': 'Nom du fournisseur',
-  
+
   // Magasin
   '{MAGASIN_CODE}': 'Code du magasin',
   '{MAGASIN_NOM}': 'Nom du magasin',
-  
+
   // Totaux
   '{TOTAL}': 'Montant total',
   '{MONTANT_PAYE}': 'Montant payé',
   '{RESTE}': 'Reste à payer',
   '{MODE_PAIEMENT}': 'Mode de paiement',
-  
+
   // Divers
   '{OBSERVATION}': 'Observation',
   '{LIGNES}': 'Liste des lignes (tableau)',
@@ -496,5 +500,6 @@ export const DEFAULT_VENTE_TEMPLATE = `
 <div class="print-footer">
   <p>Merci de votre visite !</p>
   <p><strong>{ENTREPRISE_NOM}</strong></p>
+  {ENTREPRISE_PIED_DE_PAGE ? '<p style="margin-top: 8px; font-size: 10px;">{ENTREPRISE_PIED_DE_PAGE}</p>' : ''}
 </div>
 `

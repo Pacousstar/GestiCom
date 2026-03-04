@@ -31,11 +31,28 @@ export const restoreSchema = z.object({
 /** Paramètres entreprise (PATCH) — champs optionnels, tvaParDefaut peut être string ou number */
 export const parametresPatchSchema = z.object({
   nomEntreprise: z.string().max(MAX_STRING).optional(),
+  slogan: z.string().max(MAX_STRING).nullable().optional(),
   contact: z.string().max(MAX_STRING).optional(),
+  email: z.string().email('Email invalide').max(MAX_STRING).nullable().optional().or(z.literal('')),
+  siteWeb: z.string().url('URL invalide').max(MAX_STRING).nullable().optional().or(z.literal('')),
   localisation: z.string().max(MAX_STRING).optional(),
   devise: z.string().max(20).optional(),
   tvaParDefaut: z.coerce.number().min(0).max(100).optional(),
+  typeCommerce: z.string().max(50).optional(),
   logo: z.string().optional(), // Base64 ou URL du logo
+  piedDePage: z.string().max(MAX_TEXT).nullable().optional(),
+
+  // Envoi d'emails (SMTP)
+  smtpHost: z.string().max(MAX_STRING).nullable().optional(),
+  smtpPort: z.coerce.number().min(1).max(65535).nullable().optional(),
+  smtpUser: z.string().max(MAX_STRING).nullable().optional(),
+  smtpPass: z.string().max(MAX_STRING).nullable().optional(),
+
+  // Sauvegardes
+  backupAuto: z.boolean().optional(),
+  backupFrequence: z.enum(['QUOTIDIEN', 'HEBDOMADAIRE', 'MENSUEL']).optional(),
+  backupDestination: z.enum(['LOCAL', 'EMAIL', 'GDRIVE']).optional(),
+  backupEmailDest: z.string().max(MAX_STRING).nullable().optional(),
 })
 
 /** Produit : code, désignation, catégorie, prix */

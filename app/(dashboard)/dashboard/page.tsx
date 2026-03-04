@@ -18,6 +18,7 @@ import {
 } from 'lucide-react'
 import KpiCard from '@/components/dashboard/KpiCard'
 import RecentActivity from '@/components/dashboard/RecentActivity'
+import SuggestionsAchat from '@/components/dashboard/SuggestionsAchat'
 
 
 
@@ -192,10 +193,10 @@ export default function DashboardPage() {
         ))}
       </div>
 
-      {/* Activité récente + Alertes stock */}
-      <div className="grid gap-6 lg:grid-cols-2">
+      {/* Activité récente + Alertes stock + Prédictions */}
+      <div className="grid gap-6 lg:grid-cols-3">
         {/* Activité récente */}
-        <div className="rounded-xl bg-white p-6 shadow-lg border border-orange-100">
+        <div className="flex flex-col rounded-xl bg-white p-6 shadow-lg border border-orange-100 h-full">
           <div className="mb-4 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <ShoppingCart className="h-5 w-5 text-orange-500" />
@@ -205,11 +206,13 @@ export default function DashboardPage() {
               Voir tout
             </Link>
           </div>
-          <RecentActivity items={activityItems} loading={refreshing} />
+          <div className="flex-1 overflow-auto">
+            <RecentActivity items={activityItems} loading={refreshing} />
+          </div>
         </div>
 
         {/* Alertes stock faible */}
-        <div className="rounded-xl bg-white p-6 shadow-lg border border-orange-100">
+        <div className="flex flex-col rounded-xl bg-white p-6 shadow-lg border border-orange-100 h-full">
           <div className="mb-4 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <AlertTriangle className="h-5 w-5 text-orange-500" />
@@ -252,11 +255,14 @@ export default function DashboardPage() {
           </div>
           <Link
             href="/dashboard/stock"
-            className="mt-4 block w-full rounded-lg bg-orange-500 py-2 text-center text-sm font-medium text-white hover:bg-orange-600 transition-colors"
+            className="mt-4 block w-full rounded-lg bg-orange-500 py-2.5 text-center text-sm font-medium text-white hover:bg-orange-600 transition-colors"
           >
             Voir le stock
           </Link>
         </div>
+
+        {/* Suggestions / IA */}
+        <SuggestionsAchat />
       </div>
     </div>
   )

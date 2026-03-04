@@ -105,21 +105,23 @@ export async function POST(request: NextRequest) {
     }
 
     let montantTotal = 0
-    const lignesValides: Array<{ produitId: number; designation: string; quantite: number; prixUnitaire: number; montant: number }> = []
+    const lignesValides: Array<{ produitId: number; designation: string; quantite: number; prixUnitaire: number; tva: number; montant: number }> = []
 
     for (const l of lignes) {
       const produitId = Number(l?.produitId)
       const quantite = Math.max(1, Math.floor(Number(l?.quantite) || 0))
       const prixUnitaire = Math.max(0, Number(l?.prixUnitaire) || 0)
+      const tva = Math.max(0, Number(l?.tva) || 0)
       if (!produitId || !quantite) continue
 
       const produit = await prisma.produit.findUnique({ where: { id: produitId } })
       if (!produit) continue
 
       const designation = produit.designation
-      const montant = quantite * prixUnitaire
+      const montantHT = quantite * prixUnitaire
+      const montant = montantHT * (1 + tva / 100)
       montantTotal += montant
-      lignesValides.push({ produitId, designation, quantite, prixUnitaire, montant })
+      lignesValides.push({ produitId, designation, quantite, prixUnitaire, tva, montant })
     }
 
     if (!lignesValides.length) {
@@ -210,7 +212,8 @@ export async function POST(request: NextRequest) {
             designation: l.designation,
             quantite: l.quantite,
             prixUnitaire: l.prixUnitaire,
-            montant: l.montant,
+            tva: l.tva,
+            montant: Math.round(l.montant),
           })),
         },
       },

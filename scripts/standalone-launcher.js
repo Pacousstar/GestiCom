@@ -54,7 +54,7 @@ if (!fs.existsSync(dbProject)) {
 // DATABASE_URL : chemin SANS espaces (SQLite/Prisma échoue avec des espaces dans le chemin, ex. "GSN EXPETISES  GROUP")
 const dbAbs = path.resolve(standaloneDir, 'prisma', 'gesticom.db')
 
-function toFileUrl (p, win32NoThirdSlash) {
+function toFileUrl(p, win32NoThirdSlash) {
   const s = String(p).replace(/\\/g, '/')
   return win32NoThirdSlash ? 'file:' + s : 'file:///' + s
 }
@@ -140,6 +140,12 @@ const child = spawn('node', ['run-standalone.js'], {
   stdio: 'inherit',
 })
 
+const cronChild = spawn('node', [path.join(projectRoot, 'scripts', 'cron-backups.js')], {
+  cwd: projectRoot,
+  env: process.env,
+  stdio: 'inherit',
+})
+
 child.on('error', (err) => {
   console.error('Erreur:', err)
   process.exit(1)
@@ -152,5 +158,6 @@ child.on('exit', (code) => {
       console.warn('Impossible de recopier la base vers le projet:', e.message)
     }
   }
+  cronChild.kill('SIGINT') // S'assurer de tuer le processus de background
   process.exit(code || 0)
 })

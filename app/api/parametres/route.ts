@@ -64,21 +64,50 @@ export async function PATCH(request: NextRequest) {
       p = await prisma.parametre.create({
         data: {
           nomEntreprise: data.nomEntreprise ?? '',
+          slogan: data.slogan ?? null,
           contact: data.contact ?? '',
+          email: data.email ?? null,
+          siteWeb: data.siteWeb ?? null,
           localisation: data.localisation ?? '',
           devise: data.devise ?? 'FCFA',
           tvaParDefaut: data.tvaParDefaut ?? 0,
+          typeCommerce: data.typeCommerce ?? 'GENERAL',
           logo: data.logo ?? null,
+          piedDePage: data.piedDePage ?? null,
+          smtpHost: data.smtpHost ?? null,
+          smtpPort: data.smtpPort ?? null,
+          smtpUser: data.smtpUser ?? null,
+          smtpPass: data.smtpPass ?? null,
+          backupAuto: data.backupAuto ?? false,
+          backupFrequence: data.backupFrequence ?? 'QUOTIDIEN',
+          backupDestination: data.backupDestination ?? 'LOCAL',
+          backupEmailDest: data.backupEmailDest ?? null,
         },
       })
     } else {
-      const update: Record<string, string | number | null> = {}
+      const update: Record<string, string | number | boolean | null> = {}
       if (data.nomEntreprise !== undefined) update.nomEntreprise = data.nomEntreprise
+      if (data.slogan !== undefined) update.slogan = data.slogan || null
       if (data.contact !== undefined) update.contact = data.contact
+      if (data.email !== undefined) update.email = data.email || null
+      if (data.siteWeb !== undefined) update.siteWeb = data.siteWeb || null
       if (data.localisation !== undefined) update.localisation = data.localisation
       if (data.devise !== undefined) update.devise = data.devise
       if (data.tvaParDefaut !== undefined) update.tvaParDefaut = data.tvaParDefaut
+      if (data.typeCommerce !== undefined) update.typeCommerce = data.typeCommerce
       if (data.logo !== undefined) update.logo = data.logo || null
+      if (data.piedDePage !== undefined) update.piedDePage = data.piedDePage || null
+
+      if (data.smtpHost !== undefined) update.smtpHost = data.smtpHost || null
+      if (data.smtpPort !== undefined) update.smtpPort = data.smtpPort || null
+      if (data.smtpUser !== undefined) update.smtpUser = data.smtpUser || null
+      if (data.smtpPass !== undefined) update.smtpPass = data.smtpPass || null
+
+      if (data.backupAuto !== undefined) update.backupAuto = data.backupAuto
+      if (data.backupFrequence !== undefined) update.backupFrequence = data.backupFrequence
+      if (data.backupDestination !== undefined) update.backupDestination = data.backupDestination
+      if (data.backupEmailDest !== undefined) update.backupEmailDest = data.backupEmailDest || null
+
       if (Object.keys(update).length > 0) {
         p = await prisma.parametre.update({ where: { id: p.id }, data: update })
       }
