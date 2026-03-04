@@ -11,10 +11,14 @@ type Entite = { id: number; code: string; nom: string; type: string; localisatio
 type Parametre = {
   id: number
   nomEntreprise: string
+  slogan: string | null
   contact: string
+  email: string | null
+  siteWeb: string | null
   localisation: string
   devise: string
   tvaParDefaut: number
+  typeCommerce: string
   logo: string | null
 }
 
@@ -24,7 +28,7 @@ export default function ParametresPage() {
   const [accessDenied, setAccessDenied] = useState(false)
   const [saving, setSaving] = useState(false)
   const [err, setErr] = useState('')
-  const [form, setForm] = useState({ nomEntreprise: '', contact: '', localisation: '', devise: 'FCFA', tvaParDefaut: '0', logo: '' })
+  const [form, setForm] = useState({ nomEntreprise: '', slogan: '', contact: '', email: '', siteWeb: '', localisation: '', devise: 'FCFA', tvaParDefaut: '0', typeCommerce: 'GENERAL', logo: '' })
   const [uploadingLogo, setUploadingLogo] = useState(false)
 
   const [magasins, setMagasins] = useState<Magasin[]>([])
@@ -56,7 +60,7 @@ export default function ParametresPage() {
     fetch('/api/auth/check')
       .then((r) => (r.ok ? r.json() : { role: '' }))
       .then((data: { role?: string }) => setUserRole(data.role || ''))
-      .catch(() => {})
+      .catch(() => { })
   }, [])
 
   useEffect(() => {
@@ -72,10 +76,14 @@ export default function ParametresPage() {
         setData(p)
         if (p) setForm({
           nomEntreprise: p.nomEntreprise ?? '',
+          slogan: p.slogan ?? '',
           contact: p.contact ?? '',
+          email: p.email ?? '',
+          siteWeb: p.siteWeb ?? '',
           localisation: p.localisation ?? '',
           devise: p.devise ?? 'FCFA',
           tvaParDefaut: String(p.tvaParDefaut ?? 0),
+          typeCommerce: p.typeCommerce ?? 'GENERAL',
           logo: p.logo ?? '',
         })
       })
@@ -190,10 +198,14 @@ export default function ParametresPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           nomEntreprise: form.nomEntreprise.trim(),
+          slogan: form.slogan.trim() || null,
           contact: form.contact.trim(),
+          email: form.email.trim() || null,
+          siteWeb: form.siteWeb.trim() || null,
           localisation: form.localisation.trim(),
           devise: form.devise.trim() || 'FCFA',
           tvaParDefaut: Math.max(0, Number(form.tvaParDefaut) || 0),
+          typeCommerce: form.typeCommerce || 'GENERAL',
           logo: form.logo || null,
         }),
       })
@@ -202,10 +214,14 @@ export default function ParametresPage() {
         setData(d)
         setForm({
           nomEntreprise: d.nomEntreprise ?? '',
+          slogan: d.slogan ?? '',
           contact: d.contact ?? '',
+          email: d.email ?? '',
+          siteWeb: d.siteWeb ?? '',
           localisation: d.localisation ?? '',
           devise: d.devise ?? 'FCFA',
           tvaParDefaut: String(d.tvaParDefaut ?? 0),
+          typeCommerce: d.typeCommerce ?? 'GENERAL',
           logo: d.logo ?? '',
         })
       } else setErr(d.error || 'Erreur')
@@ -413,29 +429,114 @@ export default function ParametresPage() {
 
       <form onSubmit={handleSubmit} className="rounded-xl border border-gray-200 bg-gray-50 p-6 shadow-sm">
         <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Nom de l&apos;entreprise</label>
-            <input
-              value={form.nomEntreprise}
-              onChange={(e) => setForm((f) => ({ ...f, nomEntreprise: e.target.value }))}
-              className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500/20"
-            />
+          {/* Ligne 1 : Nom + Slogan */}
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Nom de l&apos;entreprise</label>
+              <input
+                value={form.nomEntreprise}
+                onChange={(e) => setForm((f) => ({ ...f, nomEntreprise: e.target.value }))}
+                placeholder="Ex : GSN Expetises Group"
+                className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500/20"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Slogan / Description courte</label>
+              <input
+                value={form.slogan}
+                onChange={(e) => setForm((f) => ({ ...f, slogan: e.target.value }))}
+                placeholder="Ex : Votre partenaire informatique de confiance"
+                className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500/20"
+              />
+            </div>
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Contact</label>
-            <input
-              value={form.contact}
-              onChange={(e) => setForm((f) => ({ ...f, contact: e.target.value }))}
-              placeholder="Tél., email..."
-              className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500/20"
-            />
+
+          {/* Ligne 2 : Type de Commerce + Devise + TVA */}
+          <div className="grid gap-4 sm:grid-cols-3">
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Type de commerce</label>
+              <select
+                value={form.typeCommerce}
+                onChange={(e) => setForm((f) => ({ ...f, typeCommerce: e.target.value }))}
+                className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500/20"
+              >
+                <option value="GENERAL">Commerce Général</option>
+                <option value="INFORMATIQUE">Informatique / High-Tech</option>
+                <option value="PHARMACIE">Pharmacie / Santé</option>
+                <option value="ALIMENTAIRE">Commerce Alimentaire / Épicerie</option>
+                <option value="RESTAURATION">Restauration / Hôtellerie</option>
+                <option value="TEXTILE">Textile / Vêtements</option>
+                <option value="BTP">BTP / Matériaux de construction</option>
+                <option value="AUTOMOBILE">Automobile / Pièces détachées</option>
+                <option value="SERVICES">Services / Prestations</option>
+                <option value="IMPORT_EXPORT">Import / Export</option>
+                <option value="AGRICULTURE">Agriculture / Élevage</option>
+                <option value="AUTRE">Autre</option>
+              </select>
+              <p className="mt-0.5 text-xs text-gray-500">Identifie le secteur d'activité de votre commerce</p>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Devise</label>
+              <input
+                value={form.devise}
+                onChange={(e) => setForm((f) => ({ ...f, devise: e.target.value }))}
+                placeholder="FCFA"
+                className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500/20"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">TVA par défaut (%)</label>
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                value={form.tvaParDefaut}
+                onChange={(e) => setForm((f) => ({ ...f, tvaParDefaut: e.target.value }))}
+                className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500/20"
+              />
+            </div>
           </div>
+
+          {/* Ligne 3 : Contact + Email + Site Web */}
+          <div className="grid gap-4 sm:grid-cols-3">
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Téléphone / Contact</label>
+              <input
+                value={form.contact}
+                onChange={(e) => setForm((f) => ({ ...f, contact: e.target.value }))}
+                placeholder="+237 6XX XXX XXX"
+                className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500/20"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Email professionnel</label>
+              <input
+                type="email"
+                value={form.email}
+                onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
+                placeholder="contact@moncommerce.com"
+                className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500/20"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Site web</label>
+              <input
+                type="url"
+                value={form.siteWeb}
+                onChange={(e) => setForm((f) => ({ ...f, siteWeb: e.target.value }))}
+                placeholder="https://www.moncommerce.com"
+                className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500/20"
+              />
+            </div>
+          </div>
+
+          {/* Ligne 4 : Localisation */}
           <div>
             <label className="block text-sm font-medium text-gray-700">Localisation</label>
             <input
               value={form.localisation}
               onChange={(e) => setForm((f) => ({ ...f, localisation: e.target.value }))}
-              placeholder="Adresse, ville..."
+              placeholder="Adresse complète, quartier, ville, pays"
               className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500/20"
             />
           </div>
@@ -864,26 +965,26 @@ export default function ParametresPage() {
               <button onClick={() => setMagasinEdit(null)} className="rounded p-2 text-gray-500 hover:bg-gray-100"><X className="h-5 w-5" /></button>
             </div>
             <div className="mt-4 rounded-lg bg-gray-50 p-4">
-            <form onSubmit={handleMagasinEditSave} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Code</label>
-                <input value={magasinEditForm.code} onChange={(e) => setMagasinEditForm((f) => ({ ...f, code: e.target.value.toUpperCase() }))} className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 focus:border-orange-500 focus:outline-none" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Nom</label>
-                <input value={magasinEditForm.nom} onChange={(e) => setMagasinEditForm((f) => ({ ...f, nom: e.target.value }))} className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 focus:border-orange-500 focus:outline-none" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Localisation</label>
-                <input value={magasinEditForm.localisation} onChange={(e) => setMagasinEditForm((f) => ({ ...f, localisation: e.target.value }))} className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 focus:border-orange-500 focus:outline-none" />
-              </div>
-              <label className="flex items-center gap-2"><input type="checkbox" checked={magasinEditForm.actif} onChange={(e) => setMagasinEditForm((f) => ({ ...f, actif: e.target.checked }))} /> Actif</label>
-              {magasinsErr && <p className="text-sm text-red-600">{magasinsErr}</p>}
-              <div className="flex gap-2">
-                <button type="submit" disabled={magasinSaving} className="rounded-lg bg-orange-500 px-4 py-2 text-white hover:bg-orange-600 disabled:opacity-60">Enregistrer</button>
-                <button type="button" onClick={() => setMagasinEdit(null)} className="rounded-lg border-2 border-gray-400 bg-gray-200 px-4 py-2 font-medium text-gray-900 hover:bg-gray-300">Annuler</button>
-              </div>
-            </form>
+              <form onSubmit={handleMagasinEditSave} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Code</label>
+                  <input value={magasinEditForm.code} onChange={(e) => setMagasinEditForm((f) => ({ ...f, code: e.target.value.toUpperCase() }))} className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 focus:border-orange-500 focus:outline-none" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Nom</label>
+                  <input value={magasinEditForm.nom} onChange={(e) => setMagasinEditForm((f) => ({ ...f, nom: e.target.value }))} className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 focus:border-orange-500 focus:outline-none" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Localisation</label>
+                  <input value={magasinEditForm.localisation} onChange={(e) => setMagasinEditForm((f) => ({ ...f, localisation: e.target.value }))} className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 focus:border-orange-500 focus:outline-none" />
+                </div>
+                <label className="flex items-center gap-2"><input type="checkbox" checked={magasinEditForm.actif} onChange={(e) => setMagasinEditForm((f) => ({ ...f, actif: e.target.checked }))} /> Actif</label>
+                {magasinsErr && <p className="text-sm text-red-600">{magasinsErr}</p>}
+                <div className="flex gap-2">
+                  <button type="submit" disabled={magasinSaving} className="rounded-lg bg-orange-500 px-4 py-2 text-white hover:bg-orange-600 disabled:opacity-60">Enregistrer</button>
+                  <button type="button" onClick={() => setMagasinEdit(null)} className="rounded-lg border-2 border-gray-400 bg-gray-200 px-4 py-2 font-medium text-gray-900 hover:bg-gray-300">Annuler</button>
+                </div>
+              </form>
             </div>
           </div>
         </div>

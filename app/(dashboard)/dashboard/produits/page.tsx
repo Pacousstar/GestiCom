@@ -13,8 +13,10 @@ import { formatDate } from '@/lib/format-date'
 type Produit = {
   id: number
   code: string
+  codeBarres: string | null
   designation: string
   categorie: string
+  unite: string
   prixAchat: number | null
   prixVente: number | null
   seuilMin: number
@@ -44,8 +46,10 @@ export default function ProduitsPage() {
   const [pagination, setPagination] = useState<{ page: number; limit: number; total: number; totalPages: number } | null>(null)
   const [formData, setFormData] = useState({
     code: '',
+    codeBarres: '',
     designation: '',
     categorie: 'DIVERS',
+    unite: 'unite',
     magasinId: '',
     prixAchat: '',
     prixVente: '',
@@ -103,7 +107,7 @@ export default function ProduitsPage() {
       // Ctrl+N ou Cmd+N : Nouveau produit
       if ((e.ctrlKey || e.metaKey) && e.key === 'n' && !form) {
         e.preventDefault()
-        setFormData({ code: '', designation: '', categorie: 'DIVERS', magasinId: '', prixAchat: '', prixVente: '', seuilMin: '5', quantiteInitiale: '0' })
+        setFormData({ code: '', codeBarres: '', designation: '', categorie: 'DIVERS', unite: 'unite', magasinId: '', prixAchat: '', prixVente: '', seuilMin: '5', quantiteInitiale: '0' })
         setForm(true)
         fetchNextCode('DIVERS')
       }
@@ -328,6 +332,8 @@ export default function ProduitsPage() {
 
     const requestData = {
       ...validationData,
+      codeBarres: formData.codeBarres.trim() || null,
+      unite: formData.unite || 'unite',
       magasinId: Number(formData.magasinId),
       quantiteInitiale: Math.max(0, Number(formData.quantiteInitiale) || 0),
     }
@@ -342,7 +348,7 @@ export default function ProduitsPage() {
         method: 'POST',
       })
       setForm(false)
-      setFormData({ code: '', designation: '', categorie: 'DIVERS', magasinId: '', prixAchat: '', prixVente: '', seuilMin: '5', quantiteInitiale: '0' })
+      setFormData({ code: '', codeBarres: '', designation: '', categorie: 'DIVERS', unite: 'unite', magasinId: '', prixAchat: '', prixVente: '', seuilMin: '5', quantiteInitiale: '0' })
       showSuccess('Produit enregistré localement. Il sera synchronisé dès que la connexion sera rétablie.')
       return
     }
@@ -356,7 +362,7 @@ export default function ProduitsPage() {
       const data = await res.json()
       if (res.ok) {
         setForm(false)
-        setFormData({ code: '', designation: '', categorie: 'DIVERS', magasinId: '', prixAchat: '', prixVente: '', seuilMin: '5', quantiteInitiale: '0' })
+        setFormData({ code: '', codeBarres: '', designation: '', categorie: 'DIVERS', unite: 'unite', magasinId: '', prixAchat: '', prixVente: '', seuilMin: '5', quantiteInitiale: '0' })
         setCurrentPage(1)
         fetchList(1)
         // Notifier les autres pages pour rafraîchir leurs listes de produits
@@ -405,7 +411,7 @@ export default function ProduitsPage() {
           </button>
           <button
             onClick={() => {
-              setFormData({ code: '', designation: '', categorie: 'DIVERS', magasinId: '', prixAchat: '', prixVente: '', seuilMin: '5', quantiteInitiale: '0' })
+              setFormData({ code: '', codeBarres: '', designation: '', categorie: 'DIVERS', unite: 'unite', magasinId: '', prixAchat: '', prixVente: '', seuilMin: '5', quantiteInitiale: '0' })
               setForm(true)
               fetchNextCode('DIVERS')
             }}
@@ -434,7 +440,7 @@ export default function ProduitsPage() {
         <div className="rounded-xl border border-orange-200 bg-orange-50 p-6">
           <h2 className="mb-4 text-lg font-semibold text-gray-900">Nouveau produit</h2>
           <form onSubmit={handleSubmit} className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
-            {/* Ligne 1 : 4 éléments */}
+            {/* Ligne 1 : Code + Désignation + Catégorie + Point de vente */}
             <div>
               <label className="block text-sm font-medium text-gray-700">Code *</label>
               <input
@@ -486,7 +492,40 @@ export default function ProduitsPage() {
               </select>
               <p className="mt-0.5 text-xs text-gray-500">Le produit sera en stock uniquement dans ce point de vente (obligatoire)</p>
             </div>
-            {/* Ligne 2 : 4 éléments */}
+            {/* Ligne 2 : Code-barres + Unité + Prix achat + Prix vente */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Code-barres (EAN-13/QR)</label>
+              <input
+                value={formData.codeBarres}
+                onChange={(e) => setFormData((f) => ({ ...f, codeBarres: e.target.value }))}
+                placeholder="Ex: 3017620422003"
+                className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 focus:border-orange-500 focus:outline-none font-mono text-sm"
+              />
+              <p className="mt-0.5 text-xs text-gray-500">Permet la détection automatique via le scanner caméra 📷</p>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Unité de vente</label>
+              <select
+                value={formData.unite}
+                onChange={(e) => setFormData((f) => ({ ...f, unite: e.target.value }))}
+                className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 focus:border-orange-500 focus:outline-none"
+              >
+                <option value="unite">Unité (pièce)</option>
+                <option value="kg">Kilogramme (kg)</option>
+                <option value="g">Gramme (g)</option>
+                <option value="litre">Litre (L)</option>
+                <option value="cl">Centilitre (cl)</option>
+                <option value="m">Mètre (m)</option>
+                <option value="m2">Mètre carré (m²)</option>
+                <option value="m3">Mètre cube (m³)</option>
+                <option value="boite">Boîte</option>
+                <option value="carton">Carton</option>
+                <option value="sachet">Sachet</option>
+                <option value="heure">Heure (service)</option>
+                <option value="jour">Jour (service)</option>
+                <option value="forfait">Forfait (service)</option>
+              </select>
+            </div>
             <div>
               <label className="block text-sm font-medium text-gray-700">Prix d&apos;achat (FCFA)</label>
               <input
