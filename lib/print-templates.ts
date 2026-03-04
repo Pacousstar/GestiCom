@@ -21,11 +21,16 @@ export type TemplateData = {
   // Données client/fournisseur
   CLIENT_NOM?: string
   CLIENT_TELEPHONE?: string
+  CLIENT_EMAIL?: string
+  CLIENT_ADRESSE?: string
   FOURNISSEUR_NOM?: string
   FOURNISSEUR_TELEPHONE?: string
 
   // Données lignes
   LIGNES?: string // HTML des lignes de produits
+  TOTAL_HT?: string
+  TOTAL_TVA?: string
+  REMISE_GLOBALE?: string
   TOTAL?: string
   MONTANT_PAYE?: string
   RESTE?: string
@@ -76,6 +81,7 @@ export function generateLignesHTML(lignes: Array<{
           <th style="padding: 8px; text-align: left; font-size: 12px; font-weight: bold;">Produit</th>
           <th style="padding: 8px; text-align: center; font-size: 12px; font-weight: bold;">Qté</th>
           <th style="padding: 8px; text-align: right; font-size: 12px; font-weight: bold;">Prix U.</th>
+          <th style="padding: 8px; text-align: right; font-size: 12px; font-weight: bold; color: #ef4444;">Remise</th>
           <th style="padding: 8px; text-align: right; font-size: 12px; font-weight: bold;">Total</th>
         </tr>
       </thead>
@@ -85,6 +91,7 @@ export function generateLignesHTML(lignes: Array<{
             <td style="padding: 8px; font-size: 12px;">${escapeHtml(l.designation)}</td>
             <td style="padding: 8px; text-align: center; font-size: 12px;">${l.quantite}</td>
             <td style="padding: 8px; text-align: right; font-size: 12px;">${l.prixUnitaire.toLocaleString('fr-FR')} F</td>
+            <td style="padding: 8px; text-align: right; font-size: 12px; color: #ef4444;">${(l as any).remise ? `-${(l as any).remise}` : '-'}</td>
             <td style="padding: 8px; text-align: right; font-size: 12px; font-weight: bold;">${l.montant.toLocaleString('fr-FR')} F</td>
           </tr>
         `).join('')}

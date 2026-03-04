@@ -6,7 +6,7 @@ import { requirePermission } from '@/lib/require-role'
 
 type ClientDelegate = {
   findMany: (args: object) => Promise<Array<{ id: number; nom: string; telephone: string | null; type: string; plafondCredit: number | null; actif: boolean }>>
-  create: (args: object) => Promise<{ id: number; nom: string; telephone: string | null; type: string; plafondCredit: number | null }>
+  create: (args: object) => Promise<{ id: number; nom: string; telephone: string | null; email: string | null; adresse: string | null; type: string; plafondCredit: number | null }>
 }
 
 const clientRepo = (prisma as unknown as { client: ClientDelegate }).client
@@ -80,6 +80,8 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const nom = String(body?.nom || '').trim()
     const telephone = body?.telephone != null ? String(body.telephone).trim() || null : null
+    const email = body?.email != null ? String(body.email).trim() || null : null
+    const adresse = body?.adresse != null ? String(body.adresse).trim() || null : null
     const type = String(body?.type || 'CASH').toUpperCase() === 'CREDIT' ? 'CREDIT' : 'CASH'
     const plafondCredit = type === 'CREDIT' && body?.plafondCredit != null
       ? Math.max(0, Number(body.plafondCredit))
@@ -91,7 +93,7 @@ export async function POST(request: NextRequest) {
     }
 
     const c = await clientRepo.create({
-      data: { nom, telephone, type, plafondCredit, ncc, actif: true },
+      data: { nom, telephone, email, adresse, type, plafondCredit, ncc, actif: true },
     })
 
     // Invalider le cache pour affichage immédiat

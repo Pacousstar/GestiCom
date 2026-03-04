@@ -19,7 +19,7 @@ const BarcodeScanner = dynamic(() => import('@/components/scanner/BarcodeScanner
 type Magasin = { id: number; code: string; nom: string }
 type Client = { id: number; nom: string; type: string }
 type Produit = { id: number; code: string; designation: string; categorie?: string; prixVente: number | null; prixAchat?: number | null }
-type Ligne = { produitId: number; designation: string; quantite: number; prixUnitaire: number; tva?: number }
+type Ligne = { produitId: number; designation: string; quantite: number; prixUnitaire: number; tva?: number; remise?: number }
 
 export default function VentesPage() {
   const searchParams = useSearchParams()
@@ -71,14 +71,15 @@ export default function VentesPage() {
     clientLibre: '',
     modePaiement: 'ESPECES',
     montantPaye: '',
+    remiseGlobale: '',
     lignes: [] as Ligne[],
   })
-  const [ajoutProduit, setAjoutProduit] = useState({ produitId: '', quantite: '1', prixUnitaire: '', tva: '', recherche: '' })
+  const [ajoutProduit, setAjoutProduit] = useState({ produitId: '', quantite: '1', prixUnitaire: '', tva: '', remise: '', recherche: '' })
   const [dateDebut, setDateDebut] = useState('')
   const [dateFin, setDateFin] = useState('')
   const [addLignesPopupOpen, setAddLignesPopupOpen] = useState(false)
   const [popupLignes, setPopupLignes] = useState<Ligne[]>([])
-  const [popupAjoutProduit, setPopupAjoutProduit] = useState({ produitId: '', quantite: '1', prixUnitaire: '', tva: '', recherche: '' })
+  const [popupAjoutProduit, setPopupAjoutProduit] = useState({ produitId: '', quantite: '1', prixUnitaire: '', tva: '', remise: '', recherche: '' })
   const [submitting, setSubmitting] = useState(false)
   const [showCreateClient, setShowCreateClient] = useState(false)
   // État du scanner code-barres
@@ -87,6 +88,8 @@ export default function VentesPage() {
   const [clientForm, setClientForm] = useState({
     nom: '',
     telephone: '',
+    email: '',
+    adresse: '',
     type: 'CASH',
     plafondCredit: '',
   })
@@ -286,22 +289,39 @@ export default function VentesPage() {
     const q = Math.max(1, Math.floor(Number(ajoutProduit.quantite) || 0))
     const pu = Math.max(0, Number(ajoutProduit.prixUnitaire) || 0)
     const tvaLigne = ajoutProduit.tva !== '' ? Math.max(0, Number(ajoutProduit.tva)) : tvaParDefaut
+    const remLigne = ajoutProduit.remise !== '' ? Math.max(0, Number(ajoutProduit.remise)) : 0
     const p = Array.isArray(produits) ? produits.find((x) => x.id === pid) : undefined
     if (!p || !q) return
     setFormData((f) => ({
       ...f,
-      lignes: [...f.lignes, { produitId: pid, designation: p.designation, quantite: q, prixUnitaire: pu, tva: tvaLigne }],
+      lignes: [...f.lignes, { produitId: pid, designation: p.designation, quantite: q, prixUnitaire: pu, tva: tvaLigne, remise: remLigne }],
     }))
-    setAjoutProduit({ produitId: '', quantite: '1', prixUnitaire: '', tva: '', recherche: '' })
+    setAjoutProduit({ produitId: '', quantite: '1', prixUnitaire: '', tva: '', remise: '', recherche: '' })
   }
 
   const removeLigne = (i: number) => {
     setFormData((f) => ({ ...f, lignes: f.lignes.filter((_, j) => j !== i) }))
   }
 
-  const totalHT = formData.lignes.reduce((s, l) => s + l.quantite * l.prixUnitaire, 0)
-  const totalTVA = formData.lignes.reduce((s, l) => s + (l.quantite * l.prixUnitaire) * ((l.tva || 0) / 100), 0)
-  const total = totalHT + totalTVA
+  const { totalHT, totalTVA, totalRemise, totalAvantRemiseGlobale } = formData.lignes.reduce(
+    (acc, val) => {
+      const q = val.quantite
+      const pu = val.prixUnitaire
+      const t = val.tva || 0
+      const r = val.remise || 0
+      const ht = q * pu
+      const tvaMontant = ht * (t / 100)
+      const montantLigneAvecTVA = ht + tvaMontant
+
+      acc.totalHT += ht
+      acc.totalTVA += tvaMontant
+      acc.totalRemise += r // Assuming remise is an absolute value per line
+      acc.totalAvantRemiseGlobale += montantLigneAvecTVA - r
+      return acc
+    },
+    { totalHT: 0, totalTVA: 0, totalRemise: 0, totalAvantRemiseGlobale: 0 }
+  )
+  const total = Math.max(0, totalAvantRemiseGlobale - (Number(formData.remiseGlobale) || 0))
 
   const popupTotal = popupLignes.reduce((s, l) => s + (l.quantite * l.prixUnitaire) * (1 + (l.tva || 0) / 100), 0)
 
@@ -318,11 +338,13 @@ export default function VentesPage() {
       clientLibre: formData.clientLibre.trim() || null,
       modePaiement: formData.modePaiement,
       montantPaye: formData.modePaiement === 'CREDIT' ? (formData.montantPaye !== '' ? Number(formData.montantPaye) : 0) : undefined,
+      remiseGlobale: Number(formData.remiseGlobale) || 0,
       lignes: lignes.map((l) => ({
         produitId: l.produitId,
         quantite: l.quantite,
         prixUnitaire: l.prixUnitaire,
         tva: l.tva || 0,
+        remise: l.remise || 0,
       })),
     }
 
@@ -341,7 +363,7 @@ export default function VentesPage() {
       setForm(false)
       setAddLignesPopupOpen(false)
       setPopupLignes([])
-      setPopupAjoutProduit({ produitId: '', quantite: '1', prixUnitaire: '', recherche: '' })
+      setPopupAjoutProduit({ produitId: '', quantite: '1', prixUnitaire: '', tva: '', remise: '', recherche: '' })
       setFormData({
         date: new Date().toISOString().split('T')[0],
         magasinId: '',
@@ -349,6 +371,7 @@ export default function VentesPage() {
         clientLibre: '',
         modePaiement: 'ESPECES',
         montantPaye: '',
+        remiseGlobale: '',
         lignes: [],
       })
       return
@@ -365,7 +388,7 @@ export default function VentesPage() {
         setForm(false)
         setAddLignesPopupOpen(false)
         setPopupLignes([])
-        setPopupAjoutProduit({ produitId: '', quantite: '1', prixUnitaire: '', recherche: '' })
+        setPopupAjoutProduit({ produitId: '', quantite: '1', prixUnitaire: '', tva: '', remise: '', recherche: '' })
         setFormData({
           date: new Date().toISOString().split('T')[0],
           magasinId: '',
@@ -373,6 +396,7 @@ export default function VentesPage() {
           clientLibre: '',
           modePaiement: 'ESPECES',
           montantPaye: '',
+          remiseGlobale: '',
           lignes: [],
         })
         setCurrentPage(1)
@@ -429,7 +453,7 @@ export default function VentesPage() {
     if (!formData.lignes.length) {
       setAddLignesPopupOpen(true)
       setPopupLignes([])
-      setPopupAjoutProduit({ produitId: '', quantite: '1', prixUnitaire: '', recherche: '' })
+      setPopupAjoutProduit({ produitId: '', quantite: '1', prixUnitaire: '', tva: '', remise: '', recherche: '' })
       return
     }
     await doEnregistrerVente(formData.lignes)
@@ -443,7 +467,7 @@ export default function VentesPage() {
     const p = Array.isArray(produits) ? produits.find((x) => x.id === pid) : undefined
     if (!p || !q) return
     setPopupLignes((prev) => [...prev, { produitId: pid, designation: p.designation, quantite: q, prixUnitaire: pu, tva: tvaLigne }])
-    setPopupAjoutProduit({ produitId: '', quantite: '1', prixUnitaire: '', tva: '', recherche: '' })
+    setPopupAjoutProduit({ produitId: '', quantite: '1', prixUnitaire: '', tva: '', remise: '', recherche: '' })
   }
 
   const removePopupLigne = (i: number) => {
@@ -509,6 +533,8 @@ export default function VentesPage() {
         body: JSON.stringify({
           nom: clientForm.nom.trim(),
           telephone: clientForm.telephone.trim() || null,
+          email: clientForm.email.trim() || null,
+          adresse: clientForm.adresse.trim() || null,
           type: clientForm.type,
           plafondCredit: plaf,
         }),
@@ -525,6 +551,8 @@ export default function VentesPage() {
         setClientForm({
           nom: '',
           telephone: '',
+          email: '',
+          adresse: '',
           type: 'CASH',
           plafondCredit: '',
         })
@@ -820,7 +848,16 @@ export default function VentesPage() {
                   onChange={(e) => setAjoutProduit((a) => ({ ...a, tva: e.target.value }))}
                   placeholder={`TVA (${tvaParDefaut}%)`}
                   className="w-20 rounded border border-gray-200 px-2 py-2 text-sm focus:border-orange-500 focus:outline-none bg-gray-50 text-gray-700"
-                  title="TVA par défaut en cas de champ vide"
+                  title="TVA par défaut"
+                />
+                <input
+                  type="number"
+                  min="0"
+                  step="1"
+                  value={ajoutProduit.remise}
+                  onChange={(e) => setAjoutProduit((a) => ({ ...a, remise: e.target.value }))}
+                  placeholder="Remise. F"
+                  className="w-20 rounded border border-gray-200 px-2 py-2 text-sm focus:border-orange-500 focus:outline-none placeholder-red-300"
                 />
                 <button type="button" onClick={addLigne} className="rounded-lg border-2 border-orange-400 bg-orange-100 px-3 py-2 text-sm font-medium text-orange-900 hover:bg-orange-200">
                   Ajouter
@@ -835,6 +872,7 @@ export default function VentesPage() {
                         <th className="pb-2 text-right">Qté</th>
                         <th className="pb-2 text-right">P.U. (HT)</th>
                         <th className="pb-2 text-right">TVA</th>
+                        <th className="pb-2 text-right text-red-500">Remise</th>
                         <th className="pb-2 text-right">Total TTC</th>
                         <th></th>
                       </tr>
@@ -842,14 +880,16 @@ export default function VentesPage() {
                     <tbody>
                       {formData.lignes.map((l, i) => {
                         const lTva = l.tva || 0
+                        const lRemise = l.remise || 0
                         const lHT = l.quantite * l.prixUnitaire
-                        const lTTC = lHT * (1 + lTva / 100)
+                        const lTTC = (lHT * (1 + lTva / 100)) - lRemise
                         return (
                           <tr key={i} className="border-b border-gray-100">
                             <td className="py-2">{l.designation}</td>
                             <td className="text-right">{l.quantite}</td>
                             <td className="text-right">{l.prixUnitaire.toLocaleString('fr-FR')} F</td>
                             <td className="text-right">{lTva}%</td>
+                            <td className="text-right text-red-500">{lRemise > 0 ? `-${lRemise} F` : '-'}</td>
                             <td className="text-right font-medium">{lTTC.toLocaleString('fr-FR', { maximumFractionDigits: 0 })} F</td>
                             <td className="w-10">
                               <button
@@ -868,10 +908,27 @@ export default function VentesPage() {
                   </table>
                 </div>
               )}
-              <div className="mt-4 flex flex-col items-end text-sm gap-1 border-t border-gray-200 pt-3">
-                <p className="text-gray-600">Total HT : {totalHT.toLocaleString('fr-FR')} F</p>
-                <p className="text-gray-600">Total TVA : {totalTVA.toLocaleString('fr-FR', { maximumFractionDigits: 0 })} F</p>
-                <p className="text-base font-bold text-gray-900 mt-1">Total TTC: {total.toLocaleString('fr-FR', { maximumFractionDigits: 0 })} FCFA</p>
+              <div className="mt-4 flex flex-col items-end text-sm gap-2 border-t border-gray-200 pt-3">
+                <p className="text-gray-600 flex justify-between w-48"><span>Total HT :</span> <span>{totalHT.toLocaleString('fr-FR')} F</span></p>
+                <p className="text-gray-600 flex justify-between w-48"><span>Total TVA :</span> <span>{totalTVA.toLocaleString('fr-FR', { maximumFractionDigits: 0 })} F</span></p>
+                {totalRemise > 0 && (
+                  <p className="text-red-500 flex justify-between w-48"><span>Remises :</span> <span>-{totalRemise.toLocaleString('fr-FR')} F</span></p>
+                )}
+                <div className="flex items-center justify-between w-64 mt-1 border-t border-gray-100 pt-2">
+                  <span className="font-medium text-gray-700">Remise Globale (F) :</span>
+                  <input
+                    type="number"
+                    min="0"
+                    step="1"
+                    value={formData.remiseGlobale}
+                    onChange={(e) => setFormData((f) => ({ ...f, remiseGlobale: e.target.value }))}
+                    placeholder="0"
+                    className="w-24 rounded border border-gray-300 px-2 py-1 text-right focus:border-orange-500 focus:outline-none"
+                  />
+                </div>
+                <p className="text-lg font-bold text-gray-900 mt-2 bg-orange-50 px-3 py-1 rounded w-64 flex justify-between">
+                  <span>Total TTC :</span> <span>{total.toLocaleString('fr-FR', { maximumFractionDigits: 0 })} FCFA</span>
+                </p>
               </div>
             </div>
 

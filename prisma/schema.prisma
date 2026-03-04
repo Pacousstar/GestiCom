@@ -192,6 +192,8 @@ model Client {
   id            Int      @id @default(autoincrement())
   nom           String
   telephone     String?
+  email         String?
+  adresse       String?
   type          String // "CREDIT" | "CASH"
   plafondCredit Float? // si CREDIT
   ncc           String? // Numéro de Compte Contribuable (SYSCOHADA)
@@ -279,6 +281,7 @@ model Vente {
   client         Client?     @relation(fields: [clientId], references: [id])
   clientLibre    String? // saisie libre si pas de fiche Client
   montantTotal   Float
+  remiseGlobale  Float       @default(0) // Réduction/Rabais globale sur la facture
   montantPaye    Float       @default(0) // avance / montant déjà encaissé
   statutPaiement String      @default("PAYE") // "PAYE" | "PARTIEL" | "CREDIT"
   modePaiement   String // "ESPECES" | "MOBILE_MONEY" | "CREDIT"
@@ -302,6 +305,7 @@ model VenteLigne {
   quantite     Int
   prixUnitaire Float
   tva          Float   @default(0) // Taux TVA en % (0, 5.5, 10, 19.25...) — 0 = exonoré
+  remise       Float   @default(0) // Réduction/Remise par ligne
   montant      Float   // Montant HT
 }
 

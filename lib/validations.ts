@@ -114,6 +114,28 @@ export const depenseSchema = z.object({
   beneficiaire: z.string().max(MAX_STRING, 'Le bénéficiaire ne peut pas dépasser 500 caractères.').trim().nullable().optional(),
 })
 
+/** Vente : client, montant, remise, lignes de produits */
+export const venteSchema = z.object({
+  date: z.string().min(1, 'La date est requise.'),
+  magasinId: z.coerce.number().int().positive('Le magasin est requis.').nullable().optional(),
+  clientId: z.coerce.number().int().positive('Le client est requis.').nullable().optional(),
+  clientLibre: z.string().max(MAX_STRING).nullable().optional(),
+  montantTotal: z.coerce.number().min(0),
+  remiseGlobale: z.coerce.number().min(0).optional().default(0),
+  montantPaye: z.coerce.number().min(0).optional().default(0),
+  modePaiement: z.enum(['ESPECES', 'MOBILE_MONEY', 'CREDIT']),
+  observation: z.string().max(MAX_TEXT).nullable().optional(),
+  lignes: z.array(
+    z.object({
+      produitId: z.coerce.number().int().positive('Le produit est requis.'),
+      quantite: z.coerce.number().min(1, 'La quantité doit être au moins 1.'),
+      prixUnitaire: z.coerce.number().min(0, 'Le prix unitaire doit être positif.'),
+      tva: z.coerce.number().min(0).optional(),
+      remise: z.coerce.number().min(0).optional(),
+    })
+  ).min(1, 'Au moins une ligne est requise.'),
+})
+
 /** Charge : rubrique, montant, type */
 export const chargeSchema = z.object({
   date: z.string().min(1, 'La date est requise.'),

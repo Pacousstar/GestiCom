@@ -70,6 +70,7 @@ export async function POST(request: NextRequest) {
     const modePaiement = ['ESPECES', 'MOBILE_MONEY', 'CREDIT'].includes(String(body?.modePaiement || ''))
       ? String(body.modePaiement)
       : 'ESPECES'
+    const remiseGlobale = body?.remiseGlobale != null ? Math.max(0, Number(body.remiseGlobale) || 0) : 0
     const montantPayeRaw = body?.montantPaye != null ? Math.max(0, Number(body.montantPaye) || 0) : null
     const observation = body?.observation != null ? String(body.observation).trim() || null : null
     const dateStr = body?.date != null ? String(body.date).trim() : null
@@ -105,13 +106,14 @@ export async function POST(request: NextRequest) {
     }
 
     let montantTotal = 0
-    const lignesValides: Array<{ produitId: number; designation: string; quantite: number; prixUnitaire: number; tva: number; montant: number }> = []
+    const lignesValides: Array<{ produitId: number; designation: string; quantite: number; prixUnitaire: number; tva: number; remise: number; montant: number }> = []
 
     for (const l of lignes) {
       const produitId = Number(l?.produitId)
       const quantite = Math.max(1, Math.floor(Number(l?.quantite) || 0))
       const prixUnitaire = Math.max(0, Number(l?.prixUnitaire) || 0)
       const tva = Math.max(0, Number(l?.tva) || 0)
+      const remise = Math.max(0, Number(l?.remise) || 0)
       if (!produitId || !quantite) continue
 
       const produit = await prisma.produit.findUnique({ where: { id: produitId } })
@@ -119,14 +121,16 @@ export async function POST(request: NextRequest) {
 
       const designation = produit.designation
       const montantHT = quantite * prixUnitaire
-      const montant = montantHT * (1 + tva / 100)
+      const montant = Math.round((montantHT * (1 + tva / 100)) - remise)
       montantTotal += montant
-      lignesValides.push({ produitId, designation, quantite, prixUnitaire, tva, montant })
+      lignesValides.push({ produitId, designation, quantite, prixUnitaire, tva, remise, montant })
     }
 
     if (!lignesValides.length) {
       return NextResponse.json({ error: 'Lignes de vente invalides.' }, { status: 400 })
     }
+
+    montantTotal = Math.max(0, Math.round(montantTotal - remiseGlobale))
 
     const montantPaye = montantPayeRaw != null
       ? Math.min(montantTotal, Math.max(0, montantPayeRaw))
@@ -190,7 +194,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const num = `V${Date.now()}`
+    const num = `V${Date.now()}` // Créer la vente
     const vente = await prisma.vente.create({
       data: {
         numero: num,
@@ -200,7 +204,8 @@ export async function POST(request: NextRequest) {
         utilisateurId: session.userId,
         clientId,
         clientLibre,
-        montantTotal,
+        montantTotal, // montantTotal already includes global discount
+        remiseGlobale,
         montantPaye,
         statutPaiement,
         modePaiement,
@@ -213,7 +218,8 @@ export async function POST(request: NextRequest) {
             quantite: l.quantite,
             prixUnitaire: l.prixUnitaire,
             tva: l.tva,
-            montant: Math.round(l.montant),
+            remise: l.remise,
+            montant: Math.round(l.montant), // montant already includes line discount and TVA
           })),
         },
       },

@@ -23,6 +23,17 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+  font-weight: 600 !important; /* Force toutes les polices par défaut à 600 (semibold) */
+}
+
+/* Force l'accentuation des titres en gras complet pour contraster avec le corps à 600 */
+h1, h2, h3, h4, h5, h6, th, strong, b, .font-bold {
+  font-weight: 800 !important;
+}
+
+/* Éviter le texte gris clair illisible */
+.text-gray-400, .text-gray-500 {
+  color: #374151 !important; /* Equivalent à text-gray-700 pour plus de contraste */
 }
 
 /* Formulaires : champs et listes déroulantes toujours lisibles (fond + texte) */

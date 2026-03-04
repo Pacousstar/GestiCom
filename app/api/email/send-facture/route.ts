@@ -5,33 +5,33 @@ import { getSession } from '@/lib/auth'
 import { requirePermission } from '@/lib/require-role'
 
 export async function POST(req: NextRequest) {
-    const session = await getSession()
-    if (!session) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+  const session = await getSession()
+  if (!session) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
 
-    try {
-        const { emailDestinataire, htmlContent, subject } = await req.json()
-        if (!emailDestinataire || !htmlContent) {
-            return NextResponse.json({ error: 'Email et contenu requis' }, { status: 400 })
-        }
+  try {
+    const { emailDestinataire, htmlContent, subject } = await req.json()
+    if (!emailDestinataire || !htmlContent) {
+      return NextResponse.json({ error: 'Email et contenu requis' }, { status: 400 })
+    }
 
-        // Récupérer la conf SMTP courante
-        const parametre = await prisma.parametre.findFirst()
-        if (!parametre || !parametre.smtpHost || !parametre.smtpUser || !parametre.smtpPass) {
-            return NextResponse.json({ error: 'Configuration SMTP manquante dans les paramètres.' }, { status: 400 })
-        }
+    // Récupérer la conf SMTP courante
+    const parametre = await prisma.parametre.findFirst()
+    if (!parametre || !parametre.smtpHost || !parametre.smtpUser || !parametre.smtpPass) {
+      return NextResponse.json({ error: 'Configuration SMTP manquante dans les paramètres.' }, { status: 400 })
+    }
 
-        const transporter = nodemailer.createTransport({
-            host: parametre.smtpHost,
-            port: parametre.smtpPort || 465,
-            secure: parametre.smtpPort === 465, // true for 465, false for other ports
-            auth: {
-                user: parametre.smtpUser,
-                pass: parametre.smtpPass,
-            },
-        })
+    const transporter = nodemailer.createTransport({
+      host: parametre.smtpHost,
+      port: parametre.smtpPort || 465,
+      secure: parametre.smtpPort === 465, // true for 465, false for other ports
+      auth: {
+        user: parametre.smtpUser,
+        pass: parametre.smtpPass,
+      },
+    })
 
-        // L'email sera envoyé avec un style de document englobé
-        const styledHtml = `
+    // L'email sera envoyé avec un style de document englobé
+    const styledHtml = `
       <!DOCTYPE html>
       <html>
         <head>
@@ -55,8 +55,8 @@ export async function POST(req: NextRequest) {
       </html>
     `
 
-        await transporter.sendMail({
-            from: \`"\${parametre.nomEntreprise || 'GestiCom'}" <\${parametre.smtpUser}>\`,
+    await transporter.sendMail({
+      from: `"${parametre.nomEntreprise || 'GestiCom'}" <${parametre.smtpUser}>`,
       to: emailDestinataire,
       subject: subject || 'Votre Facture / Reçu',
       html: styledHtml,
@@ -65,6 +65,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: true })
   } catch (error: any) {
     console.error('Erreur SMTP:', error)
-    return NextResponse.json({ error: error.message || 'Erreur lors de l\\'envoi de l\\'email.' }, { status: 500 })
+    return NextResponse.json({ error: error.message || "Erreur lors de l'envoi de l'email." }, { status: 500 })
   }
 }

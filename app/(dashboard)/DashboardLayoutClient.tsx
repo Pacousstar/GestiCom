@@ -699,9 +699,21 @@ export default function DashboardLayoutClient({
           </div>
         </header>
 
-        <main className="min-h-[calc(100vh-5rem)] p-4 sm:p-6 lg:px-8 relative z-10">
+        <main className="flex-1 p-4 sm:p-6 lg:px-8 relative z-10 w-full overflow-y-auto">
           {children}
         </main>
+
+        {/* Footer GestiCom App */}
+        <footer className="h-10 border-t border-gray-200 bg-white flex items-center justify-center relative z-10 w-full shrink-0">
+          <p className="text-[11px] font-bold">
+            <span className="text-orange-500">Tous droits reservés</span>
+            <span className="text-gray-400 mx-1">-</span>
+            <span className="text-orange-500">Pacousstar</span>
+            <span className="text-gray-400 mx-1">07 07 80 18 17</span>
+            <span className="text-green-600 mx-1">/</span>
+            <span className="text-green-600">05 44 81 49 24</span>
+          </p>
+        </footer>
       </div>
       <ToastContainer toasts={toasts} onClose={removeToast} />
     </div>

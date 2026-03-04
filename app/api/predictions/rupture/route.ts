@@ -32,7 +32,7 @@ export async function GET(req: NextRequest) {
                 stocks: true,
             },
             where: {
-                enStock: true
+                actif: true
             }
         })
 
