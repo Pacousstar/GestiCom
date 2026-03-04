@@ -48,10 +48,6 @@ export default function CaissePage() {
       .then((d) => {
         if (d) {
           setUserRole(d.role)
-          // Si l'utilisateur n'a pas la permission de voir la caisse, on peut rediriger ou montrer une erreur
-          if (d.permissions && !d.permissions.includes('caisse:view')) {
-            window.location.href = '/dashboard?error=permission_denied'
-          }
         }
       })
       .catch(() => { })
@@ -309,8 +305,8 @@ export default function CaissePage() {
           <p className="mt-1 text-2xl font-bold text-white">{totalSorties.toLocaleString('fr-FR')} FCFA</p>
         </div>
         <div className={`rounded-xl bg-gradient-to-br p-6 shadow-lg transition-all hover:shadow-xl hover:scale-105 ${soldeMouvements >= 0
-            ? 'from-blue-500 to-cyan-600'
-            : 'from-orange-500 to-red-600'
+          ? 'from-blue-500 to-cyan-600'
+          : 'from-orange-500 to-red-600'
           }`}>
           <p className="text-sm font-medium text-white/90">Solde (entrées − sorties)</p>
           <p className="mt-1 text-2xl font-bold text-white">

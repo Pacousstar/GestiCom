@@ -4,17 +4,6 @@ import { useState, useEffect } from 'react'
 import { FileText, Loader2, AlertTriangle, TrendingUp, ArrowRightLeft, FileSpreadsheet, Trash2, Search, Filter, X } from 'lucide-react'
 import { useToast } from '@/hooks/useToast'
 import Pagination from '@/components/ui/Pagination'
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-} from 'recharts'
-
 type Alerte = {
   id: number
   quantite: number
@@ -68,7 +57,7 @@ export default function RapportsPage() {
   const [alertesPagination, setAlertesPagination] = useState<{ page: number; limit: number; total: number; totalPages: number } | null>(null)
   const [topPagination, setTopPagination] = useState<{ page: number; limit: number; total: number; totalPages: number } | null>(null)
   const { success: showSuccess, error: showError } = useToast()
-  
+
   // Filtres avancés
   const [magasins, setMagasins] = useState<Magasin[]>([])
   const [produits, setProduits] = useState<Produit[]>([])
@@ -82,8 +71,8 @@ export default function RapportsPage() {
     fetch('/api/auth/check')
       .then((r) => (r.ok ? r.json() : { role: '' }))
       .then((data: { role?: string }) => setUserRole(data.role || ''))
-      .catch(() => {})
-    
+      .catch(() => { })
+
     // Charger magasins et produits pour les filtres
     Promise.all([
       fetch('/api/magasins').then((r) => (r.ok ? r.json() : [])),
@@ -381,9 +370,8 @@ export default function RapportsPage() {
               <div className="text-xs text-gray-600">
                 Période précédente : {comparaison.periodePrecedente.ca.toLocaleString('fr-FR')} FCFA
               </div>
-              <div className={`mt-2 text-sm font-semibold ${
-                comparaison.evolution.ca >= 0 ? 'text-green-600' : 'text-red-600'
-              }`}>
+              <div className={`mt-2 text-sm font-semibold ${comparaison.evolution.ca >= 0 ? 'text-green-600' : 'text-red-600'
+                }`}>
                 {comparaison.evolution.ca >= 0 ? '↑' : '↓'} {Math.abs(comparaison.evolution.ca).toLocaleString('fr-FR')} FCFA
                 {' '}({comparaison.evolutionPourcent.ca >= 0 ? '+' : ''}{comparaison.evolutionPourcent.ca.toFixed(1)}%)
               </div>
@@ -398,9 +386,8 @@ export default function RapportsPage() {
               <div className="text-xs text-gray-600">
                 Période précédente : {comparaison.periodePrecedente.achats.toLocaleString('fr-FR')} FCFA
               </div>
-              <div className={`mt-2 text-sm font-semibold ${
-                comparaison.evolution.achats >= 0 ? 'text-green-600' : 'text-red-600'
-              }`}>
+              <div className={`mt-2 text-sm font-semibold ${comparaison.evolution.achats >= 0 ? 'text-green-600' : 'text-red-600'
+                }`}>
                 {comparaison.evolution.achats >= 0 ? '↑' : '↓'} {Math.abs(comparaison.evolution.achats).toLocaleString('fr-FR')} FCFA
                 {' '}({comparaison.evolutionPourcent.achats >= 0 ? '+' : ''}{comparaison.evolutionPourcent.achats.toFixed(1)}%)
               </div>
@@ -415,9 +402,8 @@ export default function RapportsPage() {
               <div className="text-xs text-gray-600">
                 Période précédente : {comparaison.periodePrecedente.ventes.toLocaleString('fr-FR')}
               </div>
-              <div className={`mt-2 text-sm font-semibold ${
-                comparaison.evolution.ventes >= 0 ? 'text-green-600' : 'text-red-600'
-              }`}>
+              <div className={`mt-2 text-sm font-semibold ${comparaison.evolution.ventes >= 0 ? 'text-green-600' : 'text-red-600'
+                }`}>
                 {comparaison.evolution.ventes >= 0 ? '↑' : '↓'} {Math.abs(comparaison.evolution.ventes).toLocaleString('fr-FR')}
                 {' '}({comparaison.evolutionPourcent.ventes >= 0 ? '+' : ''}{comparaison.evolutionPourcent.ventes.toFixed(1)}%)
               </div>
@@ -456,17 +442,17 @@ export default function RapportsPage() {
                     )
                   })
                   .map((a) => (
-                  <li key={a.id} className="flex items-center justify-between rounded-lg border border-red-200 bg-red-50 p-3">
-                    <div>
-                      <p className="font-medium text-gray-900">{a.produit.designation}</p>
-                      <p className="text-xs text-gray-600">{a.produit.code} · {a.magasin.code}</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-semibold text-red-600">{a.quantite} / {a.produit.seuilMin}</p>
-                      <p className="text-xs text-gray-500">manque {a.manquant}</p>
-                    </div>
-                  </li>
-                ))}
+                    <li key={a.id} className="flex items-center justify-between rounded-lg border border-red-200 bg-red-50 p-3">
+                      <div>
+                        <p className="font-medium text-gray-900">{a.produit.designation}</p>
+                        <p className="text-xs text-gray-600">{a.produit.code} · {a.magasin.code}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-semibold text-red-600">{a.quantite} / {a.produit.seuilMin}</p>
+                        <p className="text-xs text-gray-500">manque {a.manquant}</p>
+                      </div>
+                    </li>
+                  ))}
               </ul>
               {alertesPagination && alertesPagination.total > 0 && (
                 <div className="mt-4">
@@ -502,56 +488,26 @@ export default function RapportsPage() {
             <p className="text-sm text-gray-500">Aucune vente enregistrée.</p>
           ) : (
             <>
-              <div className="mb-4 h-64">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart
-                    data={topProduits.slice(0, 10).map((t, i) => ({
-                      name: t.designation.length > 20 ? t.designation.substring(0, 20) + '...' : t.designation,
-                      quantite: t.quantiteVendue,
-                      fullName: t.designation,
-                    }))}
-                    layout="vertical"
-                  >
-                    <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                    <XAxis type="number" stroke="#6b7280" fontSize={12} />
-                    <YAxis
-                      type="category"
-                      dataKey="name"
-                      stroke="#6b7280"
-                      fontSize={11}
-                      width={120}
-                    />
-                    <Tooltip
-                      contentStyle={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: '8px' }}
-                      formatter={(value: number | undefined, payload: any) => [
-                        `${value || 0} unités`,
-                        payload[0]?.payload?.fullName || '',
-                      ]}
-                    />
-                    <Bar dataKey="quantite" name="Quantité vendue" fill="#3b82f6" />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-                           <ul className="space-y-2 border-t pt-4">
-                             {topProduits
-                               .filter((t) => {
-                                 if (!searchTerm) return true
-                                 const searchLower = searchTerm.toLowerCase()
-                                 return (
-                                   t.code.toLowerCase().includes(searchLower) ||
-                                   t.designation.toLowerCase().includes(searchLower)
-                                 )
-                               })
-                               .map((t, i) => {
-                  const globalIndex = topPagination ? (topPagination.page - 1) * topPagination.limit + i : i
-                  return (
-                    <li key={t.produitId} className="flex items-center justify-between border-b border-gray-100 py-2 last:border-0">
-                      <span className="text-sm font-medium text-gray-500">#{globalIndex + 1}</span>
-                      <span className="flex-1 truncate px-2 text-sm text-gray-900">{t.designation}</span>
-                      <span className="font-semibold text-gray-900">{t.quantiteVendue} unités</span>
-                    </li>
-                  )
-                })}
+              <ul className="space-y-2">
+                {topProduits
+                  .filter((t) => {
+                    if (!searchTerm) return true
+                    const searchLower = searchTerm.toLowerCase()
+                    return (
+                      t.code.toLowerCase().includes(searchLower) ||
+                      t.designation.toLowerCase().includes(searchLower)
+                    )
+                  })
+                  .map((t, i) => {
+                    const globalIndex = topPagination ? (topPagination.page - 1) * topPagination.limit + i : i
+                    return (
+                      <li key={t.produitId} className="flex items-center justify-between border-b border-gray-100 py-2 last:border-0">
+                        <span className="text-sm font-medium text-gray-500">#{globalIndex + 1}</span>
+                        <span className="flex-1 truncate px-2 text-sm text-gray-900">{t.designation}</span>
+                        <span className="font-semibold text-gray-900">{t.quantiteVendue} unités</span>
+                      </li>
+                    )
+                  })}
               </ul>
               {topPagination && topPagination.total > 0 && (
                 <div className="mt-4 border-t pt-4">
@@ -607,36 +563,36 @@ export default function RapportsPage() {
                     )
                   })
                   .map((m) => (
-                  <tr key={m.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-2 text-sm text-gray-600">
-                      {new Date(m.date).toLocaleString('fr-FR')}
-                    </td>
-                    <td className="px-4 py-2">
-                      <span className={`rounded px-2 py-0.5 text-xs font-medium ${m.type === 'ENTREE' ? 'bg-green-100 text-green-800' : 'bg-orange-100 text-orange-800'}`}>
-                        {m.type}
-                      </span>
-                    </td>
-                    <td className="px-4 py-2 text-sm text-gray-900">{m.produit.designation}</td>
-                    <td className="px-4 py-2 text-sm text-gray-600">{m.magasin.code}</td>
-                    <td className="px-4 py-2 text-right font-medium text-gray-900">{m.quantite}</td>
-                    {(userRole === 'ADMIN' || userRole === 'SUPER_ADMIN') && (
-                      <td className="px-4 py-2 text-center">
-                        <button
-                          onClick={() => handleDeleteMouvement(m.id)}
-                          disabled={deletingId === m.id}
-                          className="rounded p-1.5 text-red-600 hover:bg-red-50 disabled:opacity-50"
-                          title="Supprimer"
-                        >
-                          {deletingId === m.id ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <Trash2 className="h-4 w-4" />
-                          )}
-                        </button>
+                    <tr key={m.id} className="hover:bg-gray-50">
+                      <td className="px-4 py-2 text-sm text-gray-600">
+                        {new Date(m.date).toLocaleString('fr-FR')}
                       </td>
-                    )}
-                  </tr>
-                ))}
+                      <td className="px-4 py-2">
+                        <span className={`rounded px-2 py-0.5 text-xs font-medium ${m.type === 'ENTREE' ? 'bg-green-100 text-green-800' : 'bg-orange-100 text-orange-800'}`}>
+                          {m.type}
+                        </span>
+                      </td>
+                      <td className="px-4 py-2 text-sm text-gray-900">{m.produit.designation}</td>
+                      <td className="px-4 py-2 text-sm text-gray-600">{m.magasin.code}</td>
+                      <td className="px-4 py-2 text-right font-medium text-gray-900">{m.quantite}</td>
+                      {(userRole === 'ADMIN' || userRole === 'SUPER_ADMIN') && (
+                        <td className="px-4 py-2 text-center">
+                          <button
+                            onClick={() => handleDeleteMouvement(m.id)}
+                            disabled={deletingId === m.id}
+                            className="rounded p-1.5 text-red-600 hover:bg-red-50 disabled:opacity-50"
+                            title="Supprimer"
+                          >
+                            {deletingId === m.id ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Trash2 className="h-4 w-4" />
+                            )}
+                          </button>
+                        </td>
+                      )}
+                    </tr>
+                  ))}
               </tbody>
             </table>
           </div>

@@ -6,7 +6,7 @@ import { useToast } from '@/hooks/useToast'
 import { formatApiError } from '@/lib/validation-helpers'
 import { addToSyncQueue, isOnline } from '@/lib/offline-sync'
 import Pagination from '@/components/ui/Pagination'
-
+import { formatDate } from '@/lib/format-date'
 type Magasin = { id: number; code: string; nom: string }
 type Produit = { id: number; code: string; designation: string; prixAchat?: number | null }
 type StockRow = {
@@ -99,11 +99,11 @@ export default function StockPage() {
       setProduits(Array.isArray(p) ? p : [])
       setCategories(Array.isArray(cat) && cat.length ? cat : ['DIVERS'])
     })
-    .catch(() => {
-      setMagasins([])
-      setProduits([])
-      setCategories(['DIVERS'])
-    })
+      .catch(() => {
+        setMagasins([])
+        setProduits([])
+        setCategories(['DIVERS'])
+      })
   }, [])
 
   useEffect(() => {
@@ -122,13 +122,13 @@ export default function StockPage() {
   const fetchList = async (page?: number) => {
     setLoading(true)
     try {
-      const params = new URLSearchParams({ 
+      const params = new URLSearchParams({
         complet: '1',
         page: String(page ?? currentPage),
         limit: '20',
       })
       if (magasinId) params.set('magasinId', magasinId)
-      
+
       const res = await fetch('/api/stock?' + params.toString())
       if (res.ok) {
         const response = await res.json()
@@ -180,12 +180,12 @@ export default function StockPage() {
   const searchLower = searchTerm.trim().toLowerCase()
   const filteredList = searchLower
     ? list.filter(
-        (s) =>
-          s.magasin.code.toLowerCase().includes(searchLower) ||
-          s.magasin.nom.toLowerCase().includes(searchLower) ||
-          s.produit.code.toLowerCase().includes(searchLower) ||
-          s.produit.designation.toLowerCase().includes(searchLower)
-      )
+      (s) =>
+        s.magasin.code.toLowerCase().includes(searchLower) ||
+        s.magasin.nom.toLowerCase().includes(searchLower) ||
+        s.produit.code.toLowerCase().includes(searchLower) ||
+        s.produit.designation.toLowerCase().includes(searchLower)
+    )
     : list
 
   // Pagination côté client pour la liste filtrée
@@ -203,7 +203,7 @@ export default function StockPage() {
     e.preventDefault()
     setErr('')
     setSaving(true)
-    
+
     const requestData = {
       date: entreeForm.date || undefined,
       magasinId: Number(entreeForm.magasinId),
@@ -275,7 +275,7 @@ export default function StockPage() {
     e.preventDefault()
     setErr('')
     setSaving(true)
-    
+
     const requestData = {
       date: sortieForm.date || undefined,
       magasinId: Number(sortieForm.magasinId),
@@ -518,7 +518,7 @@ export default function StockPage() {
     if (!editRow) return
     setErr('')
     setSaving(true)
-    
+
     // Si le stock n'existe pas encore (id null), on doit le créer via une entrée de stock
     if (editRow.id == null) {
       const quantite = Math.max(0, Math.floor(Number(editForm.quantite) || 0))
@@ -554,7 +554,7 @@ export default function StockPage() {
       }
       return
     }
-    
+
     // Stock existant, on peut le modifier
     try {
       const res = await fetch(`/api/stock/${editRow.id}`, {
@@ -901,22 +901,22 @@ export default function StockPage() {
             <div className="mt-6 flex items-center justify-between gap-4 border-t-2 border-orange-300 bg-orange-50 pt-4">
               <div className="flex-1">
                 <p className="text-sm font-medium text-gray-700">
-                  {Object.keys(inventaireReelles).filter(k => inventaireReelles[k] !== '').length > 0 
+                  {Object.keys(inventaireReelles).filter(k => inventaireReelles[k] !== '').length > 0
                     ? `✓ ${Object.keys(inventaireReelles).filter(k => inventaireReelles[k] !== '').length} ligne(s) modifiée(s)`
                     : 'Aucune modification saisie'}
                 </p>
               </div>
               <div className="flex gap-3">
-                <button 
-                  type="button" 
-                  onClick={() => { setShowInventaire(false); setInventaireReelles({}); setErr(''); }} 
+                <button
+                  type="button"
+                  onClick={() => { setShowInventaire(false); setInventaireReelles({}); setErr(''); }}
                   className="rounded-xl border-2 border-gray-300 bg-white px-6 py-3 font-semibold text-gray-700 hover:bg-gray-50 transition-colors shadow-sm"
                 >
                   Annuler
                 </button>
-                <button 
-                  type="submit" 
-                  disabled={inventaireSaving || Object.keys(inventaireReelles).filter(k => inventaireReelles[k] !== '').length === 0} 
+                <button
+                  type="submit"
+                  disabled={inventaireSaving || Object.keys(inventaireReelles).filter(k => inventaireReelles[k] !== '').length === 0}
                   className="rounded-xl bg-gradient-to-r from-orange-600 to-orange-700 px-8 py-3 font-bold text-white hover:from-orange-700 hover:to-orange-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg hover:shadow-xl transform hover:scale-105"
                 >
                   {inventaireSaving ? (
@@ -949,37 +949,37 @@ export default function StockPage() {
             </div>
             <p className="mb-4 text-sm text-gray-600">{editRow.produit.designation} - {editRow.magasin.code}</p>
             <div className="rounded-lg bg-gray-50 p-4">
-            <form onSubmit={handleEdit} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Quantité</label>
-                <input
-                  type="number"
-                  min="0"
-                  value={editForm.quantite}
-                  onChange={(e) => setEditForm((f) => ({ ...f, quantite: e.target.value }))}
-                  className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 focus:border-orange-500 focus:outline-none"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Quantité initiale</label>
-                <input
-                  type="number"
-                  min="0"
-                  value={editForm.quantiteInitiale}
-                  onChange={(e) => setEditForm((f) => ({ ...f, quantiteInitiale: e.target.value }))}
-                  className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 focus:border-orange-500 focus:outline-none"
-                />
-              </div>
-              {err && <p className="text-sm text-red-600">{err}</p>}
-              <div className="flex gap-2">
-                <button type="submit" disabled={saving} className="rounded-lg bg-orange-500 px-4 py-2 text-white hover:bg-orange-600 disabled:opacity-60">
-                  {saving ? '...' : 'Enregistrer'}
-                </button>
-                <button type="button" onClick={() => { setShowEdit(false); setEditRow(null); }} className="rounded-lg border-2 border-gray-400 bg-gray-200 px-4 py-2 font-medium text-gray-900 hover:bg-gray-300">
-                  Annuler
-                </button>
-              </div>
-            </form>
+              <form onSubmit={handleEdit} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Quantité</label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={editForm.quantite}
+                    onChange={(e) => setEditForm((f) => ({ ...f, quantite: e.target.value }))}
+                    className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 focus:border-orange-500 focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Quantité initiale</label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={editForm.quantiteInitiale}
+                    onChange={(e) => setEditForm((f) => ({ ...f, quantiteInitiale: e.target.value }))}
+                    className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 focus:border-orange-500 focus:outline-none"
+                  />
+                </div>
+                {err && <p className="text-sm text-red-600">{err}</p>}
+                <div className="flex gap-2">
+                  <button type="submit" disabled={saving} className="rounded-lg bg-orange-500 px-4 py-2 text-white hover:bg-orange-600 disabled:opacity-60">
+                    {saving ? '...' : 'Enregistrer'}
+                  </button>
+                  <button type="button" onClick={() => { setShowEdit(false); setEditRow(null); }} className="rounded-lg border-2 border-gray-400 bg-gray-200 px-4 py-2 font-medium text-gray-900 hover:bg-gray-300">
+                    Annuler
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
         </div>
@@ -1033,13 +1033,7 @@ export default function StockPage() {
                       <td className="px-4 py-3 text-right text-sm text-gray-500">{s.quantiteInitiale}</td>
                       <td className="px-4 py-3 text-right text-sm text-gray-600">{s.produit.seuilMin}</td>
                       <td className="px-4 py-3 text-sm text-gray-600">
-                        {s.createdAt ? new Date(s.createdAt).toLocaleDateString('fr-FR', { 
-                          day: '2-digit', 
-                          month: '2-digit', 
-                          year: 'numeric',
-                          hour: '2-digit',
-                          minute: '2-digit'
-                        }) : '-'}
+                        {s.createdAt ? formatDate(s.createdAt, { includeTime: true }) : '-'}
                       </td>
                       <td className="px-4 py-3">
                         <button
@@ -1218,7 +1212,7 @@ export default function StockPage() {
                 <X className="h-5 w-5" />
               </button>
             </div>
-            
+
             <div className="mb-4 space-y-2 rounded-lg bg-red-50 p-4">
               <p className="text-sm text-gray-700">
                 <strong>Quantité demandée :</strong> {stockInsuffisantModal.quantiteDemandee} unités

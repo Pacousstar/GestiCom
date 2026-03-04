@@ -8,6 +8,7 @@ import { produitSchema } from '@/lib/validations'
 import { validateForm, formatApiError } from '@/lib/validation-helpers'
 import Pagination from '@/components/ui/Pagination'
 import { addToSyncQueue, isOnline } from '@/lib/offline-sync'
+import { formatDate } from '@/lib/format-date'
 
 type Produit = {
   id: number
@@ -188,7 +189,7 @@ export default function ProduitsPage() {
       showError(errorMsg)
     } finally { setSavingPrix(false) }
   }
-  
+
   const handleImportExcel = async () => {
     const input = document.createElement('input')
     input.type = 'file'
@@ -301,7 +302,7 @@ export default function ProduitsPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setErr('')
-    
+
     const validationData = {
       code: formData.code.trim().toUpperCase(),
       designation: formData.designation.trim(),
@@ -581,13 +582,7 @@ export default function ProduitsPage() {
                     </td>
                     <td className="px-4 py-3 text-right text-sm text-gray-600">{p.seuilMin}</td>
                     <td className="px-4 py-3 text-sm text-gray-600">
-                      {new Date(p.createdAt).toLocaleDateString('fr-FR', { 
-                        day: '2-digit', 
-                        month: '2-digit', 
-                        year: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit'
-                      })}
+                      {formatDate(p.createdAt, { includeTime: true })}
                     </td>
                     <td className="px-4 py-3">
                       <button

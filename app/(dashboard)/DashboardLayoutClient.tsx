@@ -81,7 +81,7 @@ type Notification = {
   lu: boolean
 }
 
-export type UserWithPermissions = Session & { permissions?: string[] }
+type UserWithPermissions = Session & { permissions?: string[] }
 
 export default function DashboardLayoutClient({
   children,
@@ -113,8 +113,12 @@ export default function DashboardLayoutClient({
   useEffect(() => {
     loadNotifications()
     loadEntites()
-    // Rafraîchir toutes les 5 minutes
-    const interval = setInterval(loadNotifications, 5 * 60 * 1000)
+    // Rafraîchir toutes les 5 minutes unqiuement si l'onglet est actif
+    const interval = setInterval(() => {
+      if (!document.hidden) {
+        loadNotifications()
+      }
+    }, 5 * 60 * 1000)
     return () => clearInterval(interval)
   }, [])
 
@@ -131,6 +135,15 @@ export default function DashboardLayoutClient({
     window.addEventListener('online', handleOnline)
     window.addEventListener('offline', handleOffline)
 
+    // DEV ONLY: Désactiver les Service Workers obsolètes (workbox) qui interceptent et bloquent /api/ en mode dev
+    if (process.env.NODE_ENV === 'development' && typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then((registrations) => {
+        for (const registration of registrations) {
+          registration.unregister();
+        }
+      });
+    }
+
     // Vérifier la file d'attente au chargement
     checkSyncQueue()
 
@@ -143,6 +156,8 @@ export default function DashboardLayoutClient({
   // Vérifier la file d'attente toutes les 30 secondes
   useEffect(() => {
     const interval = setInterval(() => {
+      if (document.hidden) return; // Ne rien faire en arrière-plan
+
       checkSyncQueue()
       if (isOnline) {
         syncPendingOperations()
@@ -208,6 +223,24 @@ export default function DashboardLayoutClient({
         })
     }
   }, [user.entiteId])
+  // Protection des routes clientes (Route Guard global)
+  useEffect(() => {
+    if (!pathname || pathname === '/dashboard') return
+
+    const targetRoute = navigation.find(item =>
+      item.href !== '/dashboard' && pathname.startsWith(item.href)
+    )
+
+    if (targetRoute) {
+      const authorized = !targetRoute.permission || (user.permissions && user.permissions.includes(targetRoute.permission))
+      const roleAuthorized = !targetRoute.roles || targetRoute.roles.includes(user.role)
+
+      if (!authorized || !roleAuthorized) {
+        showError("Vous n'avez pas l'autorisation d'accéder à cette page.")
+        router.push('/dashboard?error=permission_denied')
+      }
+    }
+  }, [pathname, user.permissions, user.role, router, showError])
 
   async function loadEntites() {
     try {
@@ -351,7 +384,7 @@ export default function DashboardLayoutClient({
         <div className="flex h-full flex-col">
           <div className="flex h-20 items-center justify-between border-b px-4">
             <Link href="/dashboard" className="flex items-center gap-3 min-w-0">
-              <Image src="/logo.png" alt="GestiCom" width={140} height={36} className="h-9 w-auto object-contain" priority />
+              <Image src="/logo.png" alt="GestiCom" width={140} height={36} className="h-9 w-auto object-contain" style={{ width: 'auto' }} priority />
             </Link>
             <button className="lg:hidden" onClick={() => setSidebarOpen(false)}>
               <X className="h-6 w-6 text-gray-600" />
@@ -370,21 +403,18 @@ export default function DashboardLayoutClient({
                 const isActive = pathname === item.href
                 const Icon = item.icon
                 return (
-                  <button
+                  <Link
                     key={item.name}
-                    type="button"
+                    href={item.href}
                     className={`w-full flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium transition-all text-left ${isActive
                       ? 'bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-md'
                       : 'text-gray-700 hover:bg-gray-100'
                       }`}
-                    onClick={() => {
-                      setSidebarOpen(false)
-                      if (!isActive) router.push(item.href)
-                    }}
+                    onClick={() => setSidebarOpen(false)}
                   >
                     <Icon className="h-5 w-5 shrink-0" />
                     {item.name}
-                  </button>
+                  </Link>
                 )
               })}
           </nav>
@@ -420,7 +450,7 @@ export default function DashboardLayoutClient({
                 <Menu className="h-6 w-6 text-gray-600" />
               </button>
               <Link href="/dashboard" className="hidden sm:block">
-                <Image src="/logo.png" alt="GestiCom" width={120} height={30} className="h-8 w-auto object-contain" />
+                <Image src="/logo.png" alt="GestiCom" width={120} height={30} className="h-8 w-auto object-contain" style={{ width: 'auto' }} />
               </Link>
               <form
                 action="/dashboard/recherche"

@@ -10,6 +10,7 @@ import { formatApiError } from '@/lib/validation-helpers'
 import { MESSAGES } from '@/lib/messages'
 import Pagination from '@/components/ui/Pagination'
 import { addToSyncQueue, isOnline } from '@/lib/offline-sync'
+import { formatDate } from '@/lib/format-date'
 
 type Magasin = { id: number; code: string; nom: string }
 type Client = { id: number; nom: string; type: string }
@@ -995,7 +996,7 @@ export default function VentesPage() {
                     <tr key={v.id} className={v.statut === 'ANNULEE' ? 'bg-gray-100' : 'hover:bg-gray-50'}>
                       <td className="px-4 py-3 font-mono text-sm text-gray-900">{v.numero}</td>
                       <td className="px-4 py-3 text-sm text-gray-600">
-                        {new Date(v.date).toLocaleDateString('fr-FR')}
+                        {formatDate(v.date)}
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-600">{v.magasin.code}</td>
                       <td className="px-4 py-3 text-right font-medium text-gray-900">

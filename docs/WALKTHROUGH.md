@@ -9,6 +9,14 @@
 > 5. **Nom IA** : préciser le nom de l'IA qui a effectué la tâche (Gemini, Claude, etc...)
 ---
 
+## [04 Mars 2026] - Sécurisation Globale des Pages et APIs
+**Intervenant** : IA Antigravity
+- **Sécurisation côté Client (Pages)** : Mise en place d'un "Route Guard" global directement dans le `DashboardLayoutClient.tsx`. Désormais, toute tentative d'accès à une page non autorisée par le statut ou les rôles d'un utilisateur (même en modifiant l'URL manuellement) est instantanément redirigée vers le dashboard avec un message d'erreur. Suppression des anciens contrôles redondants dans `caisse/page.tsx`.
+- **Sécurisation côté Serveur (APIs)** : Ajout de la vérification de permissions strictes via la fonction `requirePermission` sur la suppression d'une opération de caisse (`api/caisse/[id]/route.ts`), qui était auparavant réservée uniquement et en dur aux `SUPER_ADMIN`.
+- **Stabilité** : Vérification globale du code avec TypeScript / Next.js confirmant une compilation complète (build) à 100% de succès sans erreur.
+
+---
+
 ## [02 Mars 2026] - Optimisation, Git et UI
 **Intervenant** : IA Antigravity
 - **Git** : Demande adressée pour renommer la branche locale de `master` vers `main` et pousser le code sur le dépôt distant (GitHub).

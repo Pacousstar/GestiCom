@@ -11,6 +11,7 @@ import {
   Loader2,
   ArrowRight,
 } from 'lucide-react'
+import { formatDate } from '@/lib/format-date'
 
 type Resultats = {
   produits: Array<{ id: number; code: string; designation: string; categorie: string; prixVente: number | null }>
@@ -104,51 +105,46 @@ export default function RecherchePage() {
         <span className="text-sm font-medium text-gray-700">Filtrer par type :</span>
         <button
           onClick={() => setFilters({ type: 'all' })}
-          className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
-            filters.type === 'all'
+          className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${filters.type === 'all'
               ? 'bg-orange-500 text-white'
               : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-          }`}
+            }`}
         >
           Tous
         </button>
         <button
           onClick={() => setFilters({ type: 'produits' })}
-          className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
-            filters.type === 'produits'
+          className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${filters.type === 'produits'
               ? 'bg-orange-500 text-white'
               : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-          }`}
+            }`}
         >
           Produits
         </button>
         <button
           onClick={() => setFilters({ type: 'clients' })}
-          className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
-            filters.type === 'clients'
+          className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${filters.type === 'clients'
               ? 'bg-orange-500 text-white'
               : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-          }`}
+            }`}
         >
           Clients
         </button>
         <button
           onClick={() => setFilters({ type: 'fournisseurs' })}
-          className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
-            filters.type === 'fournisseurs'
+          className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${filters.type === 'fournisseurs'
               ? 'bg-orange-500 text-white'
               : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-          }`}
+            }`}
         >
           Fournisseurs
         </button>
         <button
           onClick={() => setFilters({ type: 'ventes' })}
-          className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
-            filters.type === 'ventes'
+          className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${filters.type === 'ventes'
               ? 'bg-orange-500 text-white'
               : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-          }`}
+            }`}
         >
           Ventes
         </button>
@@ -281,7 +277,7 @@ export default function RecherchePage() {
                     >
                       <span className="font-mono text-gray-900">{v.numero}</span>
                       <span className="text-sm text-gray-500">
-                        {new Date(v.date).toLocaleDateString('fr-FR')} · {v.magasin.code}
+                        {formatDate(v.date)} · {v.magasin.code}
                       </span>
                       <span className="font-medium text-gray-900">
                         {Number(v.montantTotal).toLocaleString('fr-FR')} F
