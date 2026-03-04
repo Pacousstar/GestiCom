@@ -456,11 +456,16 @@ export default function VentesPage() {
    */
   const handleBarcodeScan = (code: string) => {
     setScannerOpen(false)
+    const codeNorm = code.trim().toLowerCase()
+    // Recherche 1 : par codeBarres (EAN-13, QR du produit physique)
+    // Recherche 2 : par code interne GestiCom (fallback)
     const produit = produits.find(
-      (p) => p.code.trim().toLowerCase() === code.trim().toLowerCase()
+      (p) =>
+        (p as any).codeBarres?.trim().toLowerCase() === codeNorm ||
+        p.code.trim().toLowerCase() === codeNorm
     )
     if (!produit) {
-      showError(`Produit introuvable pour le code : "${code}". Vérifiez que le code-barres correspond au champ Code du produit.`)
+      showError(`Produit introuvable pour le code scanné : "${code}". Renseignez le champ "Code-barres" du produit dans le catalogue.`)
       return
     }
     const prixDefaut = (produit.prixVente && produit.prixVente > 0) ? produit.prixVente : (produit.prixAchat ?? 0)

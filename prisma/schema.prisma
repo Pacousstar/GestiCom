@@ -85,8 +85,10 @@ model Magasin {
 model Produit {
   id          Int      @id @default(autoincrement())
   code        String   @unique
+  codeBarres  String?  // Code-barres EAN-13, QR, etc. (pour le scanner) — différent du code interne
   designation String
   categorie   String
+  unite       String   @default("unite") // Unité de mesure : "unite", "kg", "g", "m", "m2", "litre", "boite", "heure", "service"
   prixAchat   Float?
   prixVente   Float?
   seuilMin    Int      @default(5)
@@ -103,6 +105,7 @@ model Produit {
   @@index([designation])
   @@index([categorie])
   @@index([actif])
+  @@index([codeBarres]) // Index pour la recherche rapide par code-barres
 }
 
 // STOCKS PAR MAGASIN
@@ -235,10 +238,14 @@ model Caisse {
 model Parametre {
   id            Int      @id @default(autoincrement())
   nomEntreprise String   @default("")
+  slogan        String?  // Slogan ou description courte (ex: "Votre pharmacie de confiance")
   contact       String   @default("")
+  email         String?  // Email professionnel
+  siteWeb       String?  // Site web
   localisation  String   @default("")
   devise        String   @default("FCFA")
   tvaParDefaut  Float    @default(0)
+  typeCommerce  String   @default("GENERAL") // "GENERAL" | "PHARMACIE" | "RESTAURATION" | "BTP" | "SERVICES" | "IMPORT_EXPORT" | etc.
   logo          String?  // Base64 ou URL du logo
   updatedAt     DateTime @updatedAt
 }
@@ -277,10 +284,11 @@ model VenteLigne {
   vente        Vente   @relation(fields: [venteId], references: [id], onDelete: Cascade)
   produitId    Int
   produit      Produit @relation(fields: [produitId], references: [id])
-  designation  String // Copie pour historique
+  designation  String  // Copie pour historique
   quantite     Int
   prixUnitaire Float
-  montant      Float
+  tva          Float   @default(0) // Taux TVA en % (0, 5.5, 10, 19.25...) — 0 = exonoré
+  montant      Float   // Montant HT
 }
 
 // ACHATS
@@ -318,7 +326,8 @@ model AchatLigne {
   designation  String
   quantite     Int
   prixUnitaire Float
-  montant      Float
+  tva          Float   @default(0) // Taux TVA en %
+  montant      Float   // Montant HT
 }
 
 // CHARGES
