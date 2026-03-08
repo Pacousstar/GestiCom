@@ -245,6 +245,7 @@ model Parametre {
   email         String?  // Email professionnel
   siteWeb       String?  // Site web
   localisation  String   @default("")
+  numNCC        String?  // Numéro de Compte Contribuable
   devise        String   @default("FCFA")
   tvaParDefaut  Float    @default(0)
   typeCommerce  String   @default("GENERAL") // "GENERAL" | "PHARMACIE" | "RESTAURATION" | "BTP" | "SERVICES" | "IMPORT_EXPORT" | etc.

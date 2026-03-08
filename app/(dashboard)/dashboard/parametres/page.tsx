@@ -20,6 +20,8 @@ type Parametre = {
   tvaParDefaut: number
   typeCommerce: string
   logo: string | null
+  piedDePage: string | null
+  numNCC: string | null
 }
 
 export default function ParametresPage() {
@@ -28,7 +30,7 @@ export default function ParametresPage() {
   const [accessDenied, setAccessDenied] = useState(false)
   const [saving, setSaving] = useState(false)
   const [err, setErr] = useState('')
-  const [form, setForm] = useState({ nomEntreprise: '', slogan: '', contact: '', email: '', siteWeb: '', localisation: '', devise: 'FCFA', tvaParDefaut: '0', typeCommerce: 'GENERAL', logo: '', piedDePage: '', smtpHost: '', smtpPort: '', smtpUser: '', smtpPass: '', backupAuto: false, backupFrequence: 'QUOTIDIEN', backupDestination: 'LOCAL', backupEmailDest: '' })
+  const [form, setForm] = useState({ nomEntreprise: '', slogan: '', contact: '', email: '', siteWeb: '', localisation: '', numNCC: '', devise: 'FCFA', tvaParDefaut: '0', typeCommerce: 'GENERAL', logo: '', piedDePage: '', smtpHost: '', smtpPort: '', smtpUser: '', smtpPass: '', backupAuto: false, backupFrequence: 'QUOTIDIEN', backupDestination: 'LOCAL', backupEmailDest: '' })
   const [uploadingLogo, setUploadingLogo] = useState(false)
 
   const [magasins, setMagasins] = useState<Magasin[]>([])
@@ -81,6 +83,7 @@ export default function ParametresPage() {
           email: p.email ?? '',
           siteWeb: p.siteWeb ?? '',
           localisation: p.localisation ?? '',
+          numNCC: p.numNCC ?? '',
           devise: p.devise ?? 'FCFA',
           tvaParDefaut: String(p.tvaParDefaut ?? 0),
           typeCommerce: p.typeCommerce ?? 'GENERAL',
@@ -212,6 +215,7 @@ export default function ParametresPage() {
           email: form.email.trim() || null,
           siteWeb: form.siteWeb.trim() || null,
           localisation: form.localisation.trim(),
+          numNCC: form.numNCC.trim() || null,
           devise: form.devise.trim() || 'FCFA',
           tvaParDefaut: Math.max(0, Number(form.tvaParDefaut) || 0),
           typeCommerce: form.typeCommerce || 'GENERAL',
@@ -237,6 +241,7 @@ export default function ParametresPage() {
           email: d.email ?? '',
           siteWeb: d.siteWeb ?? '',
           localisation: d.localisation ?? '',
+          numNCC: d.numNCC ?? '',
           devise: d.devise ?? 'FCFA',
           tvaParDefaut: String(d.tvaParDefaut ?? 0),
           typeCommerce: d.typeCommerce ?? 'GENERAL',
@@ -524,14 +529,14 @@ export default function ParametresPage() {
             </div>
           </div>
 
-          {/* Ligne 3 : Contact + Email + Site Web */}
-          <div className="grid gap-4 sm:grid-cols-3">
+          {/* Ligne 3 : Contact + Email + Site Web + NCC */}
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <div>
               <label className="block text-sm font-medium text-gray-700">Téléphone / Contact</label>
               <input
                 value={form.contact}
                 onChange={(e) => setForm((f) => ({ ...f, contact: e.target.value }))}
-                placeholder="+237 6XX XXX XXX"
+                placeholder="+225 0X XX XX XX XX"
                 className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500/20"
               />
             </div>
@@ -542,6 +547,15 @@ export default function ParametresPage() {
                 value={form.email}
                 onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
                 placeholder="contact@moncommerce.com"
+                className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500/20"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Numéro NCC</label>
+              <input
+                value={form.numNCC}
+                onChange={(e) => setForm((f) => ({ ...f, numNCC: e.target.value }))}
+                placeholder="Numéro de Compte Contribuable"
                 className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500/20"
               />
             </div>

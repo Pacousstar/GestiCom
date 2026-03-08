@@ -72,41 +72,47 @@ export default function BilanPage() {
             {/* EN-TÊTE PROFESSIONNEL (VISIBLE À L'IMPRESSION) */}
             <div className="hidden print:block mb-10 border-b-2 border-gray-900 pb-6">
                 <div className="flex justify-between items-start">
-                    <div className="space-y-1">
-                        <h2 className="text-2xl font-black uppercase text-gray-900">{data?.entreprise?.nom}</h2>
-                        {data?.entreprise?.slogan && <p className="text-sm italic text-gray-600">{data?.entreprise?.slogan}</p>}
-                        <div className="flex flex-col gap-1 mt-3 text-xs font-bold text-gray-700">
-                            {data?.entreprise?.localisation && (
-                                <div className="flex items-center gap-2">
-                                    <MapPin className="h-3 w-3" />
-                                    <span>{data?.entreprise?.localisation}</span>
+                    <div className="space-y-4">
+                        <div className="bg-gray-900 text-white px-6 py-3 rounded-lg font-black text-2xl uppercase tracking-widest inline-block">
+                            BILAN COMPTABLE
+                        </div>
+                        <div className="space-y-1">
+                            <p className="text-sm font-bold text-gray-800 uppercase">
+                                Exercice clos au 31 décembre {annee}
+                            </p>
+                            <div className="flex items-center gap-4 text-[10px] font-bold text-gray-500 uppercase">
+                                <span>Référentiel : SYSCOHADA RÉVISÉ</span>
+                                <span className="h-1 w-1 rounded-full bg-gray-300"></span>
+                                <span>Edité le : {new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="text-right border-l-2 border-gray-100 pl-8 min-w-[300px]">
+                        {data?.entreprise?.logo && (
+                            <img src={data.entreprise.logo} alt="Logo" className="h-16 w-auto ml-auto mb-4 object-contain" />
+                        )}
+                        <h2 className="text-xl font-black uppercase text-gray-900 leading-tight">{data?.entreprise?.nom}</h2>
+                        <div className="mt-3 flex flex-col items-end gap-1 text-[11px] font-bold text-gray-700">
+                            {data?.entreprise?.numNCC && (
+                                <div className="flex items-center gap-2 bg-gray-50 px-2 py-0.5 rounded">
+                                    <span className="text-gray-400">NCC :</span>
+                                    <span className="text-gray-900 tracking-wider">{data?.entreprise?.numNCC}</span>
                                 </div>
                             )}
                             {data?.entreprise?.contact && (
                                 <div className="flex items-center gap-2">
-                                    <Phone className="h-3 w-3" />
+                                    <Phone className="h-3 w-3 text-gray-400" />
                                     <span>{data?.entreprise?.contact}</span>
                                 </div>
                             )}
+                            {data?.entreprise?.localisation && (
+                                <div className="flex items-center gap-2">
+                                    <MapPin className="h-3 w-3 text-gray-400" />
+                                    <span>{data?.entreprise?.localisation}</span>
+                                </div>
+                            )}
                         </div>
-                    </div>
-                    <div className="text-right space-y-2">
-                        <div className="bg-gray-900 text-white px-4 py-2 rounded-lg font-black text-xl uppercase tracking-widest">
-                            BILAN
-                        </div>
-                        <div className="text-sm font-bold text-gray-800">
-                            EXERCICE CLOS LE 31/12/{annee}
-                        </div>
-                    </div>
-                </div>
-                <div className="mt-8 flex justify-between items-end">
-                    <div>
-                        <p className="text-[10px] uppercase font-bold text-gray-400">Référentiel comptable</p>
-                        <p className="text-xs font-black text-gray-900">SYSCOHADA RÉVISÉ</p>
-                    </div>
-                    <div className="text-right">
-                        <p className="text-[10px] uppercase font-bold text-gray-400">Date d'édition</p>
-                        <p className="text-xs font-black text-gray-900">{new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
                     </div>
                 </div>
             </div>

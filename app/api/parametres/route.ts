@@ -69,6 +69,7 @@ export async function PATCH(request: NextRequest) {
           email: data.email ?? null,
           siteWeb: data.siteWeb ?? null,
           localisation: data.localisation ?? '',
+          numNCC: data.numNCC ?? null,
           devise: data.devise ?? 'FCFA',
           tvaParDefaut: data.tvaParDefaut ?? 0,
           typeCommerce: data.typeCommerce ?? 'GENERAL',
@@ -97,6 +98,7 @@ export async function PATCH(request: NextRequest) {
       if (data.typeCommerce !== undefined) update.typeCommerce = data.typeCommerce
       if (data.logo !== undefined) update.logo = data.logo || null
       if (data.piedDePage !== undefined) update.piedDePage = data.piedDePage || null
+      if (data.numNCC !== undefined) update.numNCC = data.numNCC || null
 
       if (data.smtpHost !== undefined) update.smtpHost = data.smtpHost || null
       if (data.smtpPort !== undefined) update.smtpPort = data.smtpPort || null

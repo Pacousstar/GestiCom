@@ -112,7 +112,9 @@ export async function GET(request: Request) {
                 contact: params?.contact,
                 localisation: params?.localisation || entite?.localisation,
                 piedDePage: params?.piedDePage,
-                codeEntite: entite?.code
+                codeEntite: entite?.code,
+                numNCC: params?.numNCC,
+                logo: params?.logo
             }
         })
     } catch (e) {
