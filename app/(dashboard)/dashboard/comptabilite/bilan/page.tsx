@@ -50,6 +50,8 @@ type BilanData = {
         localisation?: string
         piedDePage?: string
         codeEntite?: string
+        logo?: string
+        numNCC?: string
     }
 }
 
