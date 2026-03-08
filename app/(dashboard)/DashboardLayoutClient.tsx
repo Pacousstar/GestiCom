@@ -378,7 +378,7 @@ export default function DashboardLayoutClient({
       )}
 
       <aside
-        className={`fixed top-0 left-0 z-[100] h-full w-64 transform bg-white/95 backdrop-blur-xl shadow-xl transition-transform duration-300 ease-in-out lg:translate-x-0 pointer-events-auto ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+        className={`fixed top-0 left-0 z-[100] h-full w-64 transform bg-white/95 backdrop-blur-xl shadow-xl transition-transform duration-300 ease-in-out lg:translate-x-0 pointer-events-auto no-print ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'
           }`}
       >
         <div className="flex h-full flex-col">
@@ -442,8 +442,8 @@ export default function DashboardLayoutClient({
         </div>
       </aside>
 
-      <div className="relative z-10 lg:pl-64">
-        <header className="sticky top-0 z-30 border-b bg-white/90 backdrop-blur-xl shadow-sm">
+      <div className="relative z-10 lg:pl-64 print:pl-0">
+        <header className="sticky top-0 z-30 border-b bg-white/90 backdrop-blur-xl shadow-sm no-print">
           <div className="flex h-20 items-center justify-between px-4 sm:px-6 lg:px-8">
             <div className="flex items-center gap-4">
               <button className="lg:hidden" onClick={() => setSidebarOpen(true)}>
@@ -704,7 +704,7 @@ export default function DashboardLayoutClient({
         </main>
 
         {/* Footer GestiCom App */}
-        <footer className="h-10 border-t border-gray-200 bg-white flex items-center justify-center relative z-10 w-full shrink-0">
+        <footer className="h-10 border-t border-gray-200 bg-white flex items-center justify-center relative z-10 w-full shrink-0 no-print">
           <p className="text-[11px] font-bold">
             <span className="text-orange-500">Tous droits reservés</span>
             <span className="text-gray-400 mx-1">-</span>

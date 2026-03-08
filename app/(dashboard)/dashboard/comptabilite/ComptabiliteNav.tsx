@@ -2,7 +2,7 @@ import Link from 'next/link'
 
 export default function ComptabiliteNav() {
   return (
-    <div className="flex flex-wrap gap-2 mb-6">
+    <div className="flex flex-wrap gap-2 mb-6 no-print">
       <Link
         href="/dashboard/comptabilite"
         className="flex items-center gap-2 rounded-lg bg-orange-600 px-4 py-2 text-sm font-medium text-white hover:bg-orange-700"

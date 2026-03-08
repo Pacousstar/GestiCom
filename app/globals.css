@@ -113,3 +113,10 @@ tbody td {
 .animate-float {
   animation: float 8s ease-in-out infinite;
 }
+
+/* Utilitaires d'impression */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+}
