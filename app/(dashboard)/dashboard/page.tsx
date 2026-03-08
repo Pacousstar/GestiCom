@@ -15,6 +15,8 @@ import {
   ClipboardList,
   Loader2,
   RefreshCw,
+  TrendingUp,
+  Banknote,
 } from 'lucide-react'
 import KpiCard from '@/components/dashboard/KpiCard'
 import RecentActivity from '@/components/dashboard/RecentActivity'
@@ -26,14 +28,15 @@ type DashboardData = {
   transactionsJour: number
   transactionsHier: number
   produitsEnStock: number
-  totalProduitsCatalogue?: number
+  totalProduitsCatalogue: number
   mouvementsJour: number
   clientsActifs: number
   caJour: number
-  caHier: number
-  soldeCaisse: number
-  soldeBanque: number
-  achatsJour: number
+  panierMoyen: number
+  valeurStockTotal: number
+  tauxRupture: number
+  topProduits: Array<{ name: string; ca: number; qte: number }>
+  repartition: Array<{ name: string; percent: number }>
   lowStock: Array<{ name: string; stock: number; min: number; category: string }>
   recentSales: Array<{ id: string; client: string; montant: number; time: string }>
   _timeout?: boolean
@@ -109,7 +112,7 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-10">
       {err && (
         <div className="rounded-lg bg-red-50 border border-red-200 text-red-700 px-4 py-3">
           {err}
@@ -119,65 +122,97 @@ export default function DashboardPage() {
       {/* En-tête avec bouton actualiser */}
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-white">Dashboard</h1>
-          <p className="mt-1 text-white/80 text-sm">
-            Vue d&apos;ensemble opérationnelle — stocks, alertes, activité
+          <h1 className="text-3xl font-bold text-white tracking-tight">Dashboard ERP</h1>
+          <p className="mt-1 text-white/80 text-sm font-medium">
+            Vue décisionnelle — Performances, stocks et activité en temps réel
           </p>
         </div>
         <button
           onClick={() => mutate()}
           disabled={refreshing}
-          className="flex items-center gap-2 rounded-lg bg-orange-100 px-3 py-2 text-sm font-medium text-orange-700 hover:bg-orange-200 transition-colors disabled:opacity-60"
+          className="flex items-center gap-2 rounded-xl bg-white/10 backdrop-blur-md border border-white/20 px-4 py-2.5 text-sm font-bold text-white hover:bg-white/20 transition-all disabled:opacity-60"
         >
           <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
           Actualiser
         </button>
       </div>
 
-      {/* KPIs financiers (ligne 1) - Supprimés à la demande */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {/* Les cartes "CA du Jour", "Solde Caisse", "Solde Banque" ont été retirées */}
-      </div>
-
-      {/* KPIs opérationnels (ligne 2) */}
-      <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
+      {/* KPIs Opérationnels & Financiers */}
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
         {[
           {
-            widgetId: 'transactions',
-            title: 'Transactions du jour',
+            title: "Chiffre d'Affaire (Jour)",
+            value: data?.caJour ?? 0,
+            icon: ArrowUp,
+            isFcfa: true,
+            color: 'from-orange-500 to-orange-600',
+          },
+          {
+            title: 'Panier Moyen',
+            value: data?.panierMoyen ?? 0,
+            icon: ShoppingCart,
+            isFcfa: true,
+            color: 'from-blue-500 to-blue-600',
+          },
+          {
+            title: 'Valeur Totale Stock',
+            value: data?.valeurStockTotal ?? 0,
+            icon: Banknote,
+            isFcfa: true,
+            color: 'from-emerald-500 to-teal-600',
+          },
+          {
+            title: 'Taux de Rupture',
+            value: data?.tauxRupture ?? 0,
+            icon: AlertTriangle,
+            isPercent: true,
+            color: 'from-red-500 to-rose-600',
+          },
+        ].map((s, i) => (
+          <KpiCard
+            key={i}
+            title={s.title}
+            value={s.isFcfa ? `${s.value.toLocaleString('fr-FR')} F` : s.isPercent ? `${s.value}%` : s.value}
+            icon={s.icon}
+            color={s.color as any}
+            loading={refreshing}
+          />
+        ))}
+      </div>
+
+      <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-5">
+        {[
+          {
+            title: 'Transactions Jour',
             value: txJour,
             icon: ClipboardList,
-            color: 'from-yellow-400 to-yellow-500' as const,
+            color: 'from-yellow-400 to-yellow-500',
             trend: txTrend.trend,
             trendValue: txTrend.value,
           },
           {
-            widgetId: 'produits',
-            title: 'Produits (catalogue)',
-            value: data?.totalProduitsCatalogue ?? data?.produitsEnStock ?? 0,
+            title: 'Produits (Catalogue)',
+            value: data?.totalProduitsCatalogue ?? 0,
             icon: Package,
-            color: 'from-indigo-500 to-purple-600' as const,
+            color: 'from-indigo-500 to-purple-600',
           },
           {
-            widgetId: 'produits',
-            title: 'Produits en stock',
+            title: 'Produits en Stock',
             value: data?.produitsEnStock ?? 0,
             icon: ShoppingBag,
-            color: 'from-emerald-500 to-teal-600' as const,
+            color: 'from-emerald-500 to-teal-600',
           },
           {
-            widgetId: 'mouvements',
-            title: 'Mouvements du jour',
+            title: 'Mouvements Jour',
             value: data?.mouvementsJour ?? 0,
-            icon: LayoutGrid,
-            color: 'from-pink-500 to-rose-600' as const,
+            icon: RefreshCw,
+            color: 'from-pink-500 to-rose-600',
           },
           {
-            widgetId: 'clients',
-            title: 'Clients actifs',
+            title: 'Clients Actifs',
             value: data?.clientsActifs ?? 0,
             icon: Users,
-            color: 'from-cyan-500 to-emerald-600' as const,
+            color: 'from-cyan-500 to-emerald-600',
           },
         ].map((s, i) => (
           <KpiCard
@@ -185,7 +220,7 @@ export default function DashboardPage() {
             title={s.title}
             value={s.value}
             icon={s.icon}
-            color={s.color}
+            color={s.color as any}
             trend={s.trend as any}
             trendValue={s.trendValue}
             loading={refreshing}
@@ -193,60 +228,150 @@ export default function DashboardPage() {
         ))}
       </div>
 
-      {/* Activité récente + Alertes stock + Prédictions */}
+      {/* Actions Rapides */}
+      <div className="flex flex-wrap gap-3">
+        <Link
+          href="/dashboard/ventes"
+          className="flex items-center gap-2 rounded-xl bg-orange-600 px-5 py-3 text-sm font-bold text-white shadow-lg hover:bg-orange-700 transition-all hover:scale-105"
+        >
+          <ShoppingCart className="h-4 w-4" />
+          Nouvelle Vente
+        </Link>
+        <Link
+          href="/dashboard/produits"
+          className="flex items-center gap-2 rounded-xl bg-white px-5 py-3 text-sm font-bold text-gray-700 border border-orange-100 shadow-sm hover:shadow-md transition-all hover:scale-105"
+        >
+          <Package className="h-4 w-4 text-orange-500" />
+          Ajouter Produit
+        </Link>
+        <Link
+          href="/dashboard/depenses"
+          className="flex items-center gap-2 rounded-xl bg-white px-5 py-3 text-sm font-bold text-gray-700 border border-orange-100 shadow-sm hover:shadow-md transition-all hover:scale-105"
+        >
+          <ArrowDown className="h-4 w-4 text-red-500" />
+          Nouvelle Dépense
+        </Link>
+        <Link
+          href="/dashboard/rapports-ventes"
+          className="flex items-center gap-2 rounded-xl bg-white px-5 py-3 text-sm font-bold text-gray-700 border border-orange-100 shadow-sm hover:shadow-md transition-all hover:scale-105"
+        >
+          <LayoutGrid className="h-4 w-4 text-blue-500" />
+          Rapports
+        </Link>
+      </div>
+
+      {/* Widgets ERP de Performance */}
       <div className="grid gap-6 lg:grid-cols-3">
-        {/* Activité récente */}
-        <div className="flex flex-col rounded-xl bg-white p-6 shadow-lg border border-orange-100 h-full">
-          <div className="mb-4 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <ShoppingCart className="h-5 w-5 text-orange-500" />
-              <h2 className="text-xl font-bold text-gray-900">Activité récente</h2>
+        {/* Top 5 Produits (Performance) */}
+        <div className="flex flex-col rounded-2xl bg-white p-6 shadow-xl border border-orange-50 h-full">
+          <div className="mb-6 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-emerald-50">
+                <TrendingUp className="h-5 w-5 text-emerald-600" />
+              </div>
+              <h2 className="text-xl font-bold text-gray-900 tracking-tight">Top 5 Ventes</h2>
             </div>
-            <Link href="/dashboard/ventes" className="text-sm font-medium text-orange-600 hover:text-orange-700">
-              Voir tout
-            </Link>
           </div>
-          <div className="flex-1 overflow-auto">
-            <RecentActivity items={activityItems} loading={refreshing} />
+          <div className="flex-1 space-y-5">
+            {(data?.topProduits || []).length === 0 ? (
+              <p className="text-sm text-gray-400 text-center py-10 italic">Aucune donnée de vente disponible.</p>
+            ) : (
+              data?.topProduits.map((p, i) => {
+                const maxCa = data.topProduits[0]?.ca || 1
+                const pct = Math.round((p.ca / maxCa) * 100)
+                return (
+                  <div key={i} className="space-y-1.5">
+                    <div className="flex justify-between text-sm items-center">
+                      <span className="font-bold text-gray-800 truncate flex-1 pr-3">{p.name}</span>
+                      <span className="font-black text-emerald-600 tabular-nums">{p.ca.toLocaleString('fr-FR')} F</span>
+                    </div>
+                    <div className="h-2 w-full rounded-full bg-gray-50 overflow-hidden">
+                      <div
+                        className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-emerald-600 transition-all duration-1000 shadow-[0_0_8px_rgba(16,185,129,0.3)]"
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
+                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest pl-0.5">
+                      {p.qte} UNITÉS VENDUES
+                    </p>
+                  </div>
+                )
+              })
+            )}
+          </div>
+        </div>
+
+        {/* Répartition Valeur Stock */}
+        <div className="flex flex-col rounded-2xl bg-white p-6 shadow-xl border border-orange-50 h-full">
+          <div className="mb-6 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-blue-50">
+                <LayoutGrid className="h-5 w-5 text-blue-600" />
+              </div>
+              <h2 className="text-xl font-bold text-gray-900 tracking-tight">Valeur Stock</h2>
+            </div>
+          </div>
+          <div className="flex-1 space-y-5">
+            {(data?.repartition || []).length === 0 ? (
+              <p className="text-sm text-gray-400 text-center py-10 italic">Stock non répertorié.</p>
+            ) : (
+              data?.repartition.slice(0, 6).map((c, i) => (
+                <div key={i} className="space-y-1.5">
+                  <div className="flex justify-between text-sm items-center">
+                    <span className="font-bold text-gray-700">{c.name}</span>
+                    <span className="font-extrabold text-blue-600 tabular-nums">{c.percent}%</span>
+                  </div>
+                  <div className="h-2 w-full rounded-full bg-gray-50 overflow-hidden">
+                    <div
+                      className="h-full rounded-full bg-gradient-to-r from-blue-400 to-blue-600 transition-all duration-1000"
+                      style={{ width: `${c.percent}%` }}
+                    />
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+          <div className="mt-8 pt-5 border-t border-gray-100 flex items-center justify-between bg-gray-50/50 -mx-6 -mb-6 p-6 rounded-b-2xl">
+            <span className="text-sm text-gray-500 font-bold uppercase tracking-wider">Valeur Totale Est.</span>
+            <span className="text-2xl font-black text-gray-900 tabular-nums">{(data?.valeurStockTotal || 0).toLocaleString('fr-FR')} F</span>
           </div>
         </div>
 
         {/* Alertes stock faible */}
-        <div className="flex flex-col rounded-xl bg-white p-6 shadow-lg border border-orange-100 h-full">
-          <div className="mb-4 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-orange-500" />
-              <h2 className="text-xl font-bold text-gray-900">Stock faible</h2>
+        <div className="flex flex-col rounded-2xl bg-white p-6 shadow-xl border border-orange-50 h-full">
+          <div className="mb-6 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-red-50">
+                <AlertTriangle className="h-5 w-5 text-red-600" />
+              </div>
+              <h2 className="text-xl font-bold text-gray-900 tracking-tight">Alertes Stock</h2>
             </div>
             {lowStock.length > 0 && (
-              <span className="rounded-full bg-red-100 px-3 py-1 text-xs font-semibold text-red-600">
-                {lowStock.length} produit(s)
+              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-red-600 text-[10px] font-black text-white shadow-lg animate-pulse">
+                {lowStock.length}
               </span>
             )}
           </div>
-          <div className="space-y-3">
+          <div className="flex-1 space-y-4">
             {lowStock.length === 0 ? (
-              <p className="text-sm text-gray-500 text-center py-6">✅ Aucune alerte de stock.</p>
+              <div className="flex flex-col items-center justify-center py-10 space-y-2">
+                <p className="text-2xl">✅</p>
+                <p className="text-sm text-gray-400 font-medium italic text-center text-balance">Tous les stocks sont au-dessus du seuil critique.</p>
+              </div>
             ) : (
-              lowStock.map((p, i) => {
+              lowStock.slice(0, 5).map((p, i) => {
                 const pct = Math.min(100, Math.round((p.stock / p.min) * 100))
                 return (
-                  <div key={i} className="space-y-1">
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-900 truncate">{p.name}</p>
-                        <p className="text-xs text-gray-500">{p.category}</p>
+                  <div key={i} className="space-y-1.5 p-3 rounded-xl bg-gray-50/30 border border-gray-100/50 hover:bg-gray-50 transition-colors">
+                    <p className="text-sm font-bold text-gray-900 truncate">{p.name}</p>
+                    <div className="flex items-center gap-4">
+                      <div className="h-2 flex-1 rounded-full bg-gray-200 overflow-hidden">
+                        <div
+                          className={`h-full rounded-full transition-all duration-700 ${pct < 25 ? 'bg-red-600' : 'bg-orange-500'}`}
+                          style={{ width: `${pct}%` }}
+                        />
                       </div>
-                      <div className="text-right ml-3">
-                        <p className="text-sm font-bold text-red-600">{p.stock} / {p.min}</p>
-                        <p className="text-xs text-gray-400">unités</p>
-                      </div>
-                    </div>
-                    <div className="h-1.5 w-full rounded-full bg-gray-100 overflow-hidden">
-                      <div
-                        className="h-full rounded-full bg-gradient-to-r from-red-500 to-orange-400 transition-all duration-500"
-                        style={{ width: `${pct}%` }}
-                      />
+                      <span className="text-xs font-black text-red-600 bg-red-50 px-2 py-0.5 rounded tabular-nums whitespace-nowrap">{p.stock} Unités</span>
                     </div>
                   </div>
                 )
@@ -255,14 +380,35 @@ export default function DashboardPage() {
           </div>
           <Link
             href="/dashboard/stock"
-            className="mt-4 block w-full rounded-lg bg-orange-500 py-2.5 text-center text-sm font-medium text-white hover:bg-orange-600 transition-colors"
+            className="mt-6 block w-full rounded-xl bg-gray-900 py-3.5 text-center text-sm font-black text-white hover:bg-orange-600 transition-all shadow-lg hover:shadow-orange-200"
           >
-            Voir le stock
+            VOIR TOUT LE STOCK
           </Link>
+        </div>
+      </div>
+
+      {/* Activité récente + Suggestions IA */}
+      <div className="grid gap-6 lg:grid-cols-2">
+        {/* Activité récente */}
+        <div className="flex flex-col rounded-2xl bg-white p-6 shadow-xl border border-orange-50">
+          <div className="mb-6 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-orange-50">
+                <ShoppingCart className="h-5 w-5 text-orange-600" />
+              </div>
+              <h2 className="text-xl font-bold text-gray-900 tracking-tight">Flux de ventes</h2>
+            </div>
+            <Link href="/dashboard/ventes" className="text-sm font-black text-orange-600 hover:underline">
+              Voir tout
+            </Link>
+          </div>
+          <RecentActivity items={activityItems} loading={refreshing} />
         </div>
 
         {/* Suggestions / IA */}
-        <SuggestionsAchat />
+        <div className="flex flex-col h-full">
+          <SuggestionsAchat />
+        </div>
       </div>
     </div>
   )

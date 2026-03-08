@@ -98,39 +98,60 @@ export async function GET() {
         where: { actif: true },
         _count: { id: true },
       }).catch(catchEmpty('produit.groupBy')),
-      // 8 - CA du jour (supprimé de l'UI)
-      Promise.resolve(0),
-      // 9 - CA hier (supprimé de l'UI)
-      Promise.resolve(0),
-      // 10 - Solde caisse (supprimé de l'UI)
-      Promise.resolve(0),
-      // 11 - Solde banque (supprimé de l'UI)
-      Promise.resolve(0),
-      // 12 - Achats du jour
-      Promise.resolve(0),
+      // 8 - CA total (toutes périodes pour le calcul du panier moyen globale ou filtré)
+      prisma.vente.aggregate({
+        where: { statut: 'VALIDEE' },
+        _sum: { montantTotal: true },
+        _count: { id: true }
+      }).catch(() => ({ _sum: { montantTotal: 0 }, _count: { id: 0 } })),
+      // 9 - Top 5 Produits les plus vendus (CA)
+      prisma.venteLigne.groupBy({
+        by: ['produitId', 'designation'],
+        _sum: { montant: true, quantite: true },
+        orderBy: { _sum: { montant: 'desc' } },
+        take: 5
+      }).catch(catchEmpty('venteLigne.groupBy')),
+      // 10 - Valeur totale du stock au prix de vente
+      prisma.stock.findMany({
+        where: { quantite: { gt: 0 } },
+        select: {
+          quantite: true,
+          produit: { select: { prixVente: true } }
+        }
+      }).catch(catchEmpty('stock.findMany.valeur')),
+      // 11 - Statut Rupture (Nombre de produits à 0 stock)
+      prisma.produit.count({
+        where: {
+          actif: true,
+          stocks: { some: { quantite: { lte: 0 } } }
+        }
+      }).catch(catchZero('produit.count.rupture')),
+      // 12 - CA du jour (pour KPI direct)
+      prisma.vente.aggregate({
+        where: { date: { gte: debAuj, lte: finAuj }, statut: 'VALIDEE' },
+        _sum: { montantTotal: true }
+      }).then(r => toNum(r._sum.montantTotal)).catch(catchZero('vente.ca.auj')),
       // 13 - Transactions hier (pour comparaison)
       prisma.vente.count({ where: { date: { gte: debHier, lte: finHier }, statut: 'VALIDEE' } }).catch(catchZero('vente.count.hier')),
     ])
 
-    const timeoutFallback = [
+    const timeoutFallback: any[] = [
       0, 0, 0, 0, 0,
-      [] as Awaited<ReturnType<typeof prisma.stock.findMany>>,
-      [] as Array<{
-        id: number
-        numero: string
-        date: Date
-        montantTotal: number
-        clientLibre: string | null
-        client: { nom: string } | null
-      }>,
-      [] as { _count: { id: number }; categorie: string }[],
-      0, 0, 0, 0, 0, 0,
-    ] as const
+      [] as any[], // lowStock
+      [] as any[], // recentSales
+      [] as any[], // categories
+      { _sum: { montantTotal: 0 }, _count: { id: 0 } }, // caTotalAgg
+      [] as any[], // topProduitsRaw
+      [] as any[], // stocksValeurRaw
+      0, // nbRuptures
+      0, // caJour
+      0, // transactionsHier
+    ]
 
     const result = await Promise.race([
       queries,
       timeoutPromise(DASHBOARD_TIMEOUT_MS, timeoutFallback),
-    ])
+    ]) as any[]
 
     const [
       transactionsJour,
@@ -141,11 +162,11 @@ export async function GET() {
       lowStock,
       recentSales,
       categories,
+      caTotalAgg,
+      topProduitsRaw,
+      stocksValeurRaw,
+      nbRuptures,
       caJour,
-      caHier,
-      soldeCaisse,
-      soldeBanque,
-      achatsJour,
       transactionsHier,
     ] = result
 
@@ -154,10 +175,25 @@ export async function GET() {
       console.warn('[dashboard] Timeout après', DASHBOARD_TIMEOUT_MS, 'ms. Base verrouillée ou trop lente. Fermez le portable (Lancer.bat) si ouvert.')
     }
 
-    const totalRef = categories.reduce((s, c) => s + c._count.id, 0)
+    const totalRef = categories.reduce((s: number, c: any) => s + (c._count?.id ?? 0), 0)
     const repartition = totalRef > 0
-      ? categories.map((c) => ({ name: c.categorie || 'DIVERS', percent: Math.round((c._count.id / totalRef) * 100) })).sort((a, b) => b.percent - a.percent)
+      ? categories.map((c: any) => ({ name: c.categorie || 'DIVERS', percent: Math.round(((c._count?.id ?? 0) / totalRef) * 100) })).sort((a: any, b: any) => b.percent - a.percent)
       : []
+
+    // Calculs ERP supplémentaires
+    const caTotalGlobal = toNum(caTotalAgg._sum?.montantTotal)
+    const nbVentesGlobal = toNum(caTotalAgg._count?.id)
+    const panierMoyen = nbVentesGlobal > 0 ? Math.round(caTotalGlobal / nbVentesGlobal) : 0
+
+    const valeurStockTotal = stocksValeurRaw.reduce((sum: number, s: any) => sum + (s.quantite * (s.produit?.prixVente ?? 0)), 0)
+
+    const topProduits = topProduitsRaw.map((t: any) => ({
+      name: t.designation || 'Inconnu',
+      ca: toNum(t._sum?.montant),
+      qte: toNum(t._sum?.quantite)
+    }))
+
+    const tauxRupture = totalProduitsCatalogue > 0 ? Math.round((nbRuptures / totalProduitsCatalogue) * 100) : 0
 
     return NextResponse.json({
       transactionsJour,
@@ -167,10 +203,10 @@ export async function GET() {
       mouvementsJour,
       clientsActifs,
       caJour,
-      caHier,
-      soldeCaisse,
-      soldeBanque,
-      achatsJour,
+      panierMoyen,
+      valeurStockTotal,
+      tauxRupture,
+      topProduits,
       lowStock: Array.isArray(lowStock) ? lowStock.map((s: any) => ({
         name: s.produit?.designation || '',
         stock: s.quantite || 0,
