@@ -17,7 +17,11 @@ type Prediction = {
 const fetcher = (url: string) => fetch(url).then(r => r.json())
 
 export default function SuggestionsAchat() {
-    const { data: predictions, error, isLoading } = useSWR<Prediction[]>('/api/predictions/rupture', fetcher)
+    const { data: predictions, error, isLoading } = useSWR<Prediction[]>('/api/predictions/rupture', fetcher, {
+        revalidateOnFocus: false,
+        revalidateOnReconnect: false,
+        dedupingInterval: 10000,
+    })
 
     if (isLoading) {
         return (
@@ -35,7 +39,7 @@ export default function SuggestionsAchat() {
         )
     }
 
-    const p = predictions || []
+    const p = (predictions || []) as Prediction[]
 
     return (
         <div className="flex h-full flex-col rounded-xl bg-white p-6 shadow-lg border border-indigo-100">
@@ -57,7 +61,7 @@ export default function SuggestionsAchat() {
                 {p.length === 0 ? (
                     <p className="py-6 text-center text-sm text-gray-400">Aucune rupture anticipée (14j).</p>
                 ) : (
-                    p.slice(0, 5).map((item, i) => (
+                    p.slice(0, 5).map((item: Prediction, i: number) => (
                         <div key={i} className="flex items-center justify-between rounded-lg border border-indigo-50 bg-indigo-50/30 p-3">
                             <div className="min-w-0 flex-1 pr-4">
                                 <p className="truncate text-sm font-semibold text-gray-900" title={item.designation}>

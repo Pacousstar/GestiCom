@@ -49,6 +49,11 @@ function calcTrend(current: number, previous: number): { trend: 'up' | 'down' | 
 }
 
 export default function DashboardPage() {
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   // Fetcher personnalisé pour gérer le timeout et les erreurs spécifiques
   const fetcher = async (url: string) => {
@@ -103,10 +108,10 @@ export default function DashboardPage() {
     time: s.time,
   }))
 
-  if (loading) {
+  if (!mounted || loading) {
     return (
       <div className="flex min-h-[50vh] items-center justify-center">
-        <Loader2 className="h-10 w-10 animate-spin text-orange-500" />
+        <Loader2 className="h-10 w-10 animate-spin text-white/20" />
       </div>
     )
   }

@@ -26,13 +26,20 @@ export async function GET(req: NextRequest) {
             },
         })
 
-        // 2. Récupérer les produits suivis en stock avec leur niveau actuel
+        const produitIdsAvecVentes = ventesGroups.map(v => v.produitId)
+
+        // 2. Récupérer uniquement les produits qui ont eu des ventes OU qui sont en stock
+        // Cela réduit drastiquement la charge pour les gros catalogues
         const produits = await prisma.produit.findMany({
+            where: {
+                actif: true,
+                OR: [
+                    { id: { in: produitIdsAvecVentes } },
+                    { stocks: { some: { quantite: { gt: 0 } } } }
+                ]
+            },
             include: {
                 stocks: true,
-            },
-            where: {
-                actif: true
             }
         })
 
@@ -41,13 +48,13 @@ export async function GET(req: NextRequest) {
             const ventesModule = ventesGroups.find((v) => v.produitId === p.id)
             const totalVenduSur30j = ventesModule?._sum.quantite || 0
 
-            const velociteJour = totalVenduSur30j / 30 // Nombre d'articles vendus par jour en moyenne
+            const velociteJour = totalVenduSur30j / 30
 
             let joursRestants = -1
             if (velociteJour > 0) {
                 joursRestants = Math.floor(stockTotal / velociteJour)
             } else if (stockTotal === 0) {
-                joursRestants = 0 // Déjà en rupture
+                joursRestants = 0
             }
 
             return {
@@ -58,7 +65,7 @@ export async function GET(req: NextRequest) {
                 velociteJour,
                 joursRestants,
             }
-        }).filter(p => p.joursRestants !== -1 && p.joursRestants <= 14) // Alertes pour rupture dans <= 14 jours ou déjà en rupture
+        }).filter(p => p.joursRestants !== -1 && p.joursRestants <= 14)
             .sort((a, b) => a.joursRestants - b.joursRestants)
 
         return NextResponse.json(predictions)
