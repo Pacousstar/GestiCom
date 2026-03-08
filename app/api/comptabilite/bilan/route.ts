@@ -97,9 +97,23 @@ export async function GET(request: Request) {
             bilan.passif.total += Math.abs(resultat)
         }
 
+        // 4. Récupérer les infos de l'entreprise et de l'entité
+        const [params, entite] = await Promise.all([
+            prisma.parametre.findFirst(),
+            prisma.entite.findUnique({ where: { id: session.entiteId || 1 } })
+        ])
+
         return NextResponse.json({
             annee,
-            bilan
+            bilan,
+            entreprise: {
+                nom: params?.nomEntreprise || entite?.nom || 'GestiCom',
+                slogan: params?.slogan,
+                contact: params?.contact,
+                localisation: params?.localisation || entite?.localisation,
+                piedDePage: params?.piedDePage,
+                codeEntite: entite?.code
+            }
         })
     } catch (e) {
         console.error('Bilan API Error:', e)

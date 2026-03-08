@@ -10,7 +10,11 @@ import {
     RefreshCw,
     TrendingUp,
     TrendingDown,
-    Info
+    Info,
+    Calendar,
+    MapPin,
+    Building,
+    Phone
 } from 'lucide-react'
 import Link from 'next/link'
 import ComptabiliteNav from '../ComptabiliteNav'
@@ -39,6 +43,14 @@ type BilanData = {
             total: number
         }
     }
+    entreprise?: {
+        nom: string
+        slogan?: string
+        contact?: string
+        localisation?: string
+        piedDePage?: string
+        codeEntite?: string
+    }
 }
 
 function formatFcfa(n: number) {
@@ -57,6 +69,48 @@ export default function BilanPage() {
 
     return (
         <div className="space-y-6 pb-20">
+            {/* EN-TÊTE PROFESSIONNEL (VISIBLE À L'IMPRESSION) */}
+            <div className="hidden print:block mb-10 border-b-2 border-gray-900 pb-6">
+                <div className="flex justify-between items-start">
+                    <div className="space-y-1">
+                        <h2 className="text-2xl font-black uppercase text-gray-900">{data?.entreprise?.nom}</h2>
+                        {data?.entreprise?.slogan && <p className="text-sm italic text-gray-600">{data?.entreprise?.slogan}</p>}
+                        <div className="flex flex-col gap-1 mt-3 text-xs font-bold text-gray-700">
+                            {data?.entreprise?.localisation && (
+                                <div className="flex items-center gap-2">
+                                    <MapPin className="h-3 w-3" />
+                                    <span>{data?.entreprise?.localisation}</span>
+                                </div>
+                            )}
+                            {data?.entreprise?.contact && (
+                                <div className="flex items-center gap-2">
+                                    <Phone className="h-3 w-3" />
+                                    <span>{data?.entreprise?.contact}</span>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                    <div className="text-right space-y-2">
+                        <div className="bg-gray-900 text-white px-4 py-2 rounded-lg font-black text-xl uppercase tracking-widest">
+                            BILAN
+                        </div>
+                        <div className="text-sm font-bold text-gray-800">
+                            EXERCICE CLOS LE 31/12/{annee}
+                        </div>
+                    </div>
+                </div>
+                <div className="mt-8 flex justify-between items-end">
+                    <div>
+                        <p className="text-[10px] uppercase font-bold text-gray-400">Référentiel comptable</p>
+                        <p className="text-xs font-black text-gray-900">SYSCOHADA RÉVISÉ</p>
+                    </div>
+                    <div className="text-right">
+                        <p className="text-[10px] uppercase font-bold text-gray-400">Date d'édition</p>
+                        <p className="text-xs font-black text-gray-900">{new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
+                    </div>
+                </div>
+            </div>
+
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 no-print">
                 <div>
                     <h1 className="text-3xl font-black text-white tracking-tight">Bilan Comptable</h1>
@@ -158,6 +212,20 @@ export default function BilanPage() {
                     </div>
                 </div>
             )}
+
+            {/* PIED DE PAGE LÉGAL (VISIBLE À L'IMPRESSION) */}
+            <div className="hidden print:block mt-20 pt-8 border-t border-gray-200">
+                <div className="grid grid-cols-3 gap-8 text-center text-[10px] font-bold text-gray-500 uppercase tracking-widest">
+                    <div>Signature Gérant</div>
+                    <div>Cachet Entreprise</div>
+                    <div>Visa Expert/CGA</div>
+                </div>
+                {data?.entreprise?.piedDePage && (
+                    <div className="mt-12 text-center text-[9px] text-gray-400 border-t border-dotted border-gray-200 pt-4 px-10">
+                        {data.entreprise.piedDePage}
+                    </div>
+                )}
+            </div>
         </div>
     )
 }
