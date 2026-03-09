@@ -10,6 +10,17 @@ IF NOT EXIST "C:\GestiCom\app" (
     exit /b 1
 )
 
+REM Configuration de l'environnement GestiCom
+set "NODE_LOCAL=C:\GestiCom\bin\node"
+IF EXIST "%NODE_LOCAL%" (
+    set "PATH=%NODE_LOCAL%;%PATH%"
+) ELSE (
+    echo ERREUR : Environnement Node.js non trouvé. 
+    echo Veuillez réinstaller GestiCom.
+    pause
+    exit /b 1
+)
+
 REM Vérifier si le port 3000 est déjà utilisé (GestiCom déjà lancé)
 netstat -ano | findstr ":3000 " >nul 2>&1
 IF NOT ERRORLEVEL 1 (

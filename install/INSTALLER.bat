@@ -14,39 +14,20 @@ echo Durée estimée : 3 à 5 minutes selon votre connexion.
 echo.
 pause
 
-REM ── Vérifie si Node.js est installé ─────────────────────────
-echo [1/5] Vérification de Node.js...
-node --version >nul 2>&1
+REM ── Configuration de l'environnement portable ────────────────
+set "NODE_DIR=%~dp0bin\node"
+set "PATH=%NODE_DIR%;%PATH%"
+
+echo [1/5] Vérification de Node.js (Version Portable)...
+"%NODE_DIR%\node.exe" --version >nul 2>&1
 IF ERRORLEVEL 1 (
     echo.
-    echo ⚠ Node.js n'est pas installé sur ce PC.
-    echo.
-    echo Téléchargement automatique de Node.js v22 LTS...
-    echo ^(Si le téléchargement échoue, téléchargez manuellement :^)
-    echo ^(https://nodejs.org/dist/v22.14.0/node-v22.14.0-x64.msi^)
-    echo.
-    
-    REM Télécharger Node.js si curl disponible
-    where curl >nul 2>&1
-    IF NOT ERRORLEVEL 1 (
-        curl -L -o "%TEMP%\node-installer.msi" "https://nodejs.org/dist/v22.14.0/node-v22.14.0-x64.msi"
-        echo Installation de Node.js en cours...
-        msiexec /i "%TEMP%\node-installer.msi" /qn
-        del "%TEMP%\node-installer.msi"
-        echo.
-        echo Node.js installé. Veuillez relancer ce script.
-        pause
-        exit
-    ) ELSE (
-        echo ERREUR : Impossible de télécharger Node.js automatiquement.
-        echo Veuillez installer Node.js manuellement depuis https://nodejs.org
-        echo puis relancer ce script.
-        pause
-        exit
-    )
+    echo ❌ ERREUR : Node.js portable n'est pas trouvé dans %NODE_DIR%
+    echo Vérifiez que vous avez bien copié le dossier 'bin/node' dans 'install'.
+    pause
+    exit /b 1
 )
-echo    ✓ Node.js détecté : 
-
+echo    ✓ Node.js portable prêt.
 REM ── Création du dossier d'installation ─────────────────────
 echo [2/5] Préparation du dossier d'installation...
 IF NOT EXIST "C:\GestiCom" mkdir "C:\GestiCom"
@@ -54,7 +35,12 @@ IF NOT EXIST "C:\gesticom" mkdir "C:\gesticom"
 
 REM Copier les fichiers du logiciel
 xcopy /E /I /Y /Q "%~dp0gesticom2" "C:\GestiCom\app" >nul
-echo    ✓ Fichiers copiés dans C:\GestiCom\
+echo    ✓ Fichiers de l'application copiés.
+
+REM Copier Node.js portable
+IF NOT EXIST "C:\GestiCom\bin\node" mkdir "C:\GestiCom\bin\node"
+xcopy /E /I /Y /Q "%~dp0bin\node" "C:\GestiCom\bin\node" >nul
+echo    ✓ Environnement Node.js (portable) copié dans C:\GestiCom\bin\
 
 REM ── Installation des dépendances NPM ───────────────────────
 echo [3/5] Installation des modules (peut prendre 2-3 min)...
