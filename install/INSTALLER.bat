@@ -18,29 +18,29 @@ REM ── Configuration de l'environnement portable ─────────
 set "NODE_DIR=%~dp0bin\node"
 set "PATH=%NODE_DIR%;%PATH%"
 
-echo [1/5] Vérification de Node.js (Version Portable)...
-"%NODE_DIR%\node.exe" --version >nul 2>&1
-IF ERRORLEVEL 1 (
+echo [1/5] Vérification de l'environnement portable...
+IF NOT EXIST "%NODE_DIR%\node.exe" (
     echo.
     echo ❌ ERREUR : Node.js portable n'est pas trouvé dans %NODE_DIR%
-    echo Vérifiez que vous avez bien copié le dossier 'bin/node' dans 'install'.
     pause
     exit /b 1
 )
-echo    ✓ Node.js portable prêt.
+echo    ✓ Node.js portable détecté.
+
 REM ── Création du dossier d'installation ─────────────────────
 echo [2/5] Préparation du dossier d'installation...
 IF NOT EXIST "C:\GestiCom" mkdir "C:\GestiCom"
 IF NOT EXIST "C:\gesticom" mkdir "C:\gesticom"
 
 REM Copier les fichiers du logiciel
-xcopy /E /I /Y /Q "%~dp0gesticom2" "C:\GestiCom\app" >nul
+echo Copie des fichiers en cours...
+xcopy /E /I /Y /Q "%~dp0app" "C:\GestiCom\app" >nul
 echo    ✓ Fichiers de l'application copiés.
 
 REM Copier Node.js portable
 IF NOT EXIST "C:\GestiCom\bin\node" mkdir "C:\GestiCom\bin\node"
-xcopy /E /I /Y /Q "%~dp0bin\node" "C:\GestiCom\bin\node" >nul
-echo    ✓ Environnement Node.js (portable) copié dans C:\GestiCom\bin\
+xcopy /E /I /Y /Q "%NODE_DIR%" "C:\GestiCom\bin\node" >nul
+echo    ✓ Environnement Node.js copié dans C:\GestiCom\bin\
 
 REM ── Vérification des modules ───────────────────────────────
 echo [3/5] Finalisation de l'environnement applicatif...

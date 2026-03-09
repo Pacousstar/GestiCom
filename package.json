@@ -6,15 +6,7 @@
     "dev": "next dev --webpack",
     "dev:legacy": "next dev --webpack",
     "build": "prisma generate && next build --webpack",
-    "build:portable": "node scripts/build-portable.js",
     "clean": "node scripts/clean.js",
-    "rebuild:portable": "npm run clean && npm run build:portable",
-    "portable:doctor": "node scripts/portable-doctor.js",
-    "portable:copy-db": "node scripts/copier-bd-portable.js",
-    "portable:check-db": "node scripts/diagnostic-bd-portable.js",
-    "portable:fix-depense": "node scripts/creer-table-depense.js",
-    "portable:ensure-schema": "node scripts/ensure-schema.js",
-    "portable:clean-backups": "node scripts/cleanup-backups.js",
     "start": "next start",
     "start:standalone": "node scripts/standalone-launcher.js",
     "lint": "eslint",
@@ -27,7 +19,6 @@
     "db:fix-schema": "node scripts/ajouter-colonnes-manquantes-bd.js",
     "db:use-recent": "node scripts/utiliser-base-recente.js",
     "db:activer-produits-stock": "node scripts/activer-produits-et-stock.js",
-    "db:import-portable": "node scripts/importer-bd-depuis-portable.js",
     "db:studio": "prisma studio",
     "db:backup": "node scripts/sauvegarde-bd.js",
     "db:backup:list": "node scripts/sauvegarde-bd.js list",
@@ -37,8 +28,7 @@
     "fusion-bases": "node scripts/fusion-bases.js",
     "fusion:production": "node scripts/fusion-bases-production.js",
     "import:ca-plus": "node scripts/import-ca-plus.js",
-    "pwa:generate-icons": "node scripts/generate-pwa-icons.js",
-    "package:portable": "node scripts/zip-portable.js"
+    "pwa:generate-icons": "node scripts/generate-pwa-icons.js"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
@@ -84,6 +74,6 @@
     "sharp": "^0.34.5",
     "tailwindcss": "^4",
     "tsx": "^4.19.2",
-    "typescript": "^5"
+    "typescript": "5.9.3"
   }
 }
