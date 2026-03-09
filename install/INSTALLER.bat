@@ -42,17 +42,14 @@ IF NOT EXIST "C:\GestiCom\bin\node" mkdir "C:\GestiCom\bin\node"
 xcopy /E /I /Y /Q "%~dp0bin\node" "C:\GestiCom\bin\node" >nul
 echo    ✓ Environnement Node.js (portable) copié dans C:\GestiCom\bin\
 
-REM ── Installation des dépendances NPM ───────────────────────
-echo [3/5] Installation des modules (peut prendre 2-3 min)...
-cd /d "C:\GestiCom\app"
-npm install --production --silent
-IF ERRORLEVEL 1 (
-    echo ERREUR : Échec de l'installation des modules npm.
-    echo Vérifiez votre connexion Internet et relancez.
-    pause
-    exit /b 1
+REM ── Vérification des modules ───────────────────────────────
+echo [3/5] Finalisation de l'environnement applicatif...
+IF NOT EXIST "C:\GestiCom\app\node_modules" (
+    echo.
+    echo ⚠ ATTENTION : Les modules de l'application sont manquants.
+    echo L'installation risque de ne pas fonctionner.
 )
-echo    ✓ Modules installés
+echo    ✓ Environnement prêt.
 
 REM ── Configuration de la base de données ────────────────────
 echo [4/5] Initialisation de la base de données...
