@@ -53,12 +53,14 @@ echo    ✓ Environnement prêt.
 
 REM ── Configuration de la base de données ────────────────────
 echo [4/5] Initialisation de la base de données...
-npx prisma generate --silent >nul 2>&1
-npx prisma db push --accept-data-loss >nul 2>&1
+cd /d "C:\GestiCom\app"
+call npx prisma generate
+call npx prisma db push --accept-data-loss
+call npm run db:seed
 IF ERRORLEVEL 1 (
-    echo ERREUR : Échec de l'initialisation de la base de données.
-    pause
-    exit /b 1
+    echo.
+    echo ⚠ ATTENTION : L'initialisation a rencontré un problème.
+    echo Si le login ne fonctionne pas, lancez "reparer_base.bat".
 )
 echo    ✓ Base de données initialisée dans C:\gesticom\
 
