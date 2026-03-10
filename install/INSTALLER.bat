@@ -14,14 +14,34 @@ echo Durée estimée : 3 à 5 minutes selon votre connexion.
 echo.
 pause
 
+REM ── Vérification si lancé depuis un dossier temporaire ─────
+echo %~dp0 | findstr /i "Temp Rar$ Zip" >nul
+IF NOT ERRORLEVEL 1 (
+    color 0C
+    echo.
+    echo ❌ ERREUR CRITIQUE : L'INSTALLATEUR EST DANS UN DOSSIER TEMPORAIRE.
+    echo.
+    echo VOUS DEVEZ EXTRAIRE (DÉCOMPRESSER) LE DOSSIER COMPLET DEPUIS 
+    echo LE FICHIER ZIP/RAR VERS VOTRE BUREAU OU VOTRE DISQUE C:
+    echo AVANT DE LANCER L'INSTALLATION.
+    echo.
+    echo Ne lancez pas le fichier directement depuis WinRAR ou ZIP.
+    pause
+    exit /b 1
+)
+
 REM ── Configuration de l'environnement portable ────────────────
 set "NODE_DIR=%~dp0bin\node"
 set "PATH=%NODE_DIR%;%PATH%"
 
 echo [1/5] Vérification de l'environnement portable...
 IF NOT EXIST "%NODE_DIR%\node.exe" (
+    color 0C
     echo.
     echo ❌ ERREUR : Node.js portable n'est pas trouvé dans %NODE_DIR%
+    echo.
+    echo Assurez-vous d'avoir extrait TOUT le contenu du fichier compressé.
+    echo Le dossier "bin" doit être à côté de "INSTALLER.bat".
     pause
     exit /b 1
 )

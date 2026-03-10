@@ -20,8 +20,11 @@
 🚀 INSTALLATION (1ère fois uniquement)
 ─────────────────────────────────────────────────────
 1. Insérez la clé USB dans le PC
-2. Ouvrez la clé USB (Explorateur de fichiers)
-3. Double-cliquez sur "INSTALLER.bat"
+2. *** TRÈS IMPORTANT *** : COPIEZ LE DOSSIER ZIP SUR VOTRE BUREAU
+   ET FAITES CLIC-DROIT > "EXTRAIRE TOUT".
+   Ne lancez pas l'installation depuis le fichier ZIP/RAR directement.
+3. Ouvrez le dossier extrait (Explorateur de fichiers)
+4. Double-cliquez sur "INSTALLER.bat"
    → Si Windows demande "Voulez-vous autoriser ?", cliquez OUI
 4. Suivez les instructions à l'écran
    → L'installation dure environ 3 à 5 minutes
