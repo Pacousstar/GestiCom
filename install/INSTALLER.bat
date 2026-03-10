@@ -4,6 +4,14 @@ title Installation de GestiCom
 color 0A
 cls
 
+REM ── Élévation de privilèges Admin ───────────────────────────
+>nul 2>&1 "%SYSTEMROOT%\system32\cacls.exe" "%SYSTEMROOT%\system32\config\system"
+if '%errorlevel%' NEQ '0' (
+    echo [☕] Demande des droits Administrateur...
+    powershell -Command "Start-Process -FilePath '%0' -Verb RunAs"
+    exit /b
+)
+
 echo ╔══════════════════════════════════════════════════════╗
 echo ║           INSTALLATION DE GESTICOM                   ║
 echo ║      Logiciel de Gestion Commerciale Intégré         ║
@@ -54,7 +62,8 @@ IF NOT EXIST "C:\gesticom" mkdir "C:\gesticom"
 
 REM Copier les fichiers du logiciel
 echo Copie des fichiers en cours...
-xcopy /E /I /Y /Q "%~dp0app" "C:\GestiCom\app" >nul
+REM Le dossier source 'app' est en fait la racine du projet gesticom2
+xcopy /E /I /Y /Q "%~dp0.." "C:\GestiCom\app" /EXCLUDE:%~dp0..\exclude_list.txt >nul
 echo    ✓ Fichiers de l'application copiés.
 
 REM Copier Node.js portable
