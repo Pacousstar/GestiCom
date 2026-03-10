@@ -20,7 +20,11 @@ export async function GET(request: NextRequest) {
     orderBy: { code: 'asc' },
   })
 
-  return NextResponse.json(journaux)
+  return NextResponse.json(journaux, {
+    headers: {
+      'Cache-Control': 'no-store, max-age=0',
+    },
+  })
 }
 
 export async function POST(request: NextRequest) {

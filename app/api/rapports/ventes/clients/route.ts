@@ -53,7 +53,11 @@ export async function GET(request: NextRequest) {
 
         aggregated.sort((a, b) => b.chiffreAffaires - a.chiffreAffaires)
 
-        return NextResponse.json(aggregated)
+        return NextResponse.json(aggregated, {
+            headers: {
+                'Cache-Control': 'no-store, max-age=0',
+            },
+        })
     } catch (error) {
         console.error('Erreur API clients:', error)
         return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })

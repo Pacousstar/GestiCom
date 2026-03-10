@@ -91,7 +91,7 @@ export default function ChargesPage() {
   const [userRole, setUserRole] = useState<string>('')
 
   useEffect(() => {
-    fetch('/api/auth/check').then((r) => r.ok && r.json()).then((d) => d && setUserRole(d.role)).catch(() => {})
+    fetch('/api/auth/check').then((r) => r.ok && r.json()).then((d) => d && setUserRole(d.role)).catch(() => { })
   }, [])
 
   useEffect(() => {
@@ -167,7 +167,7 @@ export default function ChargesPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setErr('')
-    
+
     const rubriqueFinale = formData.rubrique === 'AUTRE' && formData.rubriqueLibre ? formData.rubriqueLibre.trim() : formData.rubrique.trim()
     const validationData = {
       date: formData.date,
@@ -215,6 +215,7 @@ export default function ChargesPage() {
       if (res.ok) {
         resetForm()
         fetchCharges()
+        setTimeout(() => fetchCharges(), 500)
         showSuccess(editing ? MESSAGES.CHARGE_MODIFIEE : MESSAGES.CHARGE_ENREGISTREE)
       } else {
         const errorMsg = formatApiError(data.error || 'Erreur lors de l\'enregistrement.')
@@ -445,50 +446,49 @@ export default function ChargesPage() {
                     )
                   })
                   .map((c) => (
-                  <tr key={c.id} className="hover:bg-gray-50">
-                    <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-900">
-                      {new Date(c.date).toLocaleDateString('fr-FR')}
-                    </td>
-                    <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-600">{c.magasin?.nom || '—'}</td>
-                    <td className="whitespace-nowrap px-4 py-3">
-                      <span
-                        className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${
-                          c.type === 'FIXE' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800'
-                        }`}
-                      >
-                        {c.type === 'FIXE' ? 'Fixe' : 'Variable'}
-                      </span>
-                    </td>
-                    <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-700">{c.rubrique}</td>
-                    <td className="whitespace-nowrap px-4 py-3 text-right text-sm font-medium text-gray-900">
-                      {c.montant.toLocaleString('fr-FR')} FCFA
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-500 max-w-xs truncate">{c.observation || '—'}</td>
-                    <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-500">{c.utilisateur.nom}</td>
-                    <td className="whitespace-nowrap px-4 py-3 text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <button
-                          type="button"
-                          onClick={() => handleEdit(c)}
-                          className="rounded-lg p-1 text-blue-600 hover:bg-blue-50"
-                          title="Modifier"
+                    <tr key={c.id} className="hover:bg-gray-50">
+                      <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-900">
+                        {new Date(c.date).toLocaleDateString('fr-FR')}
+                      </td>
+                      <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-600">{c.magasin?.nom || '—'}</td>
+                      <td className="whitespace-nowrap px-4 py-3">
+                        <span
+                          className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${c.type === 'FIXE' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800'
+                            }`}
                         >
-                          <Edit2 className="h-4 w-4" />
-                        </button>
-                        {userRole === 'SUPER_ADMIN' && (
+                          {c.type === 'FIXE' ? 'Fixe' : 'Variable'}
+                        </span>
+                      </td>
+                      <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-700">{c.rubrique}</td>
+                      <td className="whitespace-nowrap px-4 py-3 text-right text-sm font-medium text-gray-900">
+                        {c.montant.toLocaleString('fr-FR')} FCFA
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-500 max-w-xs truncate">{c.observation || '—'}</td>
+                      <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-500">{c.utilisateur.nom}</td>
+                      <td className="whitespace-nowrap px-4 py-3 text-right">
+                        <div className="flex items-center justify-end gap-2">
                           <button
                             type="button"
-                            onClick={() => handleDelete(c.id)}
-                            className="rounded-lg p-1 text-red-600 hover:bg-red-50"
-                            title="Supprimer (Super Admin)"
+                            onClick={() => handleEdit(c)}
+                            className="rounded-lg p-1 text-blue-600 hover:bg-blue-50"
+                            title="Modifier"
                           >
-                            <Trash2 className="h-4 w-4" />
+                            <Edit2 className="h-4 w-4" />
                           </button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                          {userRole === 'SUPER_ADMIN' && (
+                            <button
+                              type="button"
+                              onClick={() => handleDelete(c.id)}
+                              className="rounded-lg p-1 text-red-600 hover:bg-red-50"
+                              title="Supprimer (Super Admin)"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
               </tbody>
             </table>
           </div>
@@ -508,29 +508,29 @@ export default function ChargesPage() {
             </div>
             <form onSubmit={handleSubmit} className="space-y-4">
               {err && <p className="text-sm text-red-600">{err}</p>}
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Date</label>
-              <input
-                type="date"
-                required
-                value={formData.date}
-                onChange={(e) => setFormData((f) => ({ ...f, date: e.target.value }))}
-                className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Point de vente</label>
-              <select
-                value={formData.magasinId}
-                onChange={(e) => setFormData((f) => ({ ...f, magasinId: e.target.value }))}
-                className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
-              >
-                <option value="">— Aucun —</option>
-                {magasins.map((m) => (
-                  <option key={m.id} value={String(m.id)}>{m.code} – {m.nom}</option>
-                ))}
-              </select>
-            </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Date</label>
+                <input
+                  type="date"
+                  required
+                  value={formData.date}
+                  onChange={(e) => setFormData((f) => ({ ...f, date: e.target.value }))}
+                  className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Point de vente</label>
+                <select
+                  value={formData.magasinId}
+                  onChange={(e) => setFormData((f) => ({ ...f, magasinId: e.target.value }))}
+                  className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                >
+                  <option value="">— Aucun —</option>
+                  {magasins.map((m) => (
+                    <option key={m.id} value={String(m.id)}>{m.code} – {m.nom}</option>
+                  ))}
+                </select>
+              </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700">Type</label>
                 <select

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { revalidatePath } from 'next/cache'
 import { getSession } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 import { logModification, getIpAddress, getUserAgent } from '@/lib/audit'
@@ -47,6 +48,9 @@ export async function PATCH(
       data,
       ipAddress
     )
+
+    revalidatePath('/dashboard/produits')
+    revalidatePath('/api/produits')
 
     return NextResponse.json(p)
   } catch (e: unknown) {

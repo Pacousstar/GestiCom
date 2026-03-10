@@ -353,6 +353,7 @@ export default function AchatsPage() {
           lignes: [],
         })
         setAchats((a) => [data, ...a])
+        setTimeout(() => fetchAchats(undefined, undefined, 1), 500)
         showSuccess(MESSAGES.ACHAT_ENREGISTRE)
       } else {
         const errorMsg = formatApiError(data.error || 'Erreur lors de l\'enregistrement.')

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { revalidatePath } from 'next/cache'
 import { getSession } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 import { requirePermission } from '@/lib/require-role'
@@ -11,7 +12,7 @@ export async function GET(request: NextRequest) {
   const page = Math.max(1, Number(request.nextUrl.searchParams.get('page')) || 1)
   const limit = Math.min(100, Math.max(1, Number(request.nextUrl.searchParams.get('limit')) || 20))
   const skip = (page - 1) * limit
-  
+
   const q = String(request.nextUrl.searchParams.get('q') || '').trim().toLowerCase()
   const list = await prisma.fournisseur.findMany({
     where: { actif: true },
@@ -20,17 +21,17 @@ export async function GET(request: NextRequest) {
   })
   const filtered = q
     ? list.filter(
-        (f) =>
-          f.nom.toLowerCase().includes(q) ||
-          (f.telephone || '').toLowerCase().includes(q) ||
-          (f.email || '').toLowerCase().includes(q)
-      )
+      (f) =>
+        f.nom.toLowerCase().includes(q) ||
+        (f.telephone || '').toLowerCase().includes(q) ||
+        (f.email || '').toLowerCase().includes(q)
+    )
     : list
 
   const total = filtered.length
   const paginated = filtered.slice(skip, skip + limit)
 
-  return NextResponse.json({
+  const res = NextResponse.json({
     data: paginated,
     pagination: {
       page,
@@ -39,6 +40,8 @@ export async function GET(request: NextRequest) {
       totalPages: Math.ceil(total / limit),
     },
   })
+  res.headers.set('Cache-Control', 'no-store, max-age=0')
+  return res
 }
 
 export async function POST(request: NextRequest) {
@@ -60,6 +63,10 @@ export async function POST(request: NextRequest) {
     const f = await prisma.fournisseur.create({
       data: { nom, telephone, email, ncc, actif: true },
     })
+    // Invalider le cache pour affichage immédiat
+    revalidatePath('/dashboard/fournisseurs')
+    revalidatePath('/api/fournisseurs')
+
     return NextResponse.json(f)
   } catch (e) {
     console.error('POST /api/fournisseurs:', e)

@@ -94,7 +94,7 @@ export default function DepensesPage() {
     pieceJustificative: '',
     observation: '',
   })
-  
+
   // Filtres
   const [dateDebut, setDateDebut] = useState('')
   const [dateFin, setDateFin] = useState('')
@@ -118,7 +118,7 @@ export default function DepensesPage() {
     if (filtreCategorie) params.set('categorie', filtreCategorie)
     if (filtreMagasin) params.set('magasinId', filtreMagasin)
     if (searchTerm) params.set('search', searchTerm)
-    
+
     fetch('/api/depenses?' + params.toString())
       .then((r) => (r.ok ? r.json() : []))
       .then(setDepenses)
@@ -130,7 +130,7 @@ export default function DepensesPage() {
   }, [dateDebut, dateFin, filtreCategorie, filtreMagasin, searchTerm])
 
   useEffect(() => {
-    fetch('/api/auth/check').then((r) => r.ok && r.json()).then((d) => d && setUserRole(d.role)).catch(() => {})
+    fetch('/api/auth/check').then((r) => r.ok && r.json()).then((d) => d && setUserRole(d.role)).catch(() => { })
   }, [])
 
   const resetForm = () => {
@@ -155,7 +155,7 @@ export default function DepensesPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setErr('')
-    
+
     const validationData = {
       date: formData.date,
       magasinId: formData.magasinId ? Number(formData.magasinId) : null,
@@ -209,6 +209,7 @@ export default function DepensesPage() {
       if (res.ok) {
         resetForm()
         fetchDepenses()
+        setTimeout(() => fetchDepenses(), 500)
         showSuccess(editing ? MESSAGES.DEPENSE_MODIFIEE : MESSAGES.DEPENSE_ENREGISTREE)
       } else {
         const errorMsg = formatApiError(data.error || 'Erreur lors de l\'enregistrement.')
@@ -464,43 +465,43 @@ export default function DepensesPage() {
                   })
                   .map((d) => (
                     <tr key={d.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 text-sm text-gray-900">
-                      {new Date(d.date).toLocaleDateString('fr-FR')}
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className="inline-flex rounded-full bg-purple-100 px-2 py-1 text-xs font-medium text-purple-800">
-                        {d.categorie}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-900">{d.libelle}</td>
-                    <td className="px-4 py-3 text-sm font-semibold text-gray-900">
-                      {d.montant.toLocaleString('fr-FR')} FCFA
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-900">{d.modePaiement}</td>
-                    <td className="px-4 py-3 text-sm text-gray-900">{d.beneficiaire || '—'}</td>
-                    <td className="px-4 py-3 text-sm text-gray-900">{d.magasin?.nom || d.magasin?.code || '—'}</td>
-                    <td className="px-4 py-3 text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <button
-                          onClick={() => handleEdit(d)}
-                          className="rounded-lg p-1 text-blue-600 hover:bg-blue-50"
-                          title="Modifier"
-                        >
-                          <Edit2 className="h-4 w-4" />
-                        </button>
-                        {userRole === 'SUPER_ADMIN' && (
+                      <td className="px-4 py-3 text-sm text-gray-900">
+                        {new Date(d.date).toLocaleDateString('fr-FR')}
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className="inline-flex rounded-full bg-purple-100 px-2 py-1 text-xs font-medium text-purple-800">
+                          {d.categorie}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-900">{d.libelle}</td>
+                      <td className="px-4 py-3 text-sm font-semibold text-gray-900">
+                        {d.montant.toLocaleString('fr-FR')} FCFA
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-900">{d.modePaiement}</td>
+                      <td className="px-4 py-3 text-sm text-gray-900">{d.beneficiaire || '—'}</td>
+                      <td className="px-4 py-3 text-sm text-gray-900">{d.magasin?.nom || d.magasin?.code || '—'}</td>
+                      <td className="px-4 py-3 text-right">
+                        <div className="flex items-center justify-end gap-2">
                           <button
-                            onClick={() => handleDelete(d.id)}
-                            className="rounded-lg p-1 text-red-600 hover:bg-red-50"
-                            title="Supprimer (Super Admin)"
+                            onClick={() => handleEdit(d)}
+                            className="rounded-lg p-1 text-blue-600 hover:bg-blue-50"
+                            title="Modifier"
                           >
-                            <Trash2 className="h-4 w-4" />
+                            <Edit2 className="h-4 w-4" />
                           </button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                          {userRole === 'SUPER_ADMIN' && (
+                            <button
+                              onClick={() => handleDelete(d.id)}
+                              className="rounded-lg p-1 text-red-600 hover:bg-red-50"
+                              title="Supprimer (Super Admin)"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
               </tbody>
             </table>
           </div>

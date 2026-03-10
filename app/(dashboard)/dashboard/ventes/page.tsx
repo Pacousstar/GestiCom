@@ -402,6 +402,7 @@ export default function VentesPage() {
         setCurrentPage(1)
         showSuccess(MESSAGES.VENTE_ENREGISTREE)
         fetchVentes(undefined, undefined, 1)
+        setTimeout(() => fetchVentes(undefined, undefined, 1), 500)
       } else {
         if (data.error?.includes('Client introuvable')) {
           setCreateClientAfter(() => () => doEnregistrerVente(lignes))

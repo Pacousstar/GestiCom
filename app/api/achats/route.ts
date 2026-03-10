@@ -45,7 +45,7 @@ export async function GET(request: NextRequest) {
     prisma.achat.count({ where }),
   ])
 
-  return NextResponse.json({
+  const res = NextResponse.json({
     data: achats,
     pagination: {
       page,
@@ -54,6 +54,8 @@ export async function GET(request: NextRequest) {
       totalPages: Math.ceil(total / limit),
     },
   })
+  res.headers.set('Cache-Control', 'no-store, max-age=0')
+  return res
 }
 
 export async function POST(request: NextRequest) {

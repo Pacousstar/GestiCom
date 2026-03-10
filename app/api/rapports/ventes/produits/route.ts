@@ -41,7 +41,11 @@ export async function GET(request: NextRequest) {
             }
         }).sort((a, b) => b.chiffreAffaires - a.chiffreAffaires)
 
-        return NextResponse.json(data)
+        return NextResponse.json(data, {
+            headers: {
+                'Cache-Control': 'no-store, max-age=0',
+            },
+        })
     } catch (error) {
         console.error('Erreur API produits:', error)
         return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })

@@ -85,7 +85,11 @@ export async function GET(request: NextRequest) {
       })
 
       // Mode complet : retourner tous les produits (pagination côté client)
-      return NextResponse.json(out)
+      return NextResponse.json(out, {
+        headers: {
+          'Cache-Control': 'no-store, max-age=0',
+        },
+      })
     } else {
       // Cas 2: Pas de magasin spécifié - Afficher tous les produits avec leur stock dans leur magasin d'origine
       // Récupérer tous les produits
@@ -141,7 +145,11 @@ export async function GET(request: NextRequest) {
       })
 
       // Mode complet : retourner tous les produits (pagination côté client)
-      return NextResponse.json(out)
+      return NextResponse.json(out, {
+        headers: {
+          'Cache-Control': 'no-store, max-age=0',
+        },
+      })
     }
   }
 
@@ -169,6 +177,10 @@ export async function GET(request: NextRequest) {
       limit,
       total,
       totalPages: Math.ceil(total / limit),
+    },
+  }, {
+    headers: {
+      'Cache-Control': 'no-store, max-age=0',
     },
   })
 }

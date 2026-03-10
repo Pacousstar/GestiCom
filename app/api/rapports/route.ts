@@ -71,21 +71,21 @@ export async function GET(request: NextRequest) {
     }),
     hasDates && deb && fin
       ? prisma.venteLigne.findMany({
-          where: {
-            vente: {
-              date: { gte: deb, lte: fin },
-              statut: 'VALIDEE',
-              ...(magasinId ? { magasinId: Number(magasinId) } : {}),
-            },
-            ...(produitId ? { produitId: Number(produitId) } : {}),
+        where: {
+          vente: {
+            date: { gte: deb, lte: fin },
+            statut: 'VALIDEE',
+            ...(magasinId ? { magasinId: Number(magasinId) } : {}),
           },
-          select: { produitId: true, quantite: true },
-        })
+          ...(produitId ? { produitId: Number(produitId) } : {}),
+        },
+        select: { produitId: true, quantite: true },
+      })
       : prisma.venteLigne.groupBy({
-          by: ['produitId'],
-          _sum: { quantite: true },
-          ...(produitId ? { where: { produitId: Number(produitId) } } : {}),
-        }),
+        by: ['produitId'],
+        _sum: { quantite: true },
+        ...(produitId ? { where: { produitId: Number(produitId) } } : {}),
+      }),
     prisma.mouvement.findMany({
       where: Object.keys(mouvementWhere).length > 0 ? mouvementWhere : undefined,
       take: 50,
@@ -103,7 +103,7 @@ export async function GET(request: NextRequest) {
       ...s,
       manquant: s.produit.seuilMin - s.quantite,
     }))
-  
+
   const alertesTotal = alertesAll.length
   const alertes = alertesAll.slice(alertesSkip, alertesSkip + alertesLimit)
 
@@ -143,7 +143,7 @@ export async function GET(request: NextRequest) {
       quantiteVendue: g._sum.quantite ?? 0,
     }))
   }
-  
+
   const topProduitsTotal = topProduitsAll.length
 
   // Comparaison période vs période précédente (si dates fournies)
@@ -158,7 +158,7 @@ export async function GET(request: NextRequest) {
     // Calculer la durée de la période
     const dureeMs = fin.getTime() - deb.getTime()
     const dureeJours = Math.ceil(dureeMs / (1000 * 60 * 60 * 24))
-    
+
     // Période précédente (même durée, avant la période actuelle)
     const debPrecedent = new Date(deb)
     debPrecedent.setDate(debPrecedent.getDate() - dureeJours - 1)
@@ -261,5 +261,9 @@ export async function GET(request: NextRequest) {
     },
     mouvements,
     comparaison,
+  }, {
+    headers: {
+      'Cache-Control': 'no-store, max-age=0',
+    },
   })
 }

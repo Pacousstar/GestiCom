@@ -1,4 +1,5 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
+import { revalidatePath } from 'next/cache'
 import { getSession } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 
@@ -18,6 +19,9 @@ export async function GET() {
   try {
     const session = await getSession()
     if (!session) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+
+    revalidatePath('/dashboard')
+    revalidatePath('/api/dashboard')
 
     const now = new Date()
     const debAuj = new Date(now.getFullYear(), now.getMonth(), now.getDate())
@@ -221,6 +225,10 @@ export async function GET() {
       })) : [],
       repartition,
       _timeout: timedOut,
+    }, {
+      headers: {
+        'Cache-Control': 'no-store, max-age=0',
+      },
     })
   } catch (e) {
     console.error('Dashboard API error:', e)

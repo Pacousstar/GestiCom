@@ -35,7 +35,11 @@ export async function GET(request: NextRequest) {
             panierMoyen: v._count.id > 0 ? (v._sum.montantTotal || 0) / v._count.id : 0
         })).sort((a, b) => b.chiffreAffaires - (a.chiffreAffaires || 0))
 
-        return NextResponse.json(data)
+        return NextResponse.json(data, {
+            headers: {
+                'Cache-Control': 'no-store, max-age=0',
+            },
+        })
     } catch (error) {
         console.error('Erreur API vendeurs:', error)
         return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { revalidatePath } from 'next/cache'
 import { getSession } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 import { comptabiliserDepense } from '@/lib/comptabilisation'
@@ -24,7 +25,7 @@ export async function GET(request: NextRequest) {
     entiteId?: number
     OR?: Array<{ libelle?: { contains: string }; beneficiaire?: { contains: string } }>
   } = {}
-  
+
   // Filtrer par entité de la session (sauf SUPER_ADMIN qui voit tout)
   if (session.role !== 'SUPER_ADMIN' && session.entiteId) {
     where.entiteId = session.entiteId
@@ -66,7 +67,11 @@ export async function GET(request: NextRequest) {
     },
   })
 
-  return NextResponse.json(depenses)
+  return NextResponse.json(depenses, {
+    headers: {
+      'Cache-Control': 'no-store, max-age=0',
+    },
+  })
 }
 
 export async function POST(request: NextRequest) {
@@ -159,6 +164,9 @@ export async function POST(request: NextRequest) {
         // On continue même si la comptabilisation échoue
       }
     }
+
+    revalidatePath('/dashboard/depenses')
+    revalidatePath('/api/depenses')
 
     return NextResponse.json(depense)
   } catch (e) {

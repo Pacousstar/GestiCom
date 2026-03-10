@@ -42,7 +42,7 @@ export default function ClientsPage() {
   const [userRole, setUserRole] = useState<string>('')
 
   useEffect(() => {
-    fetch('/api/auth/check').then((r) => r.ok && r.json()).then((d) => d && setUserRole(d.role)).catch(() => {})
+    fetch('/api/auth/check').then((r) => r.ok && r.json()).then((d) => d && setUserRole(d.role)).catch(() => { })
   }, [])
 
   const fetchList = async (page?: number) => {
@@ -132,11 +132,11 @@ export default function ClientsPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setErr('')
-    
+
     const plaf = formData.type === 'CREDIT' && formData.plafondCredit
       ? Math.max(0, Number(formData.plafondCredit))
       : null
-    
+
     const validationData = {
       nom: formData.nom.trim(),
       telephone: formData.telephone.trim() || null,
@@ -194,6 +194,7 @@ export default function ClientsPage() {
           setEditing(null)
           setCurrentPage(1)
           fetchList(1)
+          setTimeout(() => fetchList(1), 500)
           showSuccess(MESSAGES.CLIENT_MODIFIE)
         } else {
           const errorMsg = formatApiError(data.error || 'Erreur lors de la modification.')
@@ -211,6 +212,7 @@ export default function ClientsPage() {
           setForm(false)
           setCurrentPage(1)
           fetchList(1)
+          setTimeout(() => fetchList(1), 500)
           showSuccess(MESSAGES.CLIENT_ENREGISTRE)
         } else {
           const errorMsg = formatApiError(data.error || 'Erreur lors de la création.')

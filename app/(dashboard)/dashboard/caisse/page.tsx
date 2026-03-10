@@ -138,6 +138,7 @@ export default function CaissePage() {
       if (res.ok) {
         setFormOpen(false)
         fetchOperations()
+        setTimeout(() => fetchOperations(), 500)
         showSuccess(MESSAGES.CAISSE_ENREGISTREE)
       } else {
         const errorMsg = formatApiError(data.error || 'Erreur lors de l\'enregistrement.')

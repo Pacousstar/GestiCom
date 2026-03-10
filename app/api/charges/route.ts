@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { revalidatePath } from 'next/cache'
 import { getSession } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 import { comptabiliserCharge } from '@/lib/comptabilisation'
@@ -22,7 +23,7 @@ export async function GET(request: NextRequest) {
     magasinId?: number | null
     entiteId?: number
   } = {}
-  
+
   // Filtrer par entité de la session (sauf SUPER_ADMIN qui voit tout)
   if (session.role !== 'SUPER_ADMIN' && session.entiteId) {
     where.entiteId = session.entiteId
@@ -61,7 +62,11 @@ export async function GET(request: NextRequest) {
     },
   })
 
-  return NextResponse.json(charges)
+  return NextResponse.json(charges, {
+    headers: {
+      'Cache-Control': 'no-store, max-age=0',
+    },
+  })
 }
 
 export async function POST(request: NextRequest) {
@@ -137,6 +142,9 @@ export async function POST(request: NextRequest) {
       console.error('Erreur comptabilisation charge:', comptaError)
       // On continue même si la comptabilisation échoue
     }
+
+    revalidatePath('/dashboard/charges')
+    revalidatePath('/api/charges')
 
     return NextResponse.json(charge)
   } catch (e) {

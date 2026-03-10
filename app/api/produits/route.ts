@@ -52,7 +52,9 @@ export async function GET(request: NextRequest) {
       )
       : produits
 
-    return NextResponse.json(filtered)
+    const res = NextResponse.json(filtered)
+    res.headers.set('Cache-Control', 'no-store, max-age=0')
+    return res
   }
 
   // Mode paginé
@@ -93,7 +95,7 @@ export async function GET(request: NextRequest) {
   // Recalculer le total si filtre appliqué
   const filteredTotal = q ? filtered.length : total
 
-  return NextResponse.json({
+  const res = NextResponse.json({
     data: filtered,
     pagination: {
       page,
@@ -102,6 +104,8 @@ export async function GET(request: NextRequest) {
       totalPages: Math.ceil(filteredTotal / limit),
     },
   })
+  res.headers.set('Cache-Control', 'no-store, max-age=0')
+  return res
 }
 
 export async function POST(request: NextRequest) {
@@ -173,11 +177,12 @@ export async function POST(request: NextRequest) {
       },
       ipAddress
     )
-
     // Invalider le cache pour affichage immédiat
     revalidatePath('/dashboard/produits')
     revalidatePath('/dashboard/stock')
     revalidatePath('/api/produits')
+    revalidatePath('/api/produits/stats')
+    revalidatePath('/api/produits/categories')
 
     return NextResponse.json(p)
   } catch (e) {

@@ -367,7 +367,11 @@ export default function ProduitsPage() {
         fetchList(1)
         // Notifier les autres pages pour rafraîchir leurs listes de produits
         window.dispatchEvent(new CustomEvent('produit-created'))
-        showSuccess('Produit créé avec succès.')
+        showSuccess(`Produit ${data.code} créé avec succès.`)
+        // Rafraîchir plusieurs fois pour être sûr (problème cache parfois en standalone)
+        fetchList(1)
+        setTimeout(() => fetchList(1), 500)
+        setTimeout(() => fetchStats(), 1000)
       } else {
         const errorMsg = formatApiError(data.error || 'Erreur lors de la création.')
         setErr(errorMsg)
@@ -462,20 +466,25 @@ export default function ProduitsPage() {
               <p className="mt-0.5 text-xs text-gray-500">Code et catégorie suggérés automatiquement à partir des produits similaires en base.</p>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700">Catégorie</label>
-              <select
+              <label className="block text-sm font-medium text-gray-700">Catégorie *</label>
+              <input
+                list="categories-list"
                 value={formData.categorie}
                 onChange={(e) => {
-                  const cat = e.target.value
+                  const cat = e.target.value.toUpperCase()
                   setFormData((f) => ({ ...f, categorie: cat }))
-                  fetchNextCode(cat)
+                  if (cat.length >= 1) fetchNextCode(cat)
                 }}
                 className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 focus:border-orange-500 focus:outline-none"
-              >
+                placeholder="Ex: BOISSONS"
+                required
+              />
+              <datalist id="categories-list">
                 {categories.map((c) => (
-                  <option key={c} value={c}>{c}</option>
+                  <option key={c} value={c} />
                 ))}
-              </select>
+              </datalist>
+              <p className="mt-0.5 text-xs text-gray-500">Choisissez ou tapez une nouvelle catégorie</p>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700">Point de vente *</label>

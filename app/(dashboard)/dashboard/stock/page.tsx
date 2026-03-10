@@ -243,14 +243,8 @@ export default function StockPage() {
       const data = await res.json()
       if (res.ok) {
         setShowEntree(false)
-        setEntreeForm({
-          date: new Date().toISOString().split('T')[0],
-          magasinId: '',
-          produitId: '',
-          quantite: '1',
-          observation: '',
-        })
         refetch()
+        setTimeout(() => refetch(), 500)
       } else {
         if (data.error?.includes("n'existe pas dans ce magasin") || data.error?.includes("Creez d'abord le produit")) {
           setCreateProduitData({
@@ -315,14 +309,8 @@ export default function StockPage() {
       const data = await res.json()
       if (res.ok) {
         setShowSortie(false)
-        setSortieForm({
-          date: new Date().toISOString().split('T')[0],
-          magasinId: '',
-          produitId: '',
-          quantite: '1',
-          observation: '',
-        })
         refetch()
+        setTimeout(() => refetch(), 500)
         showSuccess('Sortie de stock enregistrée avec succès.')
       } else {
         if (data.error?.includes("n'existe pas dans ce magasin") || data.error?.includes("Creez d'abord le produit")) {
@@ -491,6 +479,7 @@ export default function StockPage() {
         setShowInventaire(false)
         setInventaireReelles({})
         refetch()
+        setTimeout(() => refetch(), 500)
         showSuccess(data.regularise !== undefined ? `${data.regularise} ligne(s) régularisée(s).` : 'Inventaire enregistré avec succès.')
       } else {
         const errorMsg = formatApiError(data.error || 'Erreur lors de l\'enregistrement.')
@@ -538,6 +527,7 @@ export default function StockPage() {
           setShowEdit(false)
           setEditRow(null)
           refetch()
+          setTimeout(() => refetch(), 500)
           showSuccess('Stock initialisé avec succès.')
         } else {
           const d = await res.json()
@@ -569,6 +559,7 @@ export default function StockPage() {
         setShowEdit(false)
         setEditRow(null)
         refetch()
+        setTimeout(() => refetch(), 500)
         showSuccess('Stock modifié avec succès.')
       } else {
         const d = await res.json()

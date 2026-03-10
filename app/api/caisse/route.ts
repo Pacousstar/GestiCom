@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { revalidatePath } from 'next/cache'
 import { getSession } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 import { comptabiliserCaisse } from '@/lib/comptabilisation'
@@ -48,7 +49,11 @@ export async function GET(request: NextRequest) {
     },
   })
 
-  return NextResponse.json(operations)
+  return NextResponse.json(operations, {
+    headers: {
+      'Cache-Control': 'no-store, max-age=0',
+    },
+  })
 }
 
 export async function POST(request: NextRequest) {
@@ -119,6 +124,9 @@ export async function POST(request: NextRequest) {
       console.error('Erreur comptabilisation caisse:', comptaError)
       // On continue même si la comptabilisation échoue
     }
+
+    revalidatePath('/dashboard/caisse')
+    revalidatePath('/api/caisse')
 
     return NextResponse.json(operation)
   } catch (e) {
