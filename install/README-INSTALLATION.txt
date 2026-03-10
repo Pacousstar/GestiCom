@@ -8,14 +8,13 @@
 • Un PC Windows 10 ou 11 (64 bits)
 • Au moins 4 Go de RAM
 • Au moins 2 Go d'espace disque libre
-• Connexion Internet (uniquement pour l'installation)
+• Connexion Internet (facultatif si pack complet)
 • Google Chrome ou Edge installé (recommandé)
 
 📦 CONTENU DE LA CLÉ USB
 ─────────────────────────────────────────────────────
-• INSTALLER.bat   → Script d'installation automatique
-• LANCER.bat      → Lancer GestiCom après installation
-• gesticom2/      → Fichiers du logiciel
+• INSTALLER.bat    → Script d'installation automatique
+• gesticom2/       → Fichiers du logiciel
 • README-INSTALLATION.txt → Ce fichier
 
 🚀 INSTALLATION (1ère fois uniquement)
@@ -30,7 +29,7 @@
 
 🔑 PREMIER LANCEMENT
 ─────────────────────────────────────────────────────
-1. Double-cliquez sur l'icône "GestiCom" du Bureau
+1. Double-cliquez sur l'icône "GestiCom" (logo bleu) sur le Bureau
 2. Une fenêtre noire s'ouvre (NE PAS LA FERMER)
 3. Le navigateur s'ouvre automatiquement
 4. Connectez-vous avec vos identifiants SUPER_ADMIN
@@ -51,7 +50,8 @@
 🛠 EN CAS DE PROBLÈME
 ─────────────────────────────────────────────────────
 • Le navigateur n'ouvre pas → Allez sur http://localhost:3000
-• Erreur au démarrage → Relancez LANCER.bat en admin
+• Erreur de connexion (admin) → Exécutez "reparer_base.bat" dans C:\GestiCom
+• Erreur au démarrage → Relancez le raccourci en mode Administrateur
 • Données perdues → Restaurez depuis C:\gesticom-backups\
 
 📞 SUPPORT
