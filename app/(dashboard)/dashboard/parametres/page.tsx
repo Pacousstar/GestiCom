@@ -40,7 +40,7 @@ export default function ParametresPage() {
   const [magasinEdit, setMagasinEdit] = useState<Magasin | null>(null)
   const [magasinEditForm, setMagasinEditForm] = useState({ code: '', nom: '', localisation: '', actif: true })
   const [magasinSaving, setMagasinSaving] = useState(false)
-  const [ajoutDefautLoading, setAjoutDefautLoading] = useState(false)
+
 
   const [backups, setBackups] = useState<Array<{ name: string; size: number; date: string }>>([])
   const [backupsLoading, setBackupsLoading] = useState(false)
@@ -330,25 +330,7 @@ export default function ParametresPage() {
     else { const d = await res.json(); setMagasinsErr(d.error || 'Erreur') }
   }
 
-  const handleAjoutDefaut = async () => {
-    setMagasinsErr('')
-    setAjoutDefautLoading(true)
-    try {
-      const res = await fetch('/api/magasins/ajout-defaut', { method: 'POST' })
-      const d = await res.json()
-      if (res.ok) {
-        fetchMagasins()
-        const msg = d.created > 0 ? `${d.created} point(s) de vente créé(s).` : ''
-        const skip = d.skipped > 0 ? `${d.skipped} déjà existant(s).` : ''
-        setMagasinsErr('') // on success we could show a green message; we don't have state for that, so we could use a temporary. For now we just clear err. User sees the new list.
-        if (d.created > 0 || d.skipped > 0) alert([msg, skip].filter(Boolean).join(' '))
-      } else setMagasinsErr(d.error || 'Erreur')
-    } catch (e) {
-      setMagasinsErr(e instanceof Error ? e.message : 'Erreur')
-    } finally {
-      setAjoutDefautLoading(false)
-    }
-  }
+
 
   const handleEntiteAdd = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -817,15 +799,7 @@ export default function ParametresPage() {
           <button type="submit" disabled={magasinSaving} className="flex items-center gap-1 rounded-lg bg-orange-500 px-3 py-2 text-sm text-white hover:bg-orange-600 disabled:opacity-60">
             {magasinSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />} Ajouter
           </button>
-          <button
-            type="button"
-            onClick={handleAjoutDefaut}
-            disabled={ajoutDefautLoading}
-            className="flex items-center gap-1 rounded-lg border-2 border-orange-400 bg-white px-3 py-2 text-sm font-medium text-orange-600 hover:bg-orange-50 disabled:opacity-60"
-          >
-            {ajoutDefautLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Store className="h-4 w-4" />}
-            Ajouter les points de vente par défaut
-          </button>
+
         </form>
         {magasinsErr && <p className="mt-2 text-sm text-red-600">{magasinsErr}</p>}
 
