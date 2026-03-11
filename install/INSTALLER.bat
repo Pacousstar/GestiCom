@@ -4,18 +4,24 @@ title Installation de GestiCom
 color 0A
 cls
 
-REM ── Élévation de privilèges Admin (Méthode Universelle VBS) ──
+REM ── L'AUTO-ELEVATION A ETE DESACTIVEE (TROP INSTABLE CHEZ LES CLIENTS) ──
+:: Test simple pour prévenir l'utilisateur s'il a oublié de lancer en Admin
 net session >nul 2>&1
-if %errorLevel% equ 0 goto :AdminOK
+if %errorLevel% neq 0 (
+    color 0E
+    echo.
+    echo ⚠ ATTENTION : VOUS N'ETES PAS EN MODE ADMINISTRATEUR
+    echo ======================================================
+    echo Pour installer GestiCom correctement, vous DEVEZ fermer
+    echo cette fenetre, puis faire un :
+    echo.
+    echo    CLIC-DROIT sur INSTALLER.bat 
+    echo    et choisir "Exécuter en tant qu'administrateur"
+    echo.
+    pause
+    exit /b
+)
 
-echo [☕] Demande des droits Administrateur...
-echo Set UAC = CreateObject^("Shell.Application"^) > "%temp%\getadmin.vbs"
-echo UAC.ShellExecute "%~s0", "", "", "runas", 1 >> "%temp%\getadmin.vbs"
-"%temp%\getadmin.vbs"
-del "%temp%\getadmin.vbs"
-exit /b
-
-:AdminOK
 :: Forcer le retour dans le dossier de l'installateur (avec protection backslash)
 cd /d "%~dp0."
 
@@ -48,7 +54,8 @@ if not exist "C:\gesticom" mkdir "C:\gesticom"
 REM Copier les fichiers du logiciel
 echo.
 echo [2/5] Copie des fichiers de l'application... (veuillez patienter)
-xcopy /E /I /Y "%~dp0.." "C:\GestiCom\app" /EXCLUDE:%~dp0..\exclude_list.txt
+:: On utilise ..\ au lieu de %~dp0.. pour contourner le bug d'xcopy avec /EXCLUDE sur les chemins avec espaces
+xcopy /E /I /Y "..\*" "C:\GestiCom\app\" /EXCLUDE:..\exclude_list.txt
 if %errorlevel% neq 0 goto :CopyError
 
 REM Copier Node.js portable
