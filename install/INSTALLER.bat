@@ -54,8 +54,10 @@ if not exist "C:\gesticom" mkdir "C:\gesticom"
 REM Copier les fichiers du logiciel
 echo.
 echo [2/5] Copie des fichiers de l'application... (veuillez patienter)
-:: On utilise ..\ au lieu de %~dp0.. pour contourner le bug d'xcopy avec /EXCLUDE sur les chemins avec espaces
-xcopy /E /I /Y "..\*" "C:\GestiCom\app\" /EXCLUDE:..\exclude_list.txt
+:: On se deplace dans le dossier parent pour que /EXCLUDE ne contienne pas d'espaces (bug xcopy)
+pushd ".."
+xcopy /E /I /Y . "C:\GestiCom\app\" /EXCLUDE:exclude_list.txt
+popd
 if %errorlevel% neq 0 goto :CopyError
 
 REM Copier Node.js portable
@@ -93,7 +95,7 @@ echo ⚠ ATTENTION : L'initialisation de la base a rencontré un problème.
 
 REM ── Création du raccourci Bureau ────────────────────────────
 echo [5/5] Création du raccourci sur le Bureau...
-powershell -Command "$ws = New-Object -ComObject WScript.Shell; $s = $ws.CreateShortcut([Environment]::GetFolderPath('Desktop') + '\GestiCom.lnk'); $s.TargetPath = 'C:\GestiCom\LANCER.bat'; $s.IconLocation = 'C:\GestiCom\app\public\logo.png'; $s.Description = 'Lancer GestiCom'; $s.WindowStyle = 7; $s.Save()" >nul 2>&1
+powershell -Command "$ws = New-Object -ComObject WScript.Shell; $s = $ws.CreateShortcut([Environment]::GetFolderPath('Desktop') + '\GestiCom.lnk'); $s.TargetPath = 'C:\GestiCom\LANCER.bat'; $s.IconLocation = 'C:\GestiCom\app\public\favicon.ico'; $s.Description = 'Lancer GestiCom'; $s.WindowStyle = 7; $s.Save()" >nul 2>&1
 echo    ✓ Raccourci créé avec succès.
 
 REM Copier le lanceur

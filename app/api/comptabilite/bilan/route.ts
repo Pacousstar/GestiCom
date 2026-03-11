@@ -13,13 +13,13 @@ export async function GET(request: Request) {
         const debutAnnee = new Date(annee, 0, 1)
         const finAnnee = new Date(annee, 11, 31, 23, 59, 59)
 
-        // 1. Récupérer tous les comptes actifs
+        // 1. Récupérer tous les comptes actifs (1-7 pour inclure Charges et Produits dans le résultat)
         const comptes = await prisma.planCompte.findMany({
             where: { actif: true },
             include: {
                 ecritures: {
                     where: {
-                        date: { lte: finAnnee } // On prend tout jusqu'à la fin de l'exercice pour le bilan de clôture
+                        date: { lte: finAnnee }
                     }
                 }
             }
@@ -31,12 +31,13 @@ export async function GET(request: Request) {
             const totalCredit = compte.ecritures.reduce((sum, e) => sum + e.credit, 0)
             const solde = totalDebit - totalCredit
             return {
-                ...compte,
+                numero: compte.numero,
+                libelle: compte.libelle,
                 totalDebit,
                 totalCredit,
                 solde
             }
-        }).filter(c => c.solde !== 0 || c.totalDebit !== 0 || c.totalCredit !== 0)
+        }).filter(c => c.solde !== 0)
 
         // 3. Structurer le Bilan (SYSCOHADA Simplifié)
         const bilan = {
@@ -55,46 +56,50 @@ export async function GET(request: Request) {
             }
         }
 
+        // Variables pour le calcul du résultat (Produits - Charges)
+        let totalProduits = 0
+        let totalCharges = 0
+
         accountsWithBalances.forEach(c => {
             const p = { numero: c.numero, libelle: c.libelle, montant: Math.abs(c.solde) }
 
-            // LOGIQUE DE CLASSIFICATION
+            // CLASSIFICATION BILAN
             if (c.numero.startsWith('2')) {
                 bilan.actif.immobilise.push(p)
             } else if (c.numero.startsWith('3')) {
                 bilan.actif.stocks.push(p)
             } else if (c.numero.startsWith('4')) {
-                if (c.solde > 0) {
-                    bilan.actif.creances.push(p)
-                } else {
-                    bilan.passif.dettes.push(p)
-                }
+                if (c.solde > 0) bilan.actif.creances.push(p)
+                else bilan.passif.dettes.push(p)
             } else if (c.numero.startsWith('5')) {
-                if (c.solde > 0) {
-                    bilan.actif.tresorerie.push(p)
-                } else {
-                    bilan.passif.tresorerie.push(p)
-                }
+                if (c.solde > 0) bilan.actif.tresorerie.push(p)
+                else bilan.passif.tresorerie.push(p)
             } else if (c.numero.startsWith('1')) {
                 bilan.passif.capitaux.push(p)
+            } 
+            // CLASSIFICATION RÉSULTAT
+            else if (c.numero.startsWith('7')) {
+                totalProduits += Math.abs(c.solde)
+            } else if (c.numero.startsWith('6')) {
+                totalCharges += Math.abs(c.solde)
             }
         })
 
-        // Calcul des totaux
+        // Calcul des totaux de base (avant résultat)
         bilan.actif.total = [...bilan.actif.immobilise, ...bilan.actif.stocks, ...bilan.actif.creances, ...bilan.actif.tresorerie].reduce((s, x) => s + x.montant, 0)
         bilan.passif.total = [...bilan.passif.capitaux, ...bilan.passif.dettes, ...bilan.passif.tresorerie].reduce((s, x) => s + x.montant, 0)
 
-        // Calcul du Résultat de l'exercice (Différence Actif - Passif)
-        // En comptabilité double, Actif = Passif + Résultat
-        const resultat = bilan.actif.total - bilan.passif.total
-        if (resultat !== 0) {
+        // Calcul du Résultat (Produits - Charges)
+        const resultatNet = totalProduits - totalCharges
+        
+        if (resultatNet !== 0) {
             bilan.passif.capitaux.push({
                 numero: '13',
-                libelle: resultat > 0 ? 'RÉSULTAT NET : BÉNÉFICE' : 'RÉSULTAT NET : PERTE',
-                montant: Math.abs(resultat),
+                libelle: resultatNet > 0 ? 'RÉSULTAT NET : BÉNÉFICE' : 'RÉSULTAT NET : PERTE',
+                montant: Math.abs(resultatNet),
                 isResultat: true
             })
-            bilan.passif.total += Math.abs(resultat)
+            bilan.passif.total += Math.abs(resultatNet)
         }
 
         // 4. Récupérer les infos de l'entreprise et de l'entité
