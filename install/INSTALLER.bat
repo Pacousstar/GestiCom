@@ -79,7 +79,8 @@ call npm run db:seed
 echo OK.
 
 echo [5/5] Creation du raccourci Bureau...
-powershell -Command "$ws = New-Object -ComObject WScript.Shell; $s = $ws.CreateShortcut([Environment]::GetFolderPath('Desktop') + '\GestiCom.lnk'); $s.TargetPath = 'C:\GestiCom\LANCER.bat'; $s.IconLocation = 'C:\GestiCom\app\public\favicon.ico'; $s.Save()" >nul 2>&1
+copy /Y "C:\GestiCom\app\public\favicon.ico" "C:\GestiCom\app\favicon.ico" >nul 2>&1
+powershell -Command "$ws = New-Object -ComObject WScript.Shell; $l = [Environment]::GetFolderPath('Desktop') + '\GestiCom.lnk'; $s = $ws.CreateShortcut($l); $s.TargetPath = 'C:\GestiCom\LANCER.bat'; $s.IconLocation = 'C:\GestiCom\app\favicon.ico'; $s.WorkingDirectory = 'C:\GestiCom'; $s.Save()" >nul 2>&1
 copy /Y "%~dp0LANCER.bat" "C:\GestiCom\LANCER.bat" >nul
 echo OK.
 
