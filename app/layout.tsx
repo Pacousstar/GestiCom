@@ -26,6 +26,8 @@ export const viewport: Viewport = {
   themeColor: "#f97316",
 };
 
+import SecurityWrapper from "@/components/SecurityWrapper";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -34,7 +36,9 @@ export default function RootLayout({
   return (
     <html lang="fr">
       <body className="antialiased bg-gray-50">
-        {children}
+        <SecurityWrapper>
+          {children}
+        </SecurityWrapper>
       </body>
     </html>
   );

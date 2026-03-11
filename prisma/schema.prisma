@@ -557,3 +557,14 @@ model DashboardPreference {
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
 }
+
+// LICENCE & ACTIVATION (Hardware Lock)
+model Licence {
+  id              Int      @id @default(autoincrement())
+  hwid            String   @unique // Hardware ID de la machine
+  cle             String   // Clé d'activation
+  dateActivation  DateTime @default(now())
+  statut          String   @default("ACTIVE") // "ACTIVE" | "EXPIREE" | "REVOQUEE"
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}

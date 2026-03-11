@@ -4,19 +4,6 @@ import withPWA from "@ducanh2912/next-pwa";
 
 const nextConfig: NextConfig = {
   reactCompiler: true,
-  output: "standalone", // pour livraison Option B : build autonome + lanceur (double-clic)
-  // Forcer la racine de traçage = ce projet (évite multiple lockfiles → standalone vide)
-  outputFileTracingRoot: path.join(__dirname),
-  outputFileTracingExcludes: {
-    "*": [
-      "GestiCom-Portable/**",
-      "gesticom/**",
-      "backups/**",
-      "GestiCom-Portable*.zip",
-      "backup-*.db",
-      "node_modules/@next/swc-win32-x64-gnu/**"
-    ]
-  },
   // Exclure le dossier gesticom du build et configurer webpack
   webpack: (config, { isServer, dev }) => {
     if (!isServer) {
@@ -25,7 +12,28 @@ const nextConfig: NextConfig = {
         fs: false,
       };
     }
-    // STOPPER LA BOUCLE DE FAST REFRESH: Exclure les modifications SQLite du watcher
+
+    // OBFUSCATION (Seulement en production)
+    if (!dev) {
+      const WebpackObfuscator = require('webpack-obfuscator');
+      config.plugins.push(
+        new WebpackObfuscator({
+          rotateStringArray: true,
+          stringArray: true,
+          stringArrayThreshold: 0.75,
+          controlFlowFlattening: false, // Désactivé car trop gourmand/instable
+          deadCodeInjection: false,     // Désactivé pour la stabilité
+          debugProtection: false,      // Désactivé pour éviter les blocages environnementaux
+          selfDefending: false,        // Désactivé pour la compatibilité
+          identifierNamesGenerator: 'hexadecimal',
+        }, [
+          '**/node_modules/**',
+          '**/static/**',
+        ])
+      );
+    }
+
+    // STOPPER LA BOUCLE DE FAST REFRESH
     if (dev) {
       config.watchOptions = {
         ...config.watchOptions,
