@@ -703,17 +703,19 @@ export default function DashboardLayoutClient({
           {children}
         </main>
 
-        {/* Footer GestiCom App */}
-        <footer className="h-10 border-t border-gray-200 bg-white flex items-center justify-center relative z-10 w-full shrink-0 no-print">
-          <p className="text-[11px] font-bold">
-            <span className="text-orange-500">Tous droits reservés</span>
-            <span className="text-gray-400 mx-1">-</span>
-            <span className="text-orange-500">Pacousstar</span>
-            <span className="text-gray-400 mx-1">07 07 80 18 17</span>
-            <span className="text-green-600 mx-1">/</span>
-            <span className="text-green-600">05 44 81 49 24</span>
-          </p>
-        </footer>
+        {/* Footer GestiCom App - Affiché uniquement sur Dashboard et Paramètres */}
+        {(pathname === '/dashboard' || pathname?.startsWith('/dashboard/parametres')) && (
+          <footer className="h-10 border-t border-gray-200 bg-white flex items-center justify-center relative z-10 w-full shrink-0 no-print">
+            <p className="text-[11px] font-bold">
+              <span className="text-orange-500">Tous droits reservés</span>
+              <span className="text-gray-400 mx-1">-</span>
+              <span className="text-orange-500">Pacousstar</span>
+              <span className="text-gray-400 mx-1">07 07 80 18 17</span>
+              <span className="text-green-600 mx-1">/</span>
+              <span className="text-green-600">05 44 81 49 24</span>
+            </p>
+          </footer>
+        )}
       </div>
       <ToastContainer toasts={toasts} onClose={removeToast} />
     </div>
