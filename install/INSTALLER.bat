@@ -49,19 +49,17 @@ if not exist "C:\GestiCom" mkdir "C:\GestiCom"
 if not exist "C:\gesticom" mkdir "C:\gesticom"
 
 echo [2/5] Copie des fichiers (Veuillez patienter...)...
-:: On se deplace dans le dossier parent pour que /EXCLUDE ne pose pas de probleme
-pushd ".."
-xcopy /E /I /Y . "C:\GestiCom\app\" /EXCLUDE:exclude_list.txt
-popd
-if %errorlevel% neq 0 (
-    echo ERREUR: Echec de la copie des fichiers.
+:: Utilisation de ROBOCOPY pour plus de fiabilite
+robocopy ".." "C:\GestiCom\app" /E /Z /R:5 /W:5 /MT:32 /V /NFL /NDL /XD "node_modules\.cache" ".git" ".next\cache" /XF "exclude_list.txt"
+if %errorlevel% geq 8 (
+    echo ERREUR: Echec de la copie des fichiers (Code: %errorlevel%).
     pause
     exit /b 1
 )
 
 echo [2/5] Configuration moteur...
 if not exist "C:\GestiCom\bin\node" mkdir "C:\GestiCom\bin\node"
-xcopy /E /I /Y "%NODE_DIR%" "C:\GestiCom\bin\node"
+robocopy "%NODE_DIR%" "C:\GestiCom\bin\node" /E /NJH /NJS
 echo OK.
 
 echo [3/5] Controle des composants...
@@ -73,14 +71,15 @@ if not exist "C:\GestiCom\app\node_modules" (
 
 echo [4/5] Base de donnees...
 cd /d "C:\GestiCom\app"
-call npx prisma generate
-call npx prisma db push --accept-data-loss
+:: Appel direct de Prisma via node pour eviter les soucis de resolution NPX
+call node "node_modules\prisma\build\index.js" generate
+call node "node_modules\prisma\build\index.js" db push --accept-data-loss
 call npm run db:seed
 echo OK.
 
 echo [5/5] Creation du raccourci Bureau...
-copy /Y "C:\GestiCom\app\public\favicon.ico" "C:\GestiCom\app\favicon.ico" >nul 2>&1
-powershell -Command "$ws = New-Object -ComObject WScript.Shell; $l = [Environment]::GetFolderPath('Desktop') + '\GestiCom.lnk'; $s = $ws.CreateShortcut($l); $s.TargetPath = 'C:\GestiCom\LANCER.bat'; $s.IconLocation = 'C:\GestiCom\app\favicon.ico'; $s.WorkingDirectory = 'C:\GestiCom'; $s.Save()" >nul 2>&1
+:: Raccourci simplifie
+powershell -Command "$ws = New-Object -ComObject WScript.Shell; $l = [Environment]::GetFolderPath('Desktop') + '\GestiCom.lnk'; $s = $ws.CreateShortcut($l); $s.TargetPath = 'C:\GestiCom\LANCER.bat'; $s.WorkingDirectory = 'C:\GestiCom'; $s.Save()"
 copy /Y "%~dp0LANCER.bat" "C:\GestiCom\LANCER.bat" >nul
 echo OK.
 

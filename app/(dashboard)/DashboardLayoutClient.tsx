@@ -31,6 +31,7 @@ import {
   ChevronDown,
   Loader2,
   CreditCard,
+  FileBarChart,
 } from 'lucide-react'
 import type { Session } from '@/lib/auth'
 import { ToastContainer } from '@/components/ui/Toast'
@@ -59,6 +60,8 @@ const navigation: Array<{
     { name: 'Charges', href: '/dashboard/charges', icon: TrendingUp, permission: 'charges:view' },
     { name: 'Rapports', href: '/dashboard/rapports', icon: FileText, permission: 'rapports:view' },
     { name: 'Rapports Ventes', href: '/dashboard/rapports-ventes', icon: TrendingUp, permission: 'rapports:ventes' },
+    { name: 'Suivi Fournisseurs', href: '/dashboard/rapports-fournisseurs', icon: Truck, permission: 'rapports:view' },
+    { name: 'Inventaire Global', href: '/dashboard/rapports-inventaire', icon: FileBarChart, permission: 'rapports:view' },
     { name: 'Comptabilité', href: '/dashboard/comptabilite', icon: Calculator, permission: 'comptabilite:view' },
     { name: 'Utilisateurs', href: '/dashboard/utilisateurs', icon: UserPlus, permission: 'users:view' },
     { name: 'Journal d\'audit', href: '/dashboard/audit', icon: Activity, permission: 'audit:view' },
