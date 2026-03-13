@@ -49,8 +49,8 @@ if not exist "C:\GestiCom" mkdir "C:\GestiCom"
 if not exist "C:\gesticom" mkdir "C:\gesticom"
 
 echo [2/5] Copie des fichiers (Veuillez patienter...)...
-:: Utilisation de ROBOCOPY pour plus de fiabilite
-robocopy ".." "C:\GestiCom\app" /E /Z /R:5 /W:5 /MT:32 /V /NFL /NDL /XD "node_modules\.cache" ".git" ".next\cache" /XF "exclude_list.txt"
+:: Utilisation de ROBOCOPY optimisé pour la vitesse
+robocopy ".." "C:\GestiCom\app" /E /MT:16 /V /NFL /NDL /R:1 /W:1 /XD "node_modules\.cache" ".git" ".next\cache" /XF "exclude_list.txt"
 if %errorlevel% geq 8 (
     echo ERREUR: Echec de la copie des fichiers (Code: %errorlevel%).
     pause
@@ -74,12 +74,13 @@ cd /d "C:\GestiCom\app"
 :: Appel direct de Prisma via node pour eviter les soucis de resolution NPX
 call node "node_modules\prisma\build\index.js" generate
 call node "node_modules\prisma\build\index.js" db push --accept-data-loss
-call npm run db:seed
+echo Configuration des donnees par defaut...
+call node "scripts\seed-portable.js"
 echo OK.
 
 echo [5/5] Creation du raccourci Bureau...
 :: Raccourci simplifie
-powershell -Command "$ws = New-Object -ComObject WScript.Shell; $l = [Environment]::GetFolderPath('Desktop') + '\GestiCom.lnk'; $s = $ws.CreateShortcut($l); $s.TargetPath = 'C:\GestiCom\LANCER.bat'; $s.WorkingDirectory = 'C:\GestiCom'; $s.Save()"
+powershell -Command "$ws = New-Object -ComObject WScript.Shell; $l = [Environment]::GetFolderPath('Desktop') + '\GestiCom.lnk'; $s = $ws.CreateShortcut($l); $s.TargetPath = 'C:\GestiCom\LANCER.bat'; $s.WorkingDirectory = 'C:\GestiCom'; $s.IconLocation = 'C:\GestiCom\app\public\favicon.ico'; $s.Save()"
 copy /Y "%~dp0LANCER.bat" "C:\GestiCom\LANCER.bat" >nul
 echo OK.
 
