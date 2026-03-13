@@ -17,27 +17,48 @@ export default function SecurityWrapper({ children }: { children: React.ReactNod
             return
         }
 
+        let isMounted = true
+
         async function checkLicense() {
             try {
-                // Utiliser un cache court ou s'assurer que l'appel n'est pas bloqué
-                const res = await fetch('/api/license/check', { cache: 'no-store' })
+                // Timeout de 10 secondes pour le fetch de licence
+                const controller = new AbortController()
+                const timeoutId = setTimeout(() => controller.abort(), 10000)
+
+                const res = await fetch('/api/license/check', { 
+                    cache: 'no-store',
+                    signal: controller.signal 
+                })
+                clearTimeout(timeoutId)
+                
                 const data = await res.json()
                 
-                if (data.activated) {
-                    setIsActivated(true)
-                } else {
-                    setIsActivated(false)
-                    router.push('/activation')
+                if (isMounted) {
+                    if (data.activated) {
+                        setIsActivated(true)
+                    } else {
+                        setIsActivated(false)
+                        router.push('/activation')
+                    }
                 }
             } catch (error) {
                 console.error('License verification failed:', error)
-                router.push('/activation')
+                if (isMounted) {
+                    setIsActivated(false)
+                    router.push('/activation')
+                }
             } finally {
-                setLoading(false)
+                if (isMounted) {
+                    setLoading(false)
+                }
             }
         }
 
         checkLicense()
+
+        return () => {
+            isMounted = false
+        }
     }, [pathname, router])
 
     if (loading) {
@@ -54,11 +75,13 @@ export default function SecurityWrapper({ children }: { children: React.ReactNod
     }
 
     // Sinon, on ne rend les enfants que si activé. 
-    // Au lieu de retourner null (page noire), on affiche le loader tant qu'on n'est pas sur /activation
     return isActivated ? <>{children}</> : (
-        <div className="min-h-screen bg-[#0f172a] flex items-center justify-center">
+        <div className="min-h-screen bg-[#0f172a] flex items-center justify-center flex-col gap-4">
             <Loader2 className="h-10 w-10 animate-spin text-orange-500" />
-            <p className="ml-4 text-white font-medium">Vérification de la licence...</p>
+            <div className="text-center">
+                <p className="text-white font-medium">Vérification de la licence...</p>
+                <p className="text-slate-500 text-xs mt-2">Si ce message persiste, veuillez redémarrer l'application.</p>
+            </div>
         </div>
     )
 }
