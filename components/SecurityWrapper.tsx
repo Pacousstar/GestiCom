@@ -53,6 +53,12 @@ export default function SecurityWrapper({ children }: { children: React.ReactNod
         return <>{children}</>
     }
 
-    // Sinon, on ne rend les enfants que si activé
-    return isActivated ? <>{children}</> : null
+    // Sinon, on ne rend les enfants que si activé. 
+    // Au lieu de retourner null (page noire), on affiche le loader tant qu'on n'est pas sur /activation
+    return isActivated ? <>{children}</> : (
+        <div className="min-h-screen bg-[#0f172a] flex items-center justify-center">
+            <Loader2 className="h-10 w-10 animate-spin text-orange-500" />
+            <p className="ml-4 text-white font-medium">Vérification de la licence...</p>
+        </div>
+    )
 }
