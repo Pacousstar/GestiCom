@@ -414,6 +414,9 @@ async function importer() {
           // "Prix d'achat (FCFA)" dans le fichier Excel
           prixAchat: row['Prix d\'achat (FCFA)'] || row['Prix d\'achat'] ||
                      row['Prix (FCFA)'] || row['Prix'] || null,
+          // Prix de vente (FCFA)
+          prixVente: row['Prix de Vente (FCFA)'] || row['Prix de Vente'] || 
+                     row['Vente (FCFA)'] || row['Vente'] || null,
           // "Ref Mag / Stock" traité comme "Point de ventes" (déjà fusionné Danane)
           pointDeVente: pointDeVente,
           // "Stock final" utilisé comme "Stock Initiale"
@@ -478,12 +481,19 @@ async function importer() {
 
           // Gérer le prix
           let prixAchat = null
-          let prixVente = null // Prix de vente laissé vide (0) pour le moment
+          let prixVente = null
+          
           if (prod.prixAchat) {
             const prixNum = Number(String(prod.prixAchat).replace(/[^\d.-]/g, ''))
             if (!isNaN(prixNum) && prixNum > 0) {
               prixAchat = prixNum
-              // prixVente reste null (sera 0 dans la BD)
+            }
+          }
+
+          if (prod.prixVente) {
+            const prixNumVente = Number(String(prod.prixVente).replace(/[^\d.-]/g, ''))
+            if (!isNaN(prixNumVente) && prixNumVente > 0) {
+              prixVente = prixNumVente
             }
           }
 

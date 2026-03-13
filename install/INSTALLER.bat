@@ -80,7 +80,7 @@ echo OK.
 
 echo [5/5] Creation du raccourci Bureau...
 :: Raccourci simplifie
-powershell -Command "$ws = New-Object -ComObject WScript.Shell; $l = [Environment]::GetFolderPath('Desktop') + '\GestiCom.lnk'; $s = $ws.CreateShortcut($l); $s.TargetPath = 'C:\GestiCom\LANCER.bat'; $s.WorkingDirectory = 'C:\GestiCom'; $s.IconLocation = 'C:\GestiCom\app\public\favicon.ico'; $s.Save()"
+powershell -Command "$ws = New-Object -ComObject WScript.Shell; $l = [Environment]::GetFolderPath('Desktop') + '\GestiCom.lnk'; $s = $ws.CreateShortcut($l); $s.TargetPath = 'C:\GestiCom\LANCER.bat'; $s.WorkingDirectory = 'C:\GestiCom'; $s.Save()"
 copy /Y "%~dp0LANCER.bat" "C:\GestiCom\LANCER.bat" >nul
 echo OK.
 

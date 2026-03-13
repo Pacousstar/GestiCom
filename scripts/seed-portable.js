@@ -30,20 +30,25 @@ async function main() {
     console.log('Entite creee.')
   }
 
-  // 2. Magasin
-  let magasin = await prisma.magasin.findUnique({ where: { code: 'MAG01' } })
-  if (!magasin) {
-    magasin = await prisma.magasin.create({
-      data: {
-        code: 'MAG01',
-        nom: 'Magasin 01',
-        localisation: entite.localisation,
-        entiteId: entite.id,
-        actif: true,
-      },
-    })
-    console.log('Magasin cree.')
+  // 2. Nettoyage et Création Magasin
+  console.log('Nettoyage des magasins existants...')
+  try {
+    await prisma.magasin.deleteMany({})
+    console.log('Magasins nettoyes.')
+  } catch (e) {
+    console.log('Note: Nettoyage magasins ignore (peut etre lie a des donnees existantes).')
   }
+  
+  let magasin = await prisma.magasin.create({
+    data: {
+      code: 'MAG01',
+      nom: 'Magasin 01',
+      localisation: entite.localisation,
+      entiteId: entite.id,
+      actif: true,
+    },
+  })
+  console.log('Magasin par defaut cree (MAG01).')
 
   // 3. Utilisateur Admin
   const existing = await prisma.utilisateur.findUnique({ where: { login: ADMIN_LOGIN } })
