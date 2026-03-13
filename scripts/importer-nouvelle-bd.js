@@ -415,7 +415,7 @@ async function importer() {
           prixAchat: row['Prix d\'achat (FCFA)'] || row['Prix d\'achat'] ||
                      row['Prix (FCFA)'] || row['Prix'] || null,
           // Prix de vente (FCFA)
-          prixVente: row['Prix de Vente (FCFA)'] || row['Prix de Vente'] || 
+          prixVente: row['Prix Vente HT'] || row['Prix de Vente (FCFA)'] || row['Prix de Vente'] || 
                      row['Vente (FCFA)'] || row['Vente'] || null,
           // "Ref Mag / Stock" traité comme "Point de ventes" (déjà fusionné Danane)
           pointDeVente: pointDeVente,

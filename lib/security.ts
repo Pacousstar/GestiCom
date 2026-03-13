@@ -11,17 +11,27 @@ export async function getHardwareId(): Promise<string> {
             return 'NON-WINDOWS-' + crypto.randomBytes(4).toString('hex').toUpperCase()
         }
 
-        // On tente de récupérer le numéro de série de la carte mère (Baseboard)
-        const output = execSync('wmic baseboard get serialnumber', { encoding: 'utf8' })
-        const lines = output.trim().split('\n')
-        const serial = lines.length > 1 ? lines[1].trim() : 'UNKNOWN'
+        // On tente de récupérer le numéro de série de la carte mère avec un timeout court
+        let serial = 'UNKNOWN'
+        try {
+            const output = execSync('wmic baseboard get serialnumber', { encoding: 'utf8', timeout: 5000 })
+            const lines = output.trim().split('\n')
+            serial = lines.length > 1 ? lines[1].trim() : 'UNKNOWN'
+        } catch (e) {
+            console.warn('WMIC Serial Number failed or timed out')
+        }
 
-        if (!serial || serial === 'None' || serial === 'Default string') {
+        if (!serial || serial === 'None' || serial === 'Default string' || serial === 'UNKNOWN') {
             // Fallback sur le UUID système si le serial baseboard est indisponible
-            const uuidOutput = execSync('wmic csproduct get uuid', { encoding: 'utf8' })
-            const uuidLines = uuidOutput.trim().split('\n')
-            const uuid = uuidLines.length > 1 ? uuidLines[1].trim() : 'UNKNOWN'
-            return generateGestiComId(uuid)
+            try {
+                const uuidOutput = execSync('wmic csproduct get uuid', { encoding: 'utf8', timeout: 5000 })
+                const uuidLines = uuidOutput.trim().split('\n')
+                const uuid = uuidLines.length > 1 ? uuidLines[1].trim() : 'UNKNOWN'
+                return generateGestiComId(uuid)
+            } catch (e) {
+                console.warn('WMIC UUID failed or timed out')
+            }
+            return generateGestiComId('FALLBACK-' + process.env.COMPUTERNAME || 'NODE')
         }
 
         return generateGestiComId(serial)
