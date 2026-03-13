@@ -15,40 +15,41 @@ const ADMIN_PASSWORD = 'Admin@123'
 async function main() {
   console.log('--- SEED GESTICOM PORTABLE ---')
   
-  // 1. Entité
-  let entite = await prisma.entite.findFirst()
+  // 1. Entité (Maison Mère)
+  const entiteCode = 'MM01'
+  let entite = await prisma.entite.findUnique({ where: { code: entiteCode } })
   if (!entite) {
     entite = await prisma.entite.create({
       data: {
-        code: 'MM01',
-        nom: 'Maison Mere',
+        code: entiteCode,
+        nom: 'GSN EXPERTISES GROUP',
         type: 'MAISON_MERE',
-        localisation: 'Siege',
+        localisation: 'Siège',
         active: true,
       },
     })
-    console.log('Entite creee.')
+    console.log('Entité créée.')
+  } else {
+    console.log('Entité existe déjà.')
   }
 
-  // 2. Nettoyage et Création Magasin
-  console.log('Nettoyage des magasins existants...')
-  try {
-    await prisma.magasin.deleteMany({})
-    console.log('Magasins nettoyes.')
-  } catch (e) {
-    console.log('Note: Nettoyage magasins ignore (peut etre lie a des donnees existantes).')
+  // 2. Magasin par défaut
+  const magasinCode = 'MAG01'
+  let magasin = await prisma.magasin.findUnique({ where: { code: magasinCode } })
+  if (!magasin) {
+    magasin = await prisma.magasin.create({
+      data: {
+        code: magasinCode,
+        nom: 'MAG01 Maison Mère',
+        localisation: entite.localisation,
+        entiteId: entite.id,
+        actif: true,
+      },
+    })
+    console.log('Magasin par défaut créé (MAG01).')
+  } else {
+    console.log('Magasin MAG01 existe déjà.')
   }
-  
-  let magasin = await prisma.magasin.create({
-    data: {
-      code: 'MAG01',
-      nom: 'Magasin 01',
-      localisation: entite.localisation,
-      entiteId: entite.id,
-      actif: true,
-    },
-  })
-  console.log('Magasin par defaut cree (MAG01).')
 
   // 3. Utilisateur Admin
   const existing = await prisma.utilisateur.findUnique({ where: { login: ADMIN_LOGIN } })
