@@ -47,8 +47,8 @@ export default function ActivationPage() {
 
             if (data.success) {
                 setStatus('success')
-                setMessage('Logiciel activé avec succès ! Redirection...')
-                setTimeout(() => router.push('/dashboard'), 2000)
+                setMessage('Logiciel activé avec succès ! Redirection vers la connexion...')
+                setTimeout(() => router.push('/login'), 2000)
             } else {
                 setStatus('error')
                 setMessage(data.error || 'Erreur lors de l\'activation')

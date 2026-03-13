@@ -83,7 +83,10 @@ async function main() {
     console.log('Parametres crees.')
   }
 
-  console.log('Seed termine avec succes !')
+  // 5. Validation Finale
+  const userCount = await prisma.utilisateur.count()
+  console.log(`Verification Prisma : ${userCount} utilisateur(s) trouve(s) dans la base.`)
+  console.log('Seed termine avec succes ! Base de donnees opérationnelle.')
 }
 
 main()

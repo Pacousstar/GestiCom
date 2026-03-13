@@ -19,18 +19,18 @@ export default function SecurityWrapper({ children }: { children: React.ReactNod
 
         async function checkLicense() {
             try {
-                const res = await fetch('/api/license/check')
+                // Utiliser un cache court ou s'assurer que l'appel n'est pas bloqué
+                const res = await fetch('/api/license/check', { cache: 'no-store' })
                 const data = await res.json()
                 
                 if (data.activated) {
                     setIsActivated(true)
                 } else {
+                    setIsActivated(false)
                     router.push('/activation')
                 }
             } catch (error) {
                 console.error('License verification failed:', error)
-                // En cas d'erreur de serveur, on peut choisir de bloquer ou non. 
-                // Pour la sécurité maximale, on bloque.
                 router.push('/activation')
             } finally {
                 setLoading(false)
