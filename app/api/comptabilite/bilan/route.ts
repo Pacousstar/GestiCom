@@ -91,15 +91,26 @@ export async function GET(request: Request) {
                 bilan.passif.capitaux.push(p)
                 bilan.passif.total += p.montant
             } 
-            // CLASSIFICATION RÉSULTAT (Classes 6 et 7)
+            // CLASSIFICATION RÉSULTAT (Classes 6, 7 et 8)
+            // Classe 7: Produits
             else if (c.numero.startsWith('7')) {
                 totalProduits += (c.totalCredit - c.totalDebit)
-            } else if (c.numero.startsWith('6')) {
+            } 
+            // Classe 6: Charges
+            else if (c.numero.startsWith('6')) {
                 totalCharges += (c.totalDebit - c.totalCredit)
+            }
+            // Classe 8: Autres Charges/Produits HAO (SYSCOHADA)
+            else if (c.numero.startsWith('8')) {
+                // On sépare Produits HAO (82, 84, 86, 88) et Charges HAO (81, 83, 85, 87)
+                // Ou plus simplement par le solde naturel
+                const soldeNaturel = c.totalCredit - c.totalDebit
+                if (soldeNaturel > 0) totalProduits += soldeNaturel
+                else totalCharges += Math.abs(soldeNaturel)
             }
         })
 
-        // On s'assure que le résultat est dans les produits - charges
+        // Calcul du Résultat (Produits - Charges)
         const resultatNet = totalProduits - totalCharges
         
         if (resultatNet !== 0) {
@@ -109,7 +120,9 @@ export async function GET(request: Request) {
                 montant: Math.abs(resultatNet),
                 isResultat: true
             })
-            bilan.passif.total += Math.abs(resultatNet)
+            // IMPORTANT : Le résultat s'ajoute au Passif s'il est positif (Bénéfice)
+            // et se déduit du Passif s'il est négatif (Perte) dans l'équation A = P
+            bilan.passif.total += resultatNet 
         }
 
         const [params, entite] = await Promise.all([
