@@ -55,6 +55,7 @@ export default function AchatsPage() {
   const { success: showSuccess, error: showError } = useToast()
   const [currentPage, setCurrentPage] = useState(1)
   const [pagination, setPagination] = useState<{ page: number; limit: number; total: number; totalPages: number } | null>(null)
+  const [totals, setTotals] = useState<{ montantTotal: number; montantPaye: number; resteAPayer: number } | null>(null)
   const [formData, setFormData] = useState({
     date: new Date().toISOString().split('T')[0],
     magasinId: '',
@@ -124,15 +125,17 @@ export default function AchatsPage() {
     if (deb) params.set('dateDebut', deb)
     if (fin) params.set('dateFin', fin)
     fetch('/api/achats?' + params.toString())
-      .then((r) => (r.ok ? r.json() : { data: [], pagination: null }))
+      .then((r) => (r.ok ? r.json() : { data: [], pagination: null, totals: null }))
       .then((response) => {
         if (response.data) {
           setAchats(response.data)
           setPagination(response.pagination)
+          setTotals(response.totals)
         } else {
           // Compatibilité avec l'ancien format
           setAchats(Array.isArray(response) ? response : [])
           setPagination(null)
+          setTotals(null)
         }
       })
       .finally(() => setLoading(false))
@@ -830,6 +833,17 @@ export default function AchatsPage() {
                   </tr>
                 ))}
               </tbody>
+              {totals && (
+                <tfoot className="bg-orange-50 font-bold text-gray-900 border-t-2 border-orange-200">
+                  <tr>
+                    <td colSpan={4} className="px-4 py-3 uppercase text-xs tracking-wider text-gray-700">Total Période</td>
+                    <td className="px-4 py-3 text-right text-orange-700">{totals.montantTotal.toLocaleString('fr-FR')} F</td>
+                    <td colSpan={2}></td>
+                    <td className="px-4 py-3 text-right text-red-700">{totals.resteAPayer.toLocaleString('fr-FR')} F</td>
+                    <td></td>
+                  </tr>
+                </tfoot>
+              )}
             </table>
           </div>
         )}

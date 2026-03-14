@@ -30,7 +30,7 @@ export async function GET(request: NextRequest) {
     where.entiteId = session.entiteId
   }
 
-  const [achats, total] = await Promise.all([
+  const [achats, total, aggregates] = await Promise.all([
     prisma.achat.findMany({
       where,
       skip,
@@ -43,10 +43,22 @@ export async function GET(request: NextRequest) {
       },
     }),
     prisma.achat.count({ where }),
+    prisma.achat.aggregate({
+      where,
+      _sum: {
+        montantTotal: true,
+        montantPaye: true,
+      }
+    })
   ])
 
   const res = NextResponse.json({
     data: achats,
+    totals: {
+      montantTotal: aggregates._sum.montantTotal || 0,
+      montantPaye: aggregates._sum.montantPaye || 0,
+      resteAPayer: (aggregates._sum.montantTotal || 0) - (aggregates._sum.montantPaye || 0),
+    },
     pagination: {
       page,
       limit,
