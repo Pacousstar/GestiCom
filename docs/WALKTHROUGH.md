@@ -69,3 +69,35 @@ Phrase type à copier/coller :
 
 Le projet est maintenant dans un état "Stable & Premium". Félicitations pour cette étape majeure ! 👋✨
 
+
+🛠️ Guide du Kit d'Activation GSN (Indépendant)
+Ce kit permet d'activer GestiCom de manière professionnelle et séparée, sans jamais bloquer l'utilisateur au démarrage.
+
+🚀 Étape 1 : Ouvrir GestiCom
+Lancez l'application normalement avec 
+LANCER.bat
+.
+L'application s'ouvre immédiatement. Vous verrez une petite bannière rouge en bas indiquant "MODE ÉVALUATION". C'est normal.
+🔑 Étape 2 : Lancer le Kit d'Activation
+Dans votre dossier INSTALLATION_GESTICOM, double-cliquez sur : 
+ACTIVER.bat
+.
+Cela va ouvrir une interface premium dans votre navigateur.
+📡 Étape 3 : Récupérer le "Hardware ID"
+Dans l'interface d'activation, le Hardware ID s'affiche automatiquement (ex: GCOM-XXXX-XXXX).
+Cliquez sur le bouton COPIER.
+Envoyez cet ID à votre propre service technique (ou utilisez votre générateur 
+GestiCom-KeyGen.html
+).
+✅ Étape 4 : Activer
+Une fois que vous avez la Clé de Licence (ex: XXXX-XXXX-XXXX-XXXX) :
+Collez-la dans le champ "Votre Clé de Licence" du Kit.
+Cliquez sur ACTIVER LE LOGICIEL.
+Un message vert confirmera le succès.
+🎉 Étape 5 : Profiter
+Actualisez la page de GestiCom (F5).
+La bannière rouge disparaît : le logiciel est activé définitivement sur cette machine !
+TIP
+
+Pourquoi ce système ? Il permet au client de commencer à configurer son magasin et à voir ses produits immédiatement, ce qui prouve que votre installation a réussi. L'activation devient une simple touche finale "premium".
+

@@ -34,6 +34,7 @@ export async function GET(request: NextRequest) {
                 nom = clientMap.get(v.clientId)!.nom
             }
             return {
+                clientId: v.clientId,
                 client: nom,
                 chiffreAffaires: v._sum.montantTotal || 0,
                 frequenceAchat: v._count.id,

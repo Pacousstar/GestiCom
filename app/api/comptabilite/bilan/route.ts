@@ -10,16 +10,18 @@ export async function GET(request: Request) {
         const { searchParams } = new URL(request.url)
         const annee = parseInt(searchParams.get('annee') || '', 10) || new Date().getFullYear()
 
-        const debutAnnee = new Date(annee, 0, 1)
-        const finAnnee = new Date(annee, 11, 31, 23, 59, 59)
+        const finAnnee = new Date(annee, 11, 31, 23, 59, 59, 999)
+        const entiteId = session.entiteId
 
-        // 1. Récupérer tous les comptes actifs (1-7 pour inclure Charges et Produits dans le résultat)
+        // 1. Récupérer tous les comptes actifs avec les écritures filtrées par entité
         const comptes = await prisma.planCompte.findMany({
             where: { actif: true },
             include: {
                 ecritures: {
                     where: {
-                        date: { lte: finAnnee }
+                        date: { lte: finAnnee },
+                        // Filtrage par entité via l'utilisateur qui a passé l'écriture
+                        ...(entiteId ? { utilisateur: { entiteId } } : {})
                     }
                 }
             }
@@ -37,7 +39,7 @@ export async function GET(request: Request) {
                 totalCredit,
                 solde
             }
-        }).filter(c => c.solde !== 0)
+        }).filter(c => c.solde !== 0 || c.totalDebit !== 0 || c.totalCredit !== 0)
 
         // 3. Structurer le Bilan (SYSCOHADA Simplifié)
         const bilan = {
@@ -56,40 +58,48 @@ export async function GET(request: Request) {
             }
         }
 
-        // Variables pour le calcul du résultat (Produits - Charges)
         let totalProduits = 0
         let totalCharges = 0
 
         accountsWithBalances.forEach(c => {
             const p = { numero: c.numero, libelle: c.libelle, montant: Math.abs(c.solde) }
 
-            // CLASSIFICATION BILAN
+            // CLASSIFICATION BILAN (Classes 1 à 5)
             if (c.numero.startsWith('2')) {
                 bilan.actif.immobilise.push(p)
+                bilan.actif.total += p.montant
             } else if (c.numero.startsWith('3')) {
                 bilan.actif.stocks.push(p)
+                bilan.actif.total += p.montant
             } else if (c.numero.startsWith('4')) {
-                if (c.solde > 0) bilan.actif.creances.push(p)
-                else bilan.passif.dettes.push(p)
+                if (c.solde > 0) {
+                    bilan.actif.creances.push(p)
+                    bilan.actif.total += p.montant
+                } else {
+                    bilan.passif.dettes.push(p)
+                    bilan.passif.total += p.montant
+                }
             } else if (c.numero.startsWith('5')) {
-                if (c.solde > 0) bilan.actif.tresorerie.push(p)
-                else bilan.passif.tresorerie.push(p)
+                if (c.solde > 0) {
+                    bilan.actif.tresorerie.push(p)
+                    bilan.actif.total += p.montant
+                } else {
+                    bilan.passif.tresorerie.push(p)
+                    bilan.passif.total += p.montant
+                }
             } else if (c.numero.startsWith('1')) {
                 bilan.passif.capitaux.push(p)
+                bilan.passif.total += p.montant
             } 
-            // CLASSIFICATION RÉSULTAT
+            // CLASSIFICATION RÉSULTAT (Classes 6 et 7)
             else if (c.numero.startsWith('7')) {
-                totalProduits += Math.abs(c.solde)
+                totalProduits += (c.totalCredit - c.totalDebit)
             } else if (c.numero.startsWith('6')) {
-                totalCharges += Math.abs(c.solde)
+                totalCharges += (c.totalDebit - c.totalCredit)
             }
         })
 
-        // Calcul des totaux de base (avant résultat)
-        bilan.actif.total = [...bilan.actif.immobilise, ...bilan.actif.stocks, ...bilan.actif.creances, ...bilan.actif.tresorerie].reduce((s, x) => s + x.montant, 0)
-        bilan.passif.total = [...bilan.passif.capitaux, ...bilan.passif.dettes, ...bilan.passif.tresorerie].reduce((s, x) => s + x.montant, 0)
-
-        // Calcul du Résultat (Produits - Charges)
+        // On s'assure que le résultat est dans les produits - charges
         const resultatNet = totalProduits - totalCharges
         
         if (resultatNet !== 0) {
@@ -102,10 +112,9 @@ export async function GET(request: Request) {
             bilan.passif.total += Math.abs(resultatNet)
         }
 
-        // 4. Récupérer les infos de l'entreprise et de l'entité
         const [params, entite] = await Promise.all([
             prisma.parametre.findFirst(),
-            prisma.entite.findUnique({ where: { id: session.entiteId || 1 } })
+            prisma.entite.findUnique({ where: { id: entiteId || 1 } })
         ])
 
         return NextResponse.json({

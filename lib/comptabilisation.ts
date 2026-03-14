@@ -161,6 +161,63 @@ export async function comptabiliserVente(data: {
 }
 
 /**
+ * Comptabilise un règlement sur une vente (Crédit vers Règlement)
+ */
+export async function comptabiliserReglementVente(data: {
+  venteId: number
+  numeroVente: string
+  date: Date
+  montant: number
+  modePaiement: string
+  utilisateurId: number
+}) {
+  const journal = await getOrCreateJournal('CA', 'Journal de Caisse', 'CAISSE')
+  const compteClient = await getOrCreateCompte(
+    COMPTES_DEFAUT.CLIENTS,
+    'Clients',
+    '4',
+    'PASSIF'
+  )
+  
+  // Déterminer le compte de trésorerie
+  let compteTresorerie: { id: number }
+  if (data.modePaiement === 'VIREMENT') {
+    compteTresorerie = await getOrCreateCompte(COMPTES_DEFAUT.BANQUE, 'Banque', '5', 'ACTIF')
+  } else {
+    compteTresorerie = await getOrCreateCompte(COMPTES_DEFAUT.CAISSE, 'Caisse', '5', 'ACTIF')
+  }
+  
+  // Écriture : Débit Caisse/Banque (entrée d'argent), Crédit Clients (réduit la créance)
+  await createEcriture({
+    date: data.date,
+    journalId: journal.id,
+    piece: data.numeroVente,
+    libelle: `Règlement Vente ${data.numeroVente}`,
+    compteId: compteTresorerie.id,
+    debit: data.montant,
+    credit: 0,
+    reference: `REG-VEN-${data.venteId}`,
+    referenceType: 'VENTE_REGLEMENT',
+    referenceId: data.venteId,
+    utilisateurId: data.utilisateurId,
+  })
+  
+  await createEcriture({
+    date: data.date,
+    journalId: journal.id,
+    piece: data.numeroVente,
+    libelle: `Règlement Vente ${data.numeroVente}`,
+    compteId: compteClient.id,
+    debit: 0,
+    credit: data.montant,
+    reference: `REG-VEN-${data.venteId}`,
+    referenceType: 'VENTE_REGLEMENT',
+    referenceId: data.venteId,
+    utilisateurId: data.utilisateurId,
+  })
+}
+
+/**
  * Comptabilise un achat
  */
 export async function comptabiliserAchat(data: {
@@ -225,6 +282,63 @@ export async function comptabiliserAchat(data: {
     credit: data.montantTotal,
     reference: data.numeroAchat,
     referenceType: 'ACHAT',
+    referenceId: data.achatId,
+    utilisateurId: data.utilisateurId,
+  })
+}
+
+/**
+ * Comptabilise un règlement sur un achat (Crédit vers Règlement)
+ */
+export async function comptabiliserReglementAchat(data: {
+  achatId: number
+  numeroAchat: string
+  date: Date
+  montant: number
+  modePaiement: string
+  utilisateurId: number
+}) {
+  const journal = await getOrCreateJournal('CA', 'Journal de Caisse', 'CAISSE')
+  const compteFournisseur = await getOrCreateCompte(
+    COMPTES_DEFAUT.FOURNISSEURS,
+    'Fournisseurs',
+    '4',
+    'PASSIF'
+  )
+  
+  // Déterminer le compte de trésorerie
+  let compteTresorerie: { id: number }
+  if (data.modePaiement === 'VIREMENT') {
+    compteTresorerie = await getOrCreateCompte(COMPTES_DEFAUT.BANQUE, 'Banque', '5', 'ACTIF')
+  } else {
+    compteTresorerie = await getOrCreateCompte(COMPTES_DEFAUT.CAISSE, 'Caisse', '5', 'ACTIF')
+  }
+  
+  // Écriture : Débit Fournisseurs (réduit la dette), Crédit Caisse/Banque (sortie d'argent)
+  await createEcriture({
+    date: data.date,
+    journalId: journal.id,
+    piece: data.numeroAchat,
+    libelle: `Règlement Achat ${data.numeroAchat}`,
+    compteId: compteFournisseur.id,
+    debit: data.montant,
+    credit: 0,
+    reference: `REG-ACH-${data.achatId}`,
+    referenceType: 'ACHAT_REGLEMENT',
+    referenceId: data.achatId,
+    utilisateurId: data.utilisateurId,
+  })
+  
+  await createEcriture({
+    date: data.date,
+    journalId: journal.id,
+    piece: data.numeroAchat,
+    libelle: `Règlement Achat ${data.numeroAchat}`,
+    compteId: compteTresorerie.id,
+    debit: 0,
+    credit: data.montant,
+    reference: `REG-ACH-${data.achatId}`,
+    referenceType: 'ACHAT_REGLEMENT',
     referenceId: data.achatId,
     utilisateurId: data.utilisateurId,
   })

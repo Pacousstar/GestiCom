@@ -39,4 +39,4 @@ start /b cmd /c "timeout /t 4 /nobreak >nul && start http://localhost:3000"
 
 REM Démarrer le serveur Next.js
 cd /d "C:\GestiCom\app"
-npm start
+node "node_modules\next\dist\bin\next" start

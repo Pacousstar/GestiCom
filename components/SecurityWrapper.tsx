@@ -21,9 +21,9 @@ export default function SecurityWrapper({ children }: { children: React.ReactNod
 
         async function checkLicense() {
             try {
-                // Timeout de 10 secondes pour le fetch de licence
+                // Timeout de 3 secondes pour le fetch de licence (Démarrage éclair)
                 const controller = new AbortController()
-                const timeoutId = setTimeout(() => controller.abort(), 10000)
+                const timeoutId = setTimeout(() => controller.abort(), 3000)
 
                 const res = await fetch('/api/license/check', { 
                     cache: 'no-store',
@@ -38,14 +38,12 @@ export default function SecurityWrapper({ children }: { children: React.ReactNod
                         setIsActivated(true)
                     } else {
                         setIsActivated(false)
-                        router.push('/activation')
                     }
                 }
             } catch (error) {
                 console.error('License verification failed:', error)
                 if (isMounted) {
                     setIsActivated(false)
-                    router.push('/activation')
                 }
             } finally {
                 if (isMounted) {
@@ -61,27 +59,22 @@ export default function SecurityWrapper({ children }: { children: React.ReactNod
         }
     }, [pathname, router])
 
-    if (loading) {
-        return (
-            <div className="min-h-screen bg-[#0f172a] flex items-center justify-center">
-                <Loader2 className="h-10 w-10 animate-spin text-orange-500" />
-            </div>
-        )
-    }
-
-    // Si on est sur la page d'activation, on laisse passer
-    if (pathname === '/activation') {
-        return <>{children}</>
-    }
-
-    // Sinon, on ne rend les enfants que si activé. 
-    return isActivated ? <>{children}</> : (
-        <div className="min-h-screen bg-[#0f172a] flex items-center justify-center flex-col gap-4">
-            <Loader2 className="h-10 w-10 animate-spin text-orange-500" />
-            <div className="text-center">
-                <p className="text-white font-medium">Vérification de la licence...</p>
-                <p className="text-slate-500 text-xs mt-2">Si ce message persiste, veuillez redémarrer l'application.</p>
-            </div>
-        </div>
+    // Rendu immédiat de l'application (Plus de blocage !)
+    return (
+        <>
+            {children}
+            {/* Bannière discrète uniquement si non activé et pas sur la page d'activation */}
+            {!loading && !isActivated && pathname !== '/activation' && (
+                <div className="fixed bottom-0 left-0 right-0 bg-red-600/90 text-white text-[10px] py-1 px-4 flex justify-between items-center z-[9999] backdrop-blur-sm">
+                    <span className="font-medium">GESTICOM — MODE ÉVALUATION (Activation requise)</span>
+                    <button 
+                        onClick={() => router.push('/activation')}
+                        className="bg-white text-red-600 px-2 py-0.5 rounded-sm font-bold hover:bg-slate-100 transition-colors"
+                    >
+                        ACTIVER MAINTENANT
+                    </button>
+                </div>
+            )}
+        </>
     )
 }

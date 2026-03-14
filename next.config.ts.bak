@@ -3,6 +3,8 @@ import path from "path";
 import withPWA from "@ducanh2912/next-pwa";
 
 const nextConfig: NextConfig = {
+  output: 'standalone',
+  outputFileTracingRoot: path.join(__dirname),
   reactCompiler: true,
   // Exclure le dossier gesticom du build et configurer webpack
   webpack: (config, { isServer, dev }) => {

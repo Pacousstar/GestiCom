@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { ShoppingBag, Plus, Loader2, Trash2, Eye, FileSpreadsheet, Printer, X, Search } from 'lucide-react'
+import { ShoppingBag, Plus, Loader2, Trash2, Eye, FileSpreadsheet, Printer, X, Search, Wallet } from 'lucide-react'
 import { useToast } from '@/hooks/useToast'
 import { formatApiError } from '@/lib/validation-helpers'
 import { MESSAGES } from '@/lib/messages'
@@ -76,6 +76,9 @@ export default function AchatsPage() {
   const [savingFournisseur, setSavingFournisseur] = useState(false)
   const [userRole, setUserRole] = useState<string>('')
   const [supprimant, setSupprimant] = useState<number | null>(null)
+  const [showReglement, setShowReglement] = useState<{ id: number; numero: string; reste: number } | null>(null)
+  const [reglementData, setReglementData] = useState({ montant: '', modePaiement: 'ESPECES' })
+  const [savingReglement, setSavingReglement] = useState(false)
 
   useEffect(() => {
     fetch('/api/auth/check').then((r) => r.ok && r.json()).then((d) => d && setUserRole(d.role)).catch(() => { })
@@ -380,6 +383,38 @@ export default function AchatsPage() {
       if (res.ok) setDetailAchat(await res.json())
     } finally {
       setLoadingDetail(null)
+    }
+  }
+
+  const handleReglement = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!showReglement) return
+    setSavingReglement(true)
+    try {
+      const res = await fetch(`/api/achats/${showReglement.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          montant: Number(reglementData.montant),
+          modePaiement: reglementData.modePaiement
+        }),
+      })
+      if (res.ok) {
+        showSuccess('Règlement enregistré avec succès.')
+        setShowReglement(null)
+        setReglementData({ montant: '', modePaiement: 'ESPECES' })
+        fetchAchats()
+        if (detailAchat?.id === showReglement.id) {
+          handleVoirDetail(showReglement.id)
+        }
+      } else {
+        const d = await res.json()
+        showError(d.error || 'Erreur lors du règlement.')
+      }
+    } catch (e) {
+      showError('Erreur réseau.')
+    } finally {
+      setSavingReglement(false)
     }
   }
 
@@ -743,6 +778,15 @@ export default function AchatsPage() {
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-1">
+                        {a.statutPaiement !== 'PAYE' && (
+                          <button
+                            onClick={() => setShowReglement({ id: a.id, numero: a.numero, reste: Number(a.montantTotal) - (Number(a.montantPaye) || 0) })}
+                            className="rounded p-1.5 text-orange-600 hover:bg-orange-100"
+                            title="Enregistrer un règlement"
+                          >
+                            <Wallet className="h-4 w-4" />
+                          </button>
+                        )}
                         <button
                           onClick={() => handleVoirDetail(a.id)}
                           disabled={loadingDetail === a.id}
@@ -908,6 +952,63 @@ export default function AchatsPage() {
               </div>
             </form>
             {err && <p className="mt-2 text-sm text-red-600">{err}</p>}
+          </div>
+        </div>
+      )}
+
+      {showReglement && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-md rounded-xl border border-orange-200 bg-white p-6 shadow-xl">
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-gray-900">Règlement Achat {showReglement.numero}</h2>
+              <button onClick={() => setShowReglement(null)} className="rounded p-1 hover:bg-gray-100"><X className="h-5 w-5 text-gray-500" /></button>
+            </div>
+            <form onSubmit={handleReglement} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Reste à payer</label>
+                <div className="mt-1 text-lg font-bold text-orange-600">{showReglement.reste.toLocaleString('fr-FR')} FCFA</div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Montant du règlement *</label>
+                <input
+                  type="number"
+                  required
+                  max={showReglement.reste}
+                  value={reglementData.montant}
+                  onChange={(e) => setReglementData(prev => ({ ...prev, montant: e.target.value }))}
+                  placeholder={`Max ${showReglement.reste}`}
+                  className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 focus:border-orange-500 focus:outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Mode de paiement</label>
+                <select
+                  value={reglementData.modePaiement}
+                  onChange={(e) => setReglementData(prev => ({ ...prev, modePaiement: e.target.value }))}
+                  className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 focus:border-orange-500 focus:outline-none"
+                >
+                  <option value="ESPECES">Espèces</option>
+                  <option value="MOBILE_MONEY">Mobile money</option>
+                  <option value="VIREMENT">Virement</option>
+                </select>
+              </div>
+              <div className="flex gap-2 pt-2">
+                <button
+                  type="submit"
+                  disabled={savingReglement}
+                  className="flex-1 rounded-lg bg-orange-500 px-4 py-2 text-white hover:bg-orange-600 disabled:opacity-60"
+                >
+                  {savingReglement ? <Loader2 className="h-4 w-4 animate-spin mx-auto" /> : 'Enregistrer le paiement'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowReglement(null)}
+                  className="rounded-lg border-2 border-gray-400 bg-gray-200 px-4 py-2 font-medium text-gray-900 hover:bg-gray-300"
+                >
+                  Annuler
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

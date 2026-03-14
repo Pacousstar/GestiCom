@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Truck, Search, Loader2, ArrowUpRight, Scale, Clock, Wallet } from 'lucide-react'
+import { Truck, Search, Loader2, ArrowUpRight, Scale, Clock, Wallet, X, Calendar, FileText, ChevronRight } from 'lucide-react'
 import { useToast } from '@/hooks/useToast'
 
 type RapportFournisseur = {
@@ -20,6 +20,9 @@ export default function RapportFournisseursPage() {
     const [dateDebut, setDateDebut] = useState('')
     const [dateFin, setDateFin] = useState('')
     const { error: showError } = useToast()
+    const [selectedHistory, setSelectedHistory] = useState<{ id: number | null; nom: string } | null>(null)
+    const [historyData, setHistoryData] = useState<any[]>([])
+    const [loadingHistory, setLoadingHistory] = useState(false)
 
     const fetchData = async () => {
         setLoading(true)
@@ -54,6 +57,25 @@ export default function RapportFournisseursPage() {
         totalAchats: data.reduce((acc, curr) => acc + curr.montantTotal, 0),
         totalPaye: data.reduce((acc, curr) => acc + curr.montantPaye, 0),
         totalDette: data.reduce((acc, curr) => acc + curr.resteAPayer, 0)
+    }
+
+    const fetchHistory = async (id: number | null, nom: string) => {
+        if (!id) return
+        setSelectedHistory({ id, nom })
+        setLoadingHistory(true)
+        try {
+            const params = new URLSearchParams()
+            if (dateDebut) params.set('start', dateDebut)
+            if (dateFin) params.set('end', dateFin)
+            const res = await fetch(`/api/rapports/achats/fournisseurs/${id}/history?` + params.toString())
+            if (res.ok) {
+                setHistoryData(await res.json())
+            }
+        } catch (e) {
+            showError('Erreur chargement historique')
+        } finally {
+            setLoadingHistory(false)
+        }
     }
 
     return (
@@ -146,7 +168,11 @@ export default function RapportFournisseursPage() {
                             </thead>
                             <tbody className="divide-y divide-gray-100">
                                 {filteredData.map((f, i) => (
-                                    <tr key={i} className="hover:bg-gray-50 transition-colors group">
+                                    <tr 
+                                        key={i} 
+                                        className="hover:bg-gray-50 transition-colors group cursor-pointer"
+                                        onClick={() => fetchHistory(f.fournisseurId, f.fournisseur)}
+                                    >
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-3">
                                                 <div className="h-8 w-8 rounded-full bg-orange-100 flex items-center justify-center text-orange-700 font-bold text-xs">
@@ -185,6 +211,76 @@ export default function RapportFournisseursPage() {
                     )}
                 </div>
             </div>
+
+            {selectedHistory && (
+                <div className="fixed inset-y-0 right-0 w-full max-w-xl bg-white shadow-2xl z-50 flex flex-col animate-in slide-in-from-right duration-300">
+                    <div className="p-6 border-b flex items-center justify-between bg-orange-600 text-white">
+                        <div>
+                            <h2 className="text-xl font-bold">{selectedHistory.nom}</h2>
+                            <p className="text-orange-100 text-xs">Historique des opérations</p>
+                        </div>
+                        <button onClick={() => setSelectedHistory(null)} className="p-2 hover:bg-white/10 rounded-full transition-colors">
+                            <X className="h-6 w-6" />
+                        </button>
+                    </div>
+
+                    <div className="flex-1 overflow-y-auto p-6">
+                        {loadingHistory ? (
+                            <div className="flex flex-col items-center justify-center h-64 gap-3">
+                                <Loader2 className="h-8 w-8 animate-spin text-orange-500" />
+                                <p className="text-gray-500 text-sm">Chargement des transactions...</p>
+                            </div>
+                        ) : historyData.length === 0 ? (
+                            <div className="text-center py-20 text-gray-500">
+                                <Calendar className="h-12 w-12 mx-auto mb-4 opacity-20" />
+                                Aucune transaction trouvée pour ce fournisseur.
+                            </div>
+                        ) : (
+                            <div className="space-y-4">
+                                {historyData.map((h, i) => (
+                                    <div key={i} className="border rounded-xl p-4 bg-gray-50/50 hover:bg-white hover:shadow-md transition-all group border-gray-100">
+                                        <div className="flex items-center justify-between mb-3">
+                                            <div className="flex items-center gap-3">
+                                                <div className="p-2 bg-white rounded-lg border border-gray-100 shadow-sm">
+                                                    <FileText className="h-5 w-5 text-gray-400 group-hover:text-orange-500 transition-colors" />
+                                                </div>
+                                                <div>
+                                                    <p className="font-mono text-sm font-bold text-gray-900">{h.numero}</p>
+                                                    <p className="text-[10px] text-gray-500 uppercase tracking-tighter">
+                                                        {new Date(h.date).toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <div className="text-right">
+                                                <p className="text-lg font-bold text-gray-900">{h.montantTotal.toLocaleString()} F</p>
+                                                <div className="flex items-center justify-end gap-1">
+                                                    {h.statutPaiement === 'PAYE' ? (
+                                                        <span className="text-[10px] bg-emerald-100 text-emerald-800 px-1.5 rounded font-bold uppercase">Payé</span>
+                                                    ) : (
+                                                        <span className="text-[10px] bg-orange-100 text-orange-800 px-1.5 rounded font-bold uppercase">Dette: {(h.montantTotal - h.montantPaye).toLocaleString()} F</span>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center justify-between text-xs text-gray-500 border-t pt-3 mt-3 border-gray-100 group-hover:border-orange-100 transition-colors">
+                                            <div className="flex items-center gap-2">
+                                                <span className="bg-white px-2 py-0.5 rounded border border-gray-200">{h.modePaiement}</span>
+                                                <span className="bg-gray-100 px-2 py-0.5 rounded italic opacity-70">Mag: {h.magasin?.nom}</span>
+                                            </div>
+                                            <button 
+                                                className="text-orange-600 font-bold flex items-center gap-0.5 hover:gap-1.5 transition-all"
+                                                onClick={() => window.location.href = `/dashboard/achats?numero=${h.numero}`}
+                                            >
+                                                Détails <ChevronRight className="h-3 w-3" />
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
         </div>
     )
 }

@@ -4,45 +4,61 @@ import crypto from 'crypto'
 
 const execAsync = promisify(exec)
 
+// Cache mémorisé pour éviter de relancer wmic à chaque requête
+let cachedHardwareId: string | null = null;
+
 /**
  * Récupère un identifiant unique pour la machine (Hardware ID).
- * Utilise le numéro de série de la carte mère sous Windows.
+ * Mémorise le résultat après la première récupération réussie.
  */
 export async function getHardwareId(): Promise<string> {
+    if (cachedHardwareId) return cachedHardwareId;
+
     try {
         if (process.platform !== 'win32') {
-            return 'NON-WINDOWS-' + crypto.randomBytes(4).toString('hex').toUpperCase()
+            cachedHardwareId = 'NON-WINDOWS-' + crypto.randomBytes(4).toString('hex').toUpperCase()
+            return cachedHardwareId;
         }
 
-        // On tente de récupérer le numéro de série de la carte mère avec un timeout court
-        let serial = 'UNKNOWN'
-        try {
-            // Utiliser promisify(exec) pour ne pas bloquer l'event loop
-            const { stdout } = await execAsync('wmic baseboard get serialnumber', { timeout: 2000 })
-            const lines = stdout.trim().split('\n')
-            serial = lines.length > 1 ? lines[1].trim() : 'UNKNOWN'
-        } catch (e) {
-            console.warn('[Security] WMIC Serial Number failed or timed out')
-        }
+        // Fonction interne pour tenter de récupérer des infos via shell avec timeout
+        const tryExec = async (cmd: string, timeout: number): Promise<string> => {
+            return new Promise((resolve) => {
+                const timer = setTimeout(() => resolve('TIMEOUT'), timeout);
+                exec(cmd, (error, stdout) => {
+                    clearTimeout(timer);
+                    if (error || !stdout) return resolve('ERROR');
+                    resolve(stdout.trim());
+                });
+            });
+        };
 
-        if (!serial || serial === 'None' || serial === 'Default string' || serial === 'UNKNOWN') {
-            // Fallback sur le UUID système si le serial baseboard est indisponible
-            try {
-                const { stdout: uuidOutput } = await execAsync('wmic csproduct get uuid', { timeout: 2000 })
-                const uuidLines = uuidOutput.trim().split('\n')
-                const uuid = uuidLines.length > 1 ? uuidLines[1].trim() : 'UNKNOWN'
-                if (uuid && uuid !== 'UNKNOWN') return generateGestiComId(uuid)
-            } catch (e) {
-                console.warn('[Security] WMIC UUID failed or timed out')
+        // 1. Essai Board Serial (1s max)
+        const serialOutput = await tryExec('wmic baseboard get serialnumber', 1000);
+        if (serialOutput !== 'TIMEOUT' && serialOutput !== 'ERROR') {
+            const lines = serialOutput.split('\n');
+            const serial = lines.length > 1 ? lines[1].trim() : '';
+            if (serial && serial !== 'None' && serial !== 'Default string') {
+                cachedHardwareId = generateGestiComId(serial);
+                return cachedHardwareId;
             }
-            // Dernier recours : Nom de l'ordinateur + Random
-            return generateGestiComId('FALLBACK-' + (process.env.COMPUTERNAME || 'STATION'))
         }
 
-        return generateGestiComId(serial)
+        // 2. Essai UUID (0.8s max)
+        const uuidOutput = await tryExec('wmic csproduct get uuid', 800);
+        if (uuidOutput !== 'TIMEOUT' && uuidOutput !== 'ERROR') {
+            const lines = uuidOutput.split('\n');
+            const uuid = lines.length > 1 ? lines[1].trim() : '';
+            if (uuid && uuid !== '00000000-0000-0000-0000-000000000000') {
+                cachedHardwareId = generateGestiComId(uuid);
+                return cachedHardwareId;
+            }
+        }
+
+        // 3. Fallback immédiat (Nom du PC)
+        cachedHardwareId = generateGestiComId('PC-' + (process.env.COMPUTERNAME || 'STATION'));
+        return cachedHardwareId;
     } catch (error) {
-        console.error('[Security] Erreur fatale lors de la récupération du HWID:', error)
-        return 'GCOM-ERROR-' + crypto.randomBytes(4).toString('hex').toUpperCase()
+        return 'GCOM-ERR-' + crypto.randomBytes(4).toString('hex').toUpperCase()
     }
 }
 

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { Users, Search, Plus, Loader2, Pencil, Trash2, X, FileSpreadsheet, Download } from 'lucide-react'
+import { Users, Search, Plus, Loader2, Pencil, Trash2, X, FileSpreadsheet, Download, Clock, Calendar, FileText, ChevronRight } from 'lucide-react'
 import { useToast } from '@/hooks/useToast'
 import { clientSchema } from '@/lib/validations'
 import { validateForm, formatApiError } from '@/lib/validation-helpers'
@@ -40,6 +40,9 @@ export default function ClientsPage() {
     ncc: '',
   })
   const [userRole, setUserRole] = useState<string>('')
+  const [selectedHistory, setSelectedHistory] = useState<{ id: number; nom: string } | null>(null)
+  const [historyData, setHistoryData] = useState<any[]>([])
+  const [loadingHistory, setLoadingHistory] = useState(false)
 
   useEffect(() => {
     fetch('/api/auth/check').then((r) => r.ok && r.json()).then((d) => d && setUserRole(d.role)).catch(() => { })
@@ -227,6 +230,21 @@ export default function ClientsPage() {
     }
   }
 
+  const fetchHistory = async (c: Client) => {
+    setSelectedHistory({ id: c.id, nom: c.nom })
+    setLoadingHistory(true)
+    try {
+      const res = await fetch(`/api/rapports/ventes/clients/${c.id}/history`)
+      if (res.ok) {
+        setHistoryData(await res.json())
+      }
+    } catch (e) {
+      showError('Erreur chargement historique client.')
+    } finally {
+      setLoadingHistory(false)
+    }
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
@@ -400,13 +418,20 @@ export default function ClientsPage() {
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-1">
-                        <button
-                          onClick={() => openForm(c)}
-                          className="rounded p-1.5 text-gray-500 hover:bg-gray-100 hover:text-orange-600"
-                          title="Modifier"
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </button>
+                          <button
+                            onClick={() => fetchHistory(c)}
+                            className="rounded p-1.5 text-gray-500 hover:bg-gray-100 hover:text-green-600"
+                            title="Historique des ventes / règlements"
+                          >
+                            <Clock className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={() => openForm(c)}
+                            className="rounded p-1.5 text-gray-500 hover:bg-gray-100 hover:text-orange-600"
+                            title="Modifier"
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </button>
                         {userRole === 'SUPER_ADMIN' && (
                           <button
                             onClick={() => handleDelete(c)}
@@ -434,6 +459,60 @@ export default function ClientsPage() {
           />
         )}
       </div>
+
+      {selectedHistory && (
+        <div className="fixed inset-y-0 right-0 w-full max-w-xl bg-white shadow-2xl z-50 flex flex-col animate-in slide-in-from-right duration-300">
+          <div className="p-6 border-b flex items-center justify-between bg-green-700 text-white">
+            <div>
+              <h2 className="text-xl font-bold">{selectedHistory.nom}</h2>
+              <p className="text-green-100 text-xs">Mouvements & Historique</p>
+            </div>
+            <button onClick={() => setSelectedHistory(null)} className="p-2 hover:bg-white/10 rounded-full transition-colors">
+              <X className="h-6 w-6" />
+            </button>
+          </div>
+
+          <div className="flex-1 overflow-y-auto p-6">
+            {loadingHistory ? (
+              <div className="flex flex-col items-center justify-center h-64 gap-3">
+                <Loader2 className="h-8 w-8 animate-spin text-green-500" />
+                <p className="text-gray-500 text-sm">Chargement des opérations...</p>
+              </div>
+            ) : historyData.length === 0 ? (
+              <div className="text-center py-20 text-gray-500">
+                <Calendar className="h-12 w-12 mx-auto mb-4 opacity-20" />
+                Désolé, aucune vente trouvée pour ce client.
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {historyData.map((h, i) => (
+                  <div key={i} className="border rounded-xl p-4 bg-gray-50 hover:bg-white hover:shadow-md transition-all group">
+                    <div className="flex items-center justify-between mb-2">
+                       <span className="font-mono text-sm font-bold text-gray-900">{h.numero}</span>
+                       <span className="text-xs text-gray-500">{new Date(h.date).toLocaleDateString('fr-FR')}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                       <p className="text-lg font-bold text-gray-900">{h.montantTotal.toLocaleString()} F</p>
+                       <span className={`text-[10px] px-2 py-0.5 rounded font-bold uppercase ${h.statutPaiement === 'PAYE' ? 'bg-green-100 text-green-800' : 'bg-orange-100 text-orange-800'}`}>
+                         {h.statutPaiement}
+                       </span>
+                    </div>
+                    <div className="mt-3 flex items-center justify-between border-t pt-2 text-[10px] text-gray-500">
+                       <span>{h.modePaiement}</span>
+                       <button 
+                        onClick={() => window.location.href = `/dashboard/ventes?numero=${h.numero}`}
+                        className="text-green-700 font-bold flex items-center gap-1"
+                       >
+                        Voir <ChevronRight className="h-3 w-3" />
+                       </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
