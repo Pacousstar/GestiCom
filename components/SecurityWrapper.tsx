@@ -11,6 +11,11 @@ export default function SecurityWrapper({ children }: { children: React.ReactNod
     const pathname = usePathname()
 
     useEffect(() => {
+        const cached = localStorage.getItem('gesticom_activated')
+        if (cached === 'true') {
+            setIsActivated(true)
+        }
+
         // Ne pas bloquer la page d'activation elle-même
         if (pathname === '/activation') {
             setLoading(false)
@@ -21,9 +26,9 @@ export default function SecurityWrapper({ children }: { children: React.ReactNod
 
         async function checkLicense() {
             try {
-                // Timeout de 1 seconde pour le fetch de licence (Démarrage éclair)
+                // Timeout de 3 secondes pour le fetch de licence
                 const controller = new AbortController()
-                const timeoutId = setTimeout(() => controller.abort(), 1000)
+                const timeoutId = setTimeout(() => controller.abort(), 3000)
 
                 const res = await fetch('/api/license/check', { 
                     cache: 'no-store',
@@ -36,13 +41,16 @@ export default function SecurityWrapper({ children }: { children: React.ReactNod
                 if (isMounted) {
                     if (data.activated) {
                         setIsActivated(true)
+                        localStorage.setItem('gesticom_activated', 'true')
                     } else {
                         setIsActivated(false)
+                        localStorage.removeItem('gesticom_activated')
                     }
                 }
             } catch (error) {
                 console.error('License verification failed:', error)
-                if (isMounted) {
+                // En cas d'erreur réseau, on garde le cache si présent
+                if (isMounted && !localStorage.getItem('gesticom_activated')) {
                     setIsActivated(false)
                 }
             } finally {

@@ -116,6 +116,14 @@ type ValeurStock = {
   valeur: number
 }
 
+type RapportCategorie = {
+  nom: string
+  nbProduits: number
+  quantiteTotale: number
+  valeurAchatStock: number
+  valeurVenteStock: number
+}
+
 export default function RapportsPage() {
   const [activeTab, setActiveTab] = useState('logistique')
   const [loading, setLoading] = useState(true)
@@ -147,6 +155,7 @@ export default function RapportsPage() {
   const [paiementsByMode, setPaiementsByMode] = useState<PaiementDetail[]>([])
   const [valeurStock, setValeurStock] = useState<{ data: ValeurStock[], totalValeur: number } | null>(null)
   const [mouvementTotals, setMouvementTotals] = useState<{ entree: number; sortie: number } | null>(null)
+  const [categoriesData, setCategoriesData] = useState<RapportCategorie[]>([])
 
   // Filter Data
   const [magasins, setMagasins] = useState<Magasin[]>([])
@@ -216,6 +225,10 @@ export default function RapportsPage() {
 
       const resVal = await fetch(`/api/rapports/stocks/valeur?dateFin=${dateFin}&magasinId=${filtreMagasin}`)
       setValeurStock(await resVal.json())
+
+      const resCat = await fetch(`/api/rapports/categories`)
+      const dataCat = await resCat.json()
+      setCategoriesData(dataCat.data || [])
 
     } catch (e) {
       console.error(e)
@@ -341,6 +354,7 @@ export default function RapportsPage() {
       {/* Navigation Onglets */}
       <div className="flex overflow-x-auto rounded-2xl bg-white/90 border border-white/20 shadow-xl backdrop-blur-md sticky top-0 z-10 p-1">
         <TabButton id="logistique" label="Stocks & Logistique" icon={Package} />
+        <TabButton id="categories" label="Catégories" icon={PieChart} />
         <TabButton id="ventes" label="Analyse Tiers" icon={Users} />
         <TabButton id="finances" label="Paiements & Trésorerie" icon={DollarSign} />
       </div>
@@ -518,6 +532,68 @@ export default function RapportsPage() {
                                 </td>
                             </tr>
                         </tfoot>
+                    </table>
+                </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'categories' && (
+          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+               <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-xl">
+                  <p className="text-gray-400 text-[10px] font-black uppercase tracking-widest">Totaux Catégories</p>
+                  <div className="mt-2 text-4xl font-black text-indigo-600">{categoriesData.length}</div>
+               </div>
+               <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-xl">
+                  <p className="text-gray-400 text-[10px] font-black uppercase tracking-widest">Valeur d'Achat Totale</p>
+                  <div className="mt-2 text-3xl font-black text-rose-600">{categoriesData.reduce((acc, c) => acc + c.valeurAchatStock, 0).toLocaleString()} F</div>
+               </div>
+               <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-xl">
+                  <p className="text-gray-400 text-[10px] font-black uppercase tracking-widest">Valeur de Vente Totale</p>
+                  <div className="mt-2 text-3xl font-black text-emerald-600">{categoriesData.reduce((acc, c) => acc + c.valeurVenteStock, 0).toLocaleString()} F</div>
+               </div>
+            </div>
+
+            <div className="bg-white rounded-3xl border border-gray-200 shadow-xl overflow-hidden">
+                <div className="p-6 border-b border-gray-100 bg-gray-50/30 flex items-center justify-between">
+                    <h3 className="text-lg font-black text-gray-900 flex items-center gap-3 uppercase tracking-tight">
+                        <PieChart className="h-5 w-5 text-indigo-500" />
+                        Répartition par Catégories de Produits
+                    </h3>
+                </div>
+                <div className="overflow-x-auto">
+                    <table className="min-w-full">
+                        <thead className="bg-gray-50/50">
+                            <tr className="text-left text-[10px] font-black text-gray-400 uppercase tracking-widest border-b">
+                                <th className="px-6 py-4">Catégorie</th>
+                                <th className="px-6 py-4 text-center">Nombre Articles</th>
+                                <th className="px-6 py-4 text-center">Quantité Totale</th>
+                                <th className="px-6 py-4 text-right">Valeur Achat (Investi)</th>
+                                <th className="px-6 py-4 text-right">Valeur Vente (Potentiel)</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-100">
+                            {categoriesData.filter(c => c.nom.toLowerCase().includes(searchTerm.toLowerCase())).map((c, i) => (
+                                <tr key={i} className="hover:bg-gray-50/70 transition-colors">
+                                    <td className="px-6 py-4">
+                                        <div className="text-sm font-black text-gray-900 uppercase tracking-tighter">{c.nom}</div>
+                                    </td>
+                                    <td className="px-6 py-4 text-center">
+                                        <span className="text-xs font-bold text-gray-500 bg-gray-100 px-3 py-1 rounded-full">{c.nbProduits}</span>
+                                    </td>
+                                    <td className="px-6 py-4 text-center">
+                                        <span className="text-sm font-black text-gray-600">{c.quantiteTotale}</span>
+                                    </td>
+                                    <td className="px-6 py-4 text-right font-mono text-sm text-rose-600 font-bold tabular-nums">
+                                        {c.valeurAchatStock.toLocaleString()}
+                                    </td>
+                                    <td className="px-6 py-4 text-right font-black text-emerald-600 tabular-nums text-lg">
+                                        {c.valeurVenteStock.toLocaleString()}
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
                     </table>
                 </div>
             </div>

@@ -27,6 +27,8 @@ type Parametre = {
 export default function ParametresPage() {
   const [data, setData] = useState<Parametre | null>(null)
   const [loading, setLoading] = useState(true)
+  const [showCustomInput, setShowCustomInput] = useState(false)
+  const [customType, setCustomType] = useState('')
   const [accessDenied, setAccessDenied] = useState(false)
   const [saving, setSaving] = useState(false)
   const [err, setErr] = useState('')
@@ -76,28 +78,35 @@ export default function ParametresPage() {
       })
       .then((p) => {
         setData(p)
-        if (p) setForm({
-          nomEntreprise: p.nomEntreprise ?? '',
-          slogan: p.slogan ?? '',
-          contact: p.contact ?? '',
-          email: p.email ?? '',
-          siteWeb: p.siteWeb ?? '',
-          localisation: p.localisation ?? '',
-          numNCC: p.numNCC ?? '',
-          devise: p.devise ?? 'FCFA',
-          tvaParDefaut: String(p.tvaParDefaut ?? 0),
-          typeCommerce: p.typeCommerce ?? 'GENERAL',
-          logo: p.logo ?? '',
-          piedDePage: p.piedDePage ?? '',
-          smtpHost: p.smtpHost ?? '',
-          smtpPort: p.smtpPort !== null ? String(p.smtpPort) : '',
-          smtpUser: p.smtpUser ?? '',
-          smtpPass: p.smtpPass ?? '',
-          backupAuto: p.backupAuto ?? false,
-          backupFrequence: p.backupFrequence ?? 'QUOTIDIEN',
-          backupDestination: p.backupDestination ?? 'LOCAL',
-          backupEmailDest: p.backupEmailDest ?? '',
-        })
+          const isStandardType = (val: string) => ['GENERAL', 'QUINCAILLERIE', 'AUTOMOBILE', 'INFORMATIQUE', 'PHARMACIE', 'ALIMENTAIRE', 'RESTAURATION', 'TEXTILE', 'BTP', 'SERVICES', 'IMPORT_EXPORT', 'AGRICULTURE'].includes(val);
+          
+          if (p && p.typeCommerce && !isStandardType(p.typeCommerce)) {
+            setShowCustomInput(true)
+            setCustomType(p.typeCommerce)
+          }
+
+          if (p) setForm({
+            nomEntreprise: p.nomEntreprise ?? '',
+            slogan: p.slogan ?? '',
+            contact: p.contact ?? '',
+            email: p.email ?? '',
+            siteWeb: p.siteWeb ?? '',
+            localisation: p.localisation ?? '',
+            numNCC: p.numNCC ?? '',
+            devise: p.devise ?? 'FCFA',
+            tvaParDefaut: String(p.tvaParDefaut ?? 0),
+            typeCommerce: p.typeCommerce ?? 'GENERAL',
+            logo: p.logo ?? '',
+            piedDePage: p.piedDePage ?? '',
+            smtpHost: p.smtpHost ?? '',
+            smtpPort: p.smtpPort !== null ? String(p.smtpPort) : '',
+            smtpUser: p.smtpUser ?? '',
+            smtpPass: p.smtpPass ?? '',
+            backupAuto: p.backupAuto ?? false,
+            backupFrequence: p.backupFrequence ?? 'QUOTIDIEN',
+            backupDestination: p.backupDestination ?? 'LOCAL',
+            backupEmailDest: p.backupEmailDest ?? '',
+          })
       })
       .catch(() => setData(null))
       .finally(() => setLoading(false))
@@ -470,23 +479,45 @@ export default function ParametresPage() {
             <div>
               <label className="block text-sm font-medium text-gray-700">Type de commerce</label>
               <select
-                value={form.typeCommerce}
-                onChange={(e) => setForm((f) => ({ ...f, typeCommerce: e.target.value }))}
+                value={showCustomInput ? 'AUTRE' : form.typeCommerce}
+                onChange={(e) => {
+                  const val = e.target.value
+                  if (val === 'AUTRE') {
+                    setShowCustomInput(true)
+                    setForm(f => ({ ...f, typeCommerce: customType || 'AUTRE' }))
+                  } else {
+                    setShowCustomInput(false)
+                    setForm(f => ({ ...f, typeCommerce: val }))
+                  }
+                }}
                 className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500/20"
               >
                 <option value="GENERAL">Commerce Général</option>
+                <option value="QUINCAILLERIE">Quincaillerie</option>
+                <option value="AUTOMOBILE">Vente de pièces détachées auto</option>
                 <option value="INFORMATIQUE">Informatique / High-Tech</option>
                 <option value="PHARMACIE">Pharmacie / Santé</option>
                 <option value="ALIMENTAIRE">Commerce Alimentaire / Épicerie</option>
                 <option value="RESTAURATION">Restauration / Hôtellerie</option>
                 <option value="TEXTILE">Textile / Vêtements</option>
                 <option value="BTP">BTP / Matériaux de construction</option>
-                <option value="AUTOMOBILE">Automobile / Pièces détachées</option>
                 <option value="SERVICES">Services / Prestations</option>
                 <option value="IMPORT_EXPORT">Import / Export</option>
                 <option value="AGRICULTURE">Agriculture / Élevage</option>
-                <option value="AUTRE">Autre</option>
+                <option value="AUTRE">Autre (Saisie libre)</option>
               </select>
+              {showCustomInput && (
+                <input
+                  value={customType}
+                  onChange={(e) => {
+                    const val = e.target.value
+                    setCustomType(val)
+                    setForm(f => ({ ...f, typeCommerce: val }))
+                  }}
+                  placeholder="Saisissez votre type de commerce..."
+                  className="mt-2 w-full rounded-lg border border-orange-300 px-3 py-2 focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500/20 bg-orange-50"
+                />
+              )}
               <p className="mt-0.5 text-xs text-gray-500">Identifie le secteur d'activité de votre commerce</p>
             </div>
             <div>
