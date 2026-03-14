@@ -31,8 +31,33 @@ export async function GET(request: NextRequest) {
   const total = filtered.length
   const paginated = filtered.slice(skip, skip + limit)
 
+  const fournisseurIds = paginated.map((f) => f.id)
+  let detteByFournisseur: Record<number, number> = {}
+  
+  if (fournisseurIds.length > 0) {
+    const sums = await prisma.achat.groupBy({
+      by: ['fournisseurId'],
+      where: {
+        fournisseurId: { in: fournisseurIds },
+      },
+      _sum: { montantTotal: true, montantPaye: true },
+    })
+    for (const r of sums) {
+      if (r.fournisseurId != null) {
+        const totalA = r._sum?.montantTotal || 0
+        const payeA = r._sum?.montantPaye || 0
+        detteByFournisseur[r.fournisseurId] = totalA - payeA
+      }
+    }
+  }
+
+  const result = paginated.map((f) => ({
+    ...f,
+    dette: detteByFournisseur[f.id] ?? 0
+  }))
+
   const res = NextResponse.json({
-    data: paginated,
+    data: result,
     pagination: {
       page,
       limit,

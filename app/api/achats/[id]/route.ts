@@ -21,7 +21,7 @@ export async function GET(
     where: { id },
     include: {
       magasin: { select: { code: true, nom: true } },
-      fournisseur: { select: { nom: true } },
+      fournisseur: { select: { nom: true, telephone: true, email: true } },
       lignes: true,
     },
   })

@@ -20,9 +20,9 @@ export type TemplateData = {
 
   // Données client/fournisseur
   CLIENT_NOM?: string
-  CLIENT_TELEPHONE?: string
-  CLIENT_EMAIL?: string
-  CLIENT_ADRESSE?: string
+  CLIENT_CONTACT?: string
+  CLIENT_LOCALISATION?: string
+  CLIENT_NCC?: string
   FOURNISSEUR_NOM?: string
   FOURNISSEUR_TELEPHONE?: string
 
@@ -366,7 +366,12 @@ export function getDefaultTemplate(type: 'VENTE' | 'ACHAT'): string {
   <p><strong>${isVente ? 'Ticket' : 'Bon'} N°:</strong> {NUMERO}</p>
   <p><strong>Date:</strong> {DATE} {HEURE}</p>
   <p><strong>Magasin:</strong> {MAGASIN_CODE} – {MAGASIN_NOM}</p>
-  ${isVente ? '<p><strong>Client:</strong> {CLIENT_NOM}</p>' : '<p><strong>Fournisseur:</strong> {FOURNISSEUR_NOM}</p>'}
+  ${isVente ? `
+  <p><strong>Client:</strong> {CLIENT_NOM}</p>
+  {CLIENT_CONTACT ? '<p><strong>Contact:</strong> {CLIENT_CONTACT}</p>' : ''}
+  {CLIENT_LOCALISATION ? '<p><strong>Localisation:</strong> {CLIENT_LOCALISATION}</p>' : ''}
+  {CLIENT_NCC ? '<p><strong>NCC:</strong> {CLIENT_NCC}</p>' : ''}
+  ` : '<p><strong>Fournisseur:</strong> {FOURNISSEUR_NOM}</p>'}
 </div>
 <hr>
 {LIGNES}
@@ -456,7 +461,9 @@ export const PRINT_VARIABLES = {
 
   // Client/Fournisseur
   '{CLIENT_NOM}': 'Nom du client',
-  '{CLIENT_TELEPHONE}': 'Téléphone du client',
+  '{CLIENT_CONTACT}': 'Contact du client',
+  '{CLIENT_LOCALISATION}': 'Localisation du client',
+  '{CLIENT_NCC}': 'NCC du client',
   '{FOURNISSEUR_NOM}': 'Nom du fournisseur',
 
   // Magasin
@@ -492,6 +499,9 @@ export const DEFAULT_VENTE_TEMPLATE = `
   <p><strong>Date:</strong> {DATE} {HEURE}</p>
   <p><strong>Magasin:</strong> {MAGASIN_CODE} – {MAGASIN_NOM}</p>
   {CLIENT_NOM ? '<p><strong>Client:</strong> {CLIENT_NOM}</p>' : ''}
+  {CLIENT_CONTACT ? '<p><strong>Contact:</strong> {CLIENT_CONTACT}</p>' : ''}
+  {CLIENT_LOCALISATION ? '<p><strong>Localisation:</strong> {CLIENT_LOCALISATION}</p>' : ''}
+  {CLIENT_NCC ? '<p><strong>NCC:</strong> {CLIENT_NCC}</p>' : ''}
 </div>
 <hr>
 {LIGNES}

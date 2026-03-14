@@ -103,7 +103,7 @@ export default function Home() {
             <span>Version 1.0.0 - Offline Ready - Sécurisé</span>
           </div>
           <div className="flex items-center justify-center gap-2 text-sm text-gray-500">
-            <span>Pacousstar - 05 44 81 49 24</span>
+            <span>GestiCom — Solution de Gestion Professionnelle</span>
           </div>
         </div>
       </div>

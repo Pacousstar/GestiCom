@@ -21,9 +21,9 @@ export default function SecurityWrapper({ children }: { children: React.ReactNod
 
         async function checkLicense() {
             try {
-                // Timeout de 3 secondes pour le fetch de licence (Démarrage éclair)
+                // Timeout de 1 seconde pour le fetch de licence (Démarrage éclair)
                 const controller = new AbortController()
-                const timeoutId = setTimeout(() => controller.abort(), 3000)
+                const timeoutId = setTimeout(() => controller.abort(), 1000)
 
                 const res = await fetch('/api/license/check', { 
                     cache: 'no-store',

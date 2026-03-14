@@ -45,7 +45,7 @@ export default function AchatsPage() {
     fournisseurLibre: string | null
     observation: string | null
     magasin: { code: string; nom: string }
-    fournisseur: { nom: string } | null
+    fournisseur: { nom: string; telephone?: string | null; email?: string | null } | null
     lignes: Array<{ designation: string; quantite: number; prixUnitaire: number; montant: number }>
   } | null>(null)
   const [loadingDetail, setLoadingDetail] = useState<number | null>(null)
@@ -278,6 +278,8 @@ export default function AchatsPage() {
       MAGASIN_CODE: d.magasin.code,
       MAGASIN_NOM: d.magasin.nom,
       FOURNISSEUR_NOM: d.fournisseur?.nom || d.fournisseurLibre || undefined,
+      CLIENT_NOM: d.fournisseur?.nom || d.fournisseurLibre || undefined, // Pour compatibilité template
+      CLIENT_CONTACT: d.fournisseur?.telephone || undefined,
       LIGNES: lignesHtml,
       TOTAL: `${Number(d.montantTotal).toLocaleString('fr-FR')} FCFA`,
       MONTANT_PAYE: d.montantPaye ? `${Number(d.montantPaye).toLocaleString('fr-FR')} FCFA` : undefined,

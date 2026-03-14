@@ -54,7 +54,7 @@ export default function VentesPage() {
     clientLibre: string | null
     observation: string | null
     magasin: { code: string; nom: string }
-    client: { nom: string } | null
+    client: { nom: string; telephone?: string | null; adresse?: string | null; ncc?: string | null } | null
     lignes: Array<{ designation: string; quantite: number; prixUnitaire: number; montant: number }>
   } | null>(null)
   const [loadingDetail, setLoadingDetail] = useState<number | null>(null)
@@ -150,6 +150,9 @@ export default function VentesPage() {
       MAGASIN_CODE: d.magasin.code,
       MAGASIN_NOM: d.magasin.nom,
       CLIENT_NOM: d.client?.nom || d.clientLibre || undefined,
+      CLIENT_CONTACT: d.client?.telephone || undefined,
+      CLIENT_LOCALISATION: d.client?.adresse || undefined,
+      CLIENT_NCC: d.client?.ncc || undefined,
       LIGNES: lignesHtml,
       TOTAL: `${Number(d.montantTotal).toLocaleString('fr-FR')} FCFA`,
       MONTANT_PAYE: d.montantPaye ? `${Number(d.montantPaye).toLocaleString('fr-FR')} FCFA` : undefined,

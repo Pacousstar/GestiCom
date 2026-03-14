@@ -37,20 +37,24 @@ export async function GET(request: NextRequest) {
   const total = filtered.length
   const paginated = filtered.slice(skip, skip + limit)
 
-  const creditIds = paginated.filter((c) => c.type === 'CREDIT').map((c) => c.id)
+  const clientIds = paginated.map((c) => c.id)
   let detteByClient: Record<number, number> = {}
-  if (creditIds.length > 0) {
+  if (clientIds.length > 0) {
     const sums = await prisma.vente.groupBy({
       by: ['clientId'],
       where: {
-        clientId: { in: creditIds },
+        clientId: { in: clientIds },
         statut: 'VALIDEE',
-        modePaiement: 'CREDIT',
+        statutPaiement: { in: ['PARTIEL', 'CREDIT'] },
       },
-      _sum: { montantTotal: true },
+      _sum: { montantTotal: true, montantPaye: true },
     })
     for (const r of sums) {
-      if (r.clientId != null) detteByClient[r.clientId] = r._sum.montantTotal ?? 0
+      if (r.clientId != null) {
+        const totalV = r._sum?.montantTotal || 0
+        const payeV = r._sum?.montantPaye || 0
+        detteByClient[r.clientId] = totalV - payeV
+      }
     }
   }
 

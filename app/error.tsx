@@ -23,7 +23,7 @@ export default function Error({
           <h1 className="text-xl font-bold text-gray-900">Une erreur est survenue</h1>
         </div>
         <p className="mt-4 text-sm text-gray-600">
-          L&apos;application a rencontré un problème. Vous pouvez réessayer ou retourner à l&apos;accueil.
+          L&apos;application a rencontré une petite difficulté technique. Ne vous inquiétez pas, vos données sont en sécurité. Vous pouvez réessayer l&apos;action ou retourner au tableau de bord.
         </p>
         {process.env.NODE_ENV === 'development' && error.message && (
           <p className="mt-2 rounded-lg bg-gray-100 p-3 text-xs text-gray-700 font-mono break-all">

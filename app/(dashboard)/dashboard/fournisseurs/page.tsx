@@ -16,6 +16,7 @@ type Fournisseur = {
   telephone: string | null
   email: string | null
   ncc: string | null
+  dette?: number
 }
 
 export default function FournisseursPage() {
@@ -364,6 +365,7 @@ export default function FournisseursPage() {
                   <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-gray-600">Tél.</th>
                   <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-gray-600">Email</th>
                   <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-gray-600">NCC</th>
+                  <th className="px-4 py-3 text-right text-xs font-semibold uppercase text-gray-600">Solde</th>
                   <th className="px-4 py-3"></th>
                 </tr>
               </thead>
@@ -374,6 +376,9 @@ export default function FournisseursPage() {
                     <td className="px-4 py-3 text-sm text-gray-600">{f.telephone || '—'}</td>
                     <td className="px-4 py-3 text-sm text-gray-600">{f.email || '—'}</td>
                     <td className="px-4 py-3 text-sm text-gray-600">{f.ncc || '—'}</td>
+                    <td className={`px-4 py-3 text-right text-sm font-bold ${f.dette && f.dette > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                      {Number(f.dette ?? 0).toLocaleString('fr-FR')} F
+                    </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-1">
                           <button

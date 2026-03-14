@@ -1,9 +1,15 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { FileText, Loader2, AlertTriangle, TrendingUp, ArrowRightLeft, FileSpreadsheet, Trash2, Search, Filter, X } from 'lucide-react'
+import {
+  FileText, Loader2, AlertTriangle, TrendingUp, ArrowRightLeft,
+  FileSpreadsheet, Trash2, Search, Filter, X,
+  Users, ShoppingBag, CreditCard, PieChart,
+  Package, DollarSign
+} from 'lucide-react'
 import { useToast } from '@/hooks/useToast'
 import Pagination from '@/components/ui/Pagination'
+
 type Alerte = {
   id: number
   quantite: number
@@ -23,17 +29,8 @@ type Mouvement = {
   magasin: { code: string; nom: string }
 }
 
-type Magasin = {
-  id: number
-  code: string
-  nom: string
-}
-
-type Produit = {
-  id: number
-  code: string
-  designation: string
-}
+type Magasin = { id: number; code: string; nom: string }
+type Produit = { id: number; code: string; designation: string }
 
 type Comparaison = {
   periodeActuelle: { ca: number; achats: number; ventes: number }
@@ -42,147 +39,156 @@ type Comparaison = {
   evolutionPourcent: { ca: number; achats: number; ventes: number }
 }
 
+type RapportClient = {
+  clientId: number | null
+  client: string
+  chiffreAffaires: number
+  frequenceAchat: number
+}
+
+type RapportPaiement = {
+  clientId?: number | null
+  fournisseurId?: number | null
+  client?: string
+  fournisseur?: string
+  montantTotal: number
+  montantPaye: number
+  resteAPayer: number
+  nbVentes?: number
+  nbAchats?: number
+}
+
+type RapportFacture = {
+  id: number
+  numero: string
+  date: string
+  client: string
+  montantTotal: number
+  montantPaye: number
+  resteAPayer: number
+  statutPaiement: string
+}
+
+type RapportProduitClient = {
+  produit: string
+  quantiteVendue: number
+  chiffreAffaires: number
+}
+
 export default function RapportsPage() {
-  const [alertes, setAlertes] = useState<Alerte[]>([])
-  const [topProduits, setTopProduits] = useState<Top[]>([])
-  const [mouvements, setMouvements] = useState<Mouvement[]>([])
-  const [comparaison, setComparaison] = useState<Comparaison | null>(null)
+  const [activeTab, setActiveTab] = useState('logistique')
   const [loading, setLoading] = useState(true)
   const [dateDebut, setDateDebut] = useState('')
   const [dateFin, setDateFin] = useState('')
   const [userRole, setUserRole] = useState<string>('')
-  const [deletingId, setDeletingId] = useState<number | null>(null)
-  const [alertesPage, setAlertesPage] = useState(1)
-  const [topPage, setTopPage] = useState(1)
-  const [alertesPagination, setAlertesPagination] = useState<{ page: number; limit: number; total: number; totalPages: number } | null>(null)
-  const [topPagination, setTopPagination] = useState<{ page: number; limit: number; total: number; totalPages: number } | null>(null)
+  const [searchTerm, setSearchTerm] = useState('')
   const { success: showSuccess, error: showError } = useToast()
 
-  // Filtres avancés
+  // Data State
+  const [alertes, setAlertes] = useState<Alerte[]>([])
+  const [topProduits, setTopProduits] = useState<Top[]>([])
+  const [mouvements, setMouvements] = useState<Mouvement[]>([])
+  const [comparaison, setComparaison] = useState<Comparaison | null>(null)
+  const [caClients, setCaClients] = useState<RapportClient[]>([])
+  const [etatPaiementVentes, setEtatPaiementVentes] = useState<RapportPaiement[]>([])
+  const [etatPaiementAchats, setEtatPaiementAchats] = useState<RapportPaiement[]>([])
+  const [facturesVentes, setFacturesVentes] = useState<RapportFacture[]>([])
+  const [produitsParClient, setProduitsParClient] = useState<RapportProduitClient[]>([])
+  const [selectedClientId, setSelectedClientId] = useState<number | null>(null)
+
+  // Filter Data
   const [magasins, setMagasins] = useState<Magasin[]>([])
   const [produits, setProduits] = useState<Produit[]>([])
+  const [clients, setClients] = useState<{ id: number; nom: string }[]>([])
   const [filtreMagasin, setFiltreMagasin] = useState('')
   const [filtreProduit, setFiltreProduit] = useState('')
   const [filtreCategorie, setFiltreCategorie] = useState('')
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false)
-  const [searchTerm, setSearchTerm] = useState('')
+
+  // Pagination
+  const [alertesPage, setAlertesPage] = useState(1)
+  const [topPage, setTopPage] = useState(1)
+  const [facturesPage, setFacturesPage] = useState(1)
+  const [paginationFactures, setPaginationFactures] = useState<{ totalPages: number; total: number } | null>(null)
 
   useEffect(() => {
-    fetch('/api/auth/check')
-      .then((r) => (r.ok ? r.json() : { role: '' }))
-      .then((data: { role?: string }) => setUserRole(data.role || ''))
-      .catch(() => { })
-
-    // Charger magasins et produits pour les filtres
-    Promise.all([
-      fetch('/api/magasins').then((r) => (r.ok ? r.json() : [])),
-      fetch('/api/produits?complet=1').then((r) => (r.ok ? r.json() : [])).then((d) => Array.isArray(d) ? d : []),
-    ]).then(([mags, prods]) => {
-      setMagasins(Array.isArray(mags) ? mags : [])
-      setProduits(Array.isArray(prods) ? prods : [])
-    })
+    fetch('/api/auth/check').then(r => r.json()).then(data => setUserRole(data.role || ''))
+    fetch('/api/magasins').then(r => r.json()).then(setMagasins)
+    fetch('/api/produits?complet=1').then(r => r.json()).then(d => setProduits(Array.isArray(d) ? d : []))
+    fetch('/api/clients').then(r => r.json()).then(d => setClients(Array.isArray(d) ? d : []))
   }, [])
 
-  const fetchRapports = (overrideDeb?: string, overrideFin?: string, overrideAlertesPage?: number, overrideTopPage?: number) => {
+  const fetchAllData = async () => {
     setLoading(true)
-    const deb = overrideDeb ?? dateDebut
-    const fin = overrideFin ?? dateFin
-    const alertesPg = overrideAlertesPage ?? alertesPage
-    const topPg = overrideTopPage ?? topPage
-    const params = new URLSearchParams()
-    if (deb) params.set('dateDebut', deb)
-    if (fin) params.set('dateFin', fin)
-    if (filtreMagasin) params.set('magasinId', filtreMagasin)
-    if (filtreProduit) params.set('produitId', filtreProduit)
-    if (filtreCategorie) params.set('categorie', filtreCategorie)
-    params.set('alertesPage', String(alertesPg))
-    params.set('alertesLimit', '10')
-    params.set('topPage', String(topPg))
-    params.set('topLimit', '10')
-    fetch('/api/rapports?' + params.toString())
-      .then((r) => (r.ok ? r.json() : { alertes: [], topProduits: [], mouvements: [], alertesPagination: null, topPagination: null }))
-      .then((d) => {
-        setAlertes(Array.isArray(d.alertes) ? d.alertes : [])
-        setTopProduits(Array.isArray(d.topProduits) ? d.topProduits : [])
-        setMouvements(Array.isArray(d.mouvements) ? d.mouvements : [])
-        setAlertesPagination(d.alertesPagination || null)
-        setTopPagination(d.topPagination || null)
-        setComparaison(d.comparaison || null)
-      })
-      .catch((e) => {
-        console.error('Erreur fetch rapports:', e)
-        setAlertes([])
-        setTopProduits([])
-        setMouvements([])
-        setAlertesPagination(null)
-        setTopPagination(null)
-        setComparaison(null)
-      })
-      .finally(() => setLoading(false))
-  }
+    const params = new URLSearchParams({
+      start: dateDebut,
+      end: dateFin,
+      magasinId: filtreMagasin,
+      produitId: filtreProduit,
+      categorie: filtreCategorie,
+      alertesPage: String(alertesPage),
+      topPage: String(topPage)
+    })
 
-  // Charger les données au premier rendu
-  useEffect(() => {
-    fetchRapports('', '', 1, 1)
-  }, [])
-
-  // Recharger quand les pages ou filtres changent
-  useEffect(() => {
-    fetchRapports(dateDebut, dateFin, alertesPage, topPage)
-  }, [alertesPage, topPage, filtreMagasin, filtreProduit, filtreCategorie])
-
-  const preset = (j: number) => {
-    const f = new Date()
-    const d = new Date(f)
-    d.setDate(d.getDate() - j)
-    const deb = d.toISOString().slice(0, 10)
-    const fin = f.toISOString().slice(0, 10)
-    setDateDebut(deb)
-    setDateFin(fin)
-    setAlertesPage(1)
-    setTopPage(1)
-    fetchRapports(deb, fin, 1, 1)
-  }
-  const presetMois = () => {
-    const f = new Date()
-    const deb = new Date(f.getFullYear(), f.getMonth(), 1).toISOString().slice(0, 10)
-    const fin = f.toISOString().slice(0, 10)
-    setDateDebut(deb)
-    setDateFin(fin)
-    setAlertesPage(1)
-    setTopPage(1)
-    fetchRapports(deb, fin, 1, 1)
-  }
-  const resetDates = () => {
-    setDateDebut('')
-    setDateFin('')
-    setAlertesPage(1)
-    setTopPage(1)
-    fetchRapports('', '', 1, 1)
-  }
-
-  const handleDeleteMouvement = async (id: number) => {
-    if (!confirm('Êtes-vous sûr de vouloir supprimer ce mouvement ? Cette action est irréversible.')) {
-      return
-    }
-    setDeletingId(id)
     try {
-      const res = await fetch(`/api/mouvements/${id}`, { method: 'DELETE' })
-      if (res.ok) {
-        showSuccess('Mouvement supprimé avec succès.')
-        fetchRapports(dateDebut, dateFin, alertesPage, topPage)
-      } else {
-        const data = await res.json()
-        showError(data.error || 'Erreur lors de la suppression.')
-      }
+      // 1. Rapports Généraux (Logistique)
+      const resG = await fetch(`/api/rapports?${params.toString()}`)
+      const dataG = await resG.json()
+      setAlertes(dataG.alertes || [])
+      setTopProduits(dataG.topProduits || [])
+      setMouvements(dataG.mouvements || [])
+      setComparaison(dataG.comparaison || null)
+
+      // 2. CA par Client
+      const resC = await fetch(`/api/rapports/ventes/clients?start=${dateDebut}&end=${dateFin}`)
+      setCaClients(await resC.json())
+
+      // 3. Etat Paiement Ventes
+      const resPV = await fetch(`/api/rapports/ventes/etat-paiement?start=${dateDebut}&end=${dateFin}`)
+      setEtatPaiementVentes(await resPV.json())
+
+      // 4. Etat Paiement Achats
+      const resPA = await fetch(`/api/rapports/achats/fournisseurs?start=${dateDebut}&end=${dateFin}`)
+      setEtatPaiementAchats(await resPA.json())
+
+      // 5. Factures (avec pagination spécifique)
+      const resF = await fetch(`/api/rapports/ventes/factures?start=${dateDebut}&end=${dateFin}&page=${facturesPage}`)
+      const dataF = await resF.json()
+      setFacturesVentes(dataF.data || [])
+      setPaginationFactures(dataF.pagination)
+
     } catch (e) {
-      showError('Erreur réseau lors de la suppression.')
+      console.error(e)
+      showError('Erreur lors du chargement des rapports')
     } finally {
-      setDeletingId(null)
+      setLoading(false)
     }
   }
 
-  if (loading) {
+  // Fetch produits pour un client spécifique
+  const fetchProduitsClient = async (clientId: number) => {
+    setSelectedClientId(clientId)
+    try {
+      const res = await fetch(`/api/rapports/ventes/clients/produits?clientId=${clientId}&start=${dateDebut}&end=${dateFin}`)
+      setProduitsParClient(await res.json())
+    } catch (e) {
+      showError('Erreur chargement produits client')
+    }
+  }
+
+  useEffect(() => {
+    fetchAllData()
+  }, [dateDebut, dateFin, filtreMagasin, filtreProduit, filtreCategorie, alertesPage, topPage, facturesPage])
+
+  const preset = (days: number) => {
+    const end = new Date()
+    const start = new Date()
+    start.setDate(end.getDate() - days)
+    setDateDebut(start.toISOString().split('T')[0])
+    setDateFin(end.toISOString().split('T')[0])
+  }
+
+  if (loading && !alertes.length && !caClients.length) {
     return (
       <div className="flex min-h-[40vh] items-center justify-center">
         <Loader2 className="h-10 w-10 animate-spin text-orange-500" />
@@ -190,413 +196,428 @@ export default function RapportsPage() {
     )
   }
 
+  const TabButton = ({ id, label, icon: Icon }: { id: string; label: string; icon: any }) => (
+    <button
+      onClick={() => setActiveTab(id)}
+      className={`flex items-center gap-2 px-6 py-3 text-sm font-medium transition-all border-b-2 ${activeTab === id
+          ? 'border-orange-500 text-orange-600 bg-orange-50/50'
+          : 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+        }`}
+    >
+      <Icon className="h-4 w-4" />
+      {label}
+    </button>
+  )
+
   return (
-    <div className="space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold text-white">Rapports</h1>
-        <p className="mt-1 text-white/90">Alertes stock, top produits, mouvements</p>
-      </div>
-
-      {/* Barre de recherche */}
-      <div className="rounded-xl border border-gray-200 bg-white p-4">
-        <div className="flex flex-wrap items-center gap-4">
-          <div className="flex-1 min-w-[200px]">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Rechercher dans les rapports..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full rounded-lg border border-gray-300 bg-white pl-10 pr-4 py-2 text-sm"
-              />
-            </div>
-          </div>
+    <div className="space-y-6 pb-20">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-white drop-shadow-sm">Centre de Rapports</h1>
+          <p className="mt-1 text-white/80">Analyses commerciales, stocks et finances</p>
+        </div>
+        <div className="flex items-center gap-2">
           <button
-            onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-            className="flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-800 hover:bg-gray-50"
+            onClick={() => window.open(`/api/rapports/export?start=${dateDebut}&end=${dateFin}`, '_blank')}
+            className="flex items-center gap-2 rounded-lg bg-white/10 px-4 py-2 text-sm font-medium text-white hover:bg-white/20 backdrop-blur-md border border-white/20 transition-all"
           >
-            <Filter className="h-4 w-4" />
-            Filtres avancés
+            <FileSpreadsheet className="h-4 w-4" />
+            Export Excel
           </button>
-          {(filtreMagasin || filtreProduit || filtreCategorie) && (
-            <button
-              onClick={() => {
-                setFiltreMagasin('')
-                setFiltreProduit('')
-                setFiltreCategorie('')
-              }}
-              className="flex items-center gap-2 rounded-lg border border-red-300 px-4 py-2 text-sm text-red-600 hover:bg-red-50"
-            >
-              <X className="h-4 w-4" />
-              Réinitialiser filtres
+        </div>
+      </div>
+
+      {/* Filtres Globaux */}
+      <div className="rounded-2xl border border-white/20 bg-white/95 p-5 shadow-xl backdrop-blur-lg">
+        <div className="flex flex-wrap items-center gap-4">
+          <div className="flex items-center gap-2 bg-gray-50 p-1 rounded-xl border border-gray-100">
+            <input
+              type="date"
+              value={dateDebut}
+              onChange={(e) => setDateDebut(e.target.value)}
+              className="bg-transparent px-3 py-1.5 text-sm focus:outline-none"
+            />
+            <span className="text-gray-400">à</span>
+            <input
+              type="date"
+              value={dateFin}
+              onChange={(e) => setDateFin(e.target.value)}
+              className="bg-transparent px-3 py-1.5 text-sm focus:outline-none"
+            />
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {[7, 30].map(d => (
+              <button key={d} onClick={() => preset(d)} className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-gray-100 text-gray-600 hover:bg-orange-500 hover:text-white transition-all">
+                {d} derniers jours
+              </button>
+            ))}
+            <button onClick={() => { setDateDebut(''); setDateFin('') }} className="px-3 py-1.5 text-xs font-semibold rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50">
+              Toute la période
             </button>
-          )}
+          </div>
+          <div className="h-8 w-px bg-gray-200 hidden md:block" />
+          <div className="relative flex-1 min-w-[200px]">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Filtrer les résultats..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full rounded-xl border border-gray-200 bg-gray-50 pl-10 pr-4 py-2 text-sm focus:ring-2 focus:ring-orange-500/20"
+            />
+          </div>
         </div>
+      </div>
 
-        {/* Filtres avancés */}
-        {showAdvancedFilters && (
-          <div className="mt-4 grid gap-4 border-t pt-4 md:grid-cols-3">
-            <div>
-              <label className="block text-xs font-medium text-gray-800 mb-1">Magasin</label>
-              <select
-                value={filtreMagasin}
-                onChange={(e) => setFiltreMagasin(e.target.value)}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
-              >
-                <option value="">Tous les magasins</option>
-                {magasins.map((mag) => (
-                  <option key={mag.id} value={mag.id}>
-                    {mag.code} - {mag.nom}
-                  </option>
-                ))}
-              </select>
+      {/* Navigation Onglets */}
+      <div className="flex overflow-x-auto rounded-xl bg-white/90 border border-white/20 shadow-lg backdrop-blur-md">
+        <TabButton id="logistique" label="Stock & Logistique" icon={Package} />
+        <TabButton id="ventes" label="Analyse Ventes" icon={ShoppingBag} />
+        <TabButton id="achats" label="Analyse Achats" icon={ArrowRightLeft} />
+        <TabButton id="finances" label="Finances & Créances" icon={DollarSign} />
+      </div>
+
+      {/* Contenu de l'onglet */}
+      <div className="mt-6">
+        {activeTab === 'logistique' && (
+          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4">
+            {comparaison && (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <StatCard label="Chiffre d'Affaires" value={comparaison.periodeActuelle.ca} prev={comparaison.periodePrecedente.ca} evol={comparaison.evolutionPourcent.ca} unit="FCFA" color="blue" />
+                <StatCard label="Total Achats" value={comparaison.periodeActuelle.achats} prev={comparaison.periodePrecedente.achats} evol={comparaison.evolutionPourcent.achats} unit="FCFA" color="orange" />
+                <StatCard label="Volume Ventes" value={comparaison.periodeActuelle.ventes} prev={comparaison.periodePrecedente.ventes} evol={comparaison.evolutionPourcent.ventes} unit="unités" color="green" />
+              </div>
+            )}
+            <div className="grid lg:grid-cols-2 gap-6">
+              <LogistiqueAlertes alertes={alertes} searchTerm={searchTerm} />
+              <LogistiqueTop top={topProduits} searchTerm={searchTerm} />
             </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-800 mb-1">Produit</label>
-              <select
-                value={filtreProduit}
-                onChange={(e) => setFiltreProduit(e.target.value)}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
-              >
-                <option value="">Tous les produits</option>
-                {produits.map((prod) => (
-                  <option key={prod.id} value={prod.id}>
-                    {prod.code} - {prod.designation}
-                  </option>
-                ))}
-              </select>
+            <LogistiqueMouvements mouvements={mouvements} searchTerm={searchTerm} userRole={userRole} />
+          </div>
+        )}
+
+        {activeTab === 'ventes' && (
+          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4">
+            <div className="grid lg:grid-cols-3 gap-6">
+              <div className="lg:col-span-1 border border-gray-200 bg-white p-5 rounded-2xl shadow-sm h-fit">
+                <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                  <Users className="h-5 w-5 text-blue-500" />
+                  CA par Client
+                </h3>
+                <div className="space-y-2 overflow-y-auto max-h-[600px] pr-2 scrollbar-thin scrollbar-thumb-gray-200">
+                  {caClients.filter(c => c.client.toLowerCase().includes(searchTerm.toLowerCase())).map(c => (
+                    <button
+                      key={c.clientId || c.client}
+                      onClick={() => c.clientId && fetchProduitsClient(c.clientId)}
+                      className={`w-full text-left p-3 rounded-xl transition-all border ${selectedClientId === c.clientId ? 'bg-blue-50 border-blue-200 shadow-sm' : 'hover:bg-gray-50 border-transparent'}`}
+                    >
+                      <div className="flex justify-between items-center">
+                        <span className="font-semibold text-gray-800 truncate">{c.client}</span>
+                        <span className="text-xs bg-gray-100 px-2 py-0.5 rounded-full">{c.frequenceAchat} vts</span>
+                      </div>
+                      <div className="mt-1 text-blue-600 font-bold">
+                        {c.chiffreAffaires.toLocaleString()} <span className="text-[10px] font-normal">FCFA</span>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="lg:col-span-2 border border-gray-200 bg-white p-5 rounded-2xl shadow-sm">
+                <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                  <Package className="h-5 w-5 text-orange-500" />
+                  Produits achetés par {caClients.find(c => c.clientId === selectedClientId)?.client || 'le client'}
+                </h3>
+                {selectedClientId ? (
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full">
+                      <thead className="border-b">
+                        <tr className="text-left text-xs font-bold text-gray-500 uppercase tracking-wider">
+                          <th className="px-4 py-3">Produit</th>
+                          <th className="px-4 py-3 text-right">Qté</th>
+                          <th className="px-4 py-3 text-right">Montant (CA)</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100">
+                        {produitsParClient.map((p, i) => (
+                          <tr key={i} className="hover:bg-gray-50 transition-colors">
+                            <td className="px-4 py-3 text-sm font-medium text-gray-900">{p.produit}</td>
+                            <td className="px-4 py-3 text-sm text-right font-semibold text-gray-600">{p.quantiteVendue}</td>
+                            <td className="px-4 py-3 text-sm text-right font-bold text-blue-600">{p.chiffreAffaires.toLocaleString()} FCFA</td>
+                          </tr>
+                        ))}
+                        {produitsParClient.length === 0 && (
+                          <tr><td colSpan={3} className="px-4 py-10 text-center text-gray-400">Aucune donnée sur cette période</td></tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-20 text-gray-400">
+                    <PieChart className="h-12 w-12 mb-4 opacity-20" />
+                    <p>Sélectionnez un client à gauche pour voir le détail de ses produits</p>
+                  </div>
+                )}
+              </div>
             </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-800 mb-1">Catégorie</label>
-              <input
-                type="text"
-                value={filtreCategorie}
-                onChange={(e) => setFiltreCategorie(e.target.value)}
-                placeholder="Filtrer par catégorie"
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
-              />
+          </div>
+        )}
+
+        {activeTab === 'achats' && (
+          <div className="animate-in fade-in slide-in-from-bottom-4">
+            <PaiementTable
+              title="État de Paiement des Achats"
+              data={etatPaiementAchats}
+              type="achats"
+              searchTerm={searchTerm}
+            />
+          </div>
+        )}
+
+        {activeTab === 'finances' && (
+          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4">
+            <PaiementTable
+              title="Créances Clients (Ventes)"
+              data={etatPaiementVentes}
+              type="ventes"
+              searchTerm={searchTerm}
+            />
+            
+            <div className="border border-gray-200 bg-white p-5 rounded-2xl shadow-sm">
+                <div className="flex items-center justify-between mb-6">
+                    <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                        <FileText className="h-5 w-5 text-gray-500" />
+                        Factures Clients Détaillées
+                    </h3>
+                </div>
+                <div className="overflow-x-auto">
+                    <table className="min-w-full">
+                        <thead className="bg-gray-50/50">
+                            <tr className="text-left text-xs font-bold text-gray-500 uppercase tracking-wider">
+                                <th className="px-4 py-3">N° Facture</th>
+                                <th className="px-4 py-3">Date</th>
+                                <th className="px-4 py-3">Client</th>
+                                <th className="px-4 py-3 text-right">Total</th>
+                                <th className="px-4 py-3 text-right">Réglé</th>
+                                <th className="px-4 py-3 text-right">Solde</th>
+                                <th className="px-4 py-3 text-center">Statut</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-100">
+                            {facturesVentes.filter(f => f.client.toLowerCase().includes(searchTerm.toLowerCase()) || f.numero.toLowerCase().includes(searchTerm.toLowerCase())).map(f => (
+                                <tr key={f.id} className="hover:bg-gray-50 transition-colors">
+                                    <td className="px-4 py-3 text-sm font-mono font-bold text-blue-600">{f.numero}</td>
+                                    <td className="px-4 py-3 text-sm text-gray-600">{new Date(f.date).toLocaleDateString()}</td>
+                                    <td className="px-4 py-3 text-sm font-medium text-gray-900">{f.client}</td>
+                                    <td className="px-4 py-3 text-sm text-right font-bold">{f.montantTotal.toLocaleString()}</td>
+                                    <td className="px-4 py-3 text-sm text-right text-green-600 font-semibold">{f.montantPaye.toLocaleString()}</td>
+                                    <td className="px-4 py-3 text-sm text-right text-red-600 font-bold">{f.resteAPayer.toLocaleString()}</td>
+                                    <td className="px-4 py-3 text-center">
+                                        <StatutBadge statut={f.statutPaiement} />
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+                {paginationFactures && (
+                    <div className="mt-4">
+                        <Pagination 
+                            currentPage={facturesPage} 
+                            totalPages={paginationFactures.totalPages} 
+                            onPageChange={setFacturesPage}
+                            totalItems={paginationFactures.total}
+                            itemsPerPage={10}
+                        />
+                    </div>
+                )}
             </div>
           </div>
         )}
       </div>
+    </div>
+  )
+}
 
-      <div className="flex flex-wrap items-end gap-3 rounded-xl border border-gray-200 bg-gray-50 p-4">
-        <div>
-          <label className="block text-xs font-medium text-gray-800">Du</label>
-          <input
-            type="date"
-            value={dateDebut}
-            onChange={(e) => setDateDebut(e.target.value)}
-            className="mt-1 rounded-lg border border-gray-200 px-3 py-2 text-sm"
-          />
-        </div>
-        <div>
-          <label className="block text-xs font-medium text-gray-800">Au</label>
-          <input
-            type="date"
-            value={dateFin}
-            onChange={(e) => setDateFin(e.target.value)}
-            className="mt-1 rounded-lg border border-gray-200 px-3 py-2 text-sm"
-          />
-        </div>
-        <button
-          type="button"
-          onClick={() => {
-            setAlertesPage(1)
-            setTopPage(1)
-            fetchRapports(dateDebut, dateFin, 1, 1)
-          }}
-          className="rounded-lg bg-orange-500 px-4 py-2 text-sm font-medium text-white hover:bg-orange-600"
-        >
-          Appliquer
-        </button>
-        <button type="button" onClick={() => { preset(7); }} className="rounded-lg bg-gradient-to-r from-blue-500 to-cyan-600 px-4 py-2 text-sm font-medium text-white shadow-md hover:shadow-lg hover:scale-105 transition-all">
-          7 jours
-        </button>
-        <button type="button" onClick={() => { preset(30); }} className="rounded-lg bg-gradient-to-r from-purple-500 to-pink-600 px-4 py-2 text-sm font-medium text-white shadow-md hover:shadow-lg hover:scale-105 transition-all">
-          30 jours
-        </button>
-        <button type="button" onClick={presetMois} className="rounded-lg bg-gradient-to-r from-emerald-500 to-green-600 px-4 py-2 text-sm font-medium text-white shadow-md hover:shadow-lg hover:scale-105 transition-all">
-          Ce mois
-        </button>
-        <button type="button" onClick={resetDates} className="rounded-lg bg-gradient-to-r from-slate-500 to-gray-600 px-4 py-2 text-sm font-medium text-white shadow-md hover:shadow-lg hover:scale-105 transition-all">
-          Réinitialiser
-        </button>
-        <button
-          type="button"
-          onClick={() => {
-            const params = new URLSearchParams()
-            if (dateDebut) params.set('dateDebut', dateDebut)
-            if (dateFin) params.set('dateFin', dateFin)
-            window.open('/api/rapports/export?' + params.toString(), '_blank')
-          }}
-          className="rounded-lg border-2 border-green-500 bg-green-50 px-3 py-2 text-sm font-medium text-green-800 hover:bg-green-100 flex items-center gap-1.5"
-          title="Exporter les rapports en Excel (alertes, top produits, mouvements)"
-        >
-          <FileSpreadsheet className="h-4 w-4" />
-          Exporter Excel
-        </button>
-        <button
-          type="button"
-          onClick={() => {
-            const params = new URLSearchParams()
-            if (dateDebut) params.set('dateDebut', dateDebut)
-            if (dateFin) params.set('dateFin', dateFin)
-            window.open('/api/rapports/export-pdf?' + params.toString(), '_blank')
-          }}
-          className="rounded-lg border-2 border-red-500 bg-red-50 px-3 py-2 text-sm font-medium text-red-800 hover:bg-red-100 flex items-center gap-1.5"
-          title="Exporter les rapports en PDF (alertes, top produits)"
-        >
-          <FileSpreadsheet className="h-4 w-4" />
-          Exporter PDF
-        </button>
+// Sous-composants
+function StatCard({ label, value, prev, evol, unit, color }: any) {
+  const isUp = evol >= 0
+  const colors: any = {
+    blue: 'from-blue-500 to-indigo-600 text-blue-600',
+    orange: 'from-orange-500 to-amber-600 text-orange-600',
+    green: 'from-emerald-500 to-green-600 text-green-600'
+  }
+  return (
+    <div className="relative group overflow-hidden rounded-2xl border border-gray-100 bg-white p-6 shadow-sm hover:shadow-md transition-all">
+      <div className={`absolute top-0 right-0 h-16 w-16 -mr-8 -mt-8 rounded-full bg-gradient-to-br ${colors[color].split(' text')[0]} opacity-5 group-hover:scale-150 transition-transform`} />
+      <p className="text-sm font-medium text-gray-500 uppercase tracking-tight">{label}</p>
+      <div className="mt-2 flex items-baseline gap-2">
+        <span className="text-2xl font-black text-gray-900">{value.toLocaleString()}</span>
+        <span className="text-xs text-gray-400">{unit}</span>
       </div>
-
-      {/* Section Comparaison Période vs Période */}
-      {comparaison && (
-        <div className="rounded-xl border border-gray-200 bg-white p-6">
-          <div className="mb-4 flex items-center gap-2">
-            <ArrowRightLeft className="h-5 w-5 text-indigo-500" />
-            <h2 className="text-xl font-bold text-gray-900">Comparaison Période vs Période Précédente</h2>
-          </div>
-          <div className="grid gap-4 md:grid-cols-3">
-            {/* CA */}
-            <div className="rounded-lg border border-gray-200 bg-gradient-to-br from-blue-50 to-blue-100 p-4">
-              <div className="mb-2 text-sm font-medium text-gray-600">Chiffre d'Affaires</div>
-              <div className="mb-1 text-2xl font-bold text-gray-900">
-                {comparaison.periodeActuelle.ca.toLocaleString('fr-FR')} FCFA
-              </div>
-              <div className="text-xs text-gray-600">
-                Période précédente : {comparaison.periodePrecedente.ca.toLocaleString('fr-FR')} FCFA
-              </div>
-              <div className={`mt-2 text-sm font-semibold ${comparaison.evolution.ca >= 0 ? 'text-green-600' : 'text-red-600'
-                }`}>
-                {comparaison.evolution.ca >= 0 ? '↑' : '↓'} {Math.abs(comparaison.evolution.ca).toLocaleString('fr-FR')} FCFA
-                {' '}({comparaison.evolutionPourcent.ca >= 0 ? '+' : ''}{comparaison.evolutionPourcent.ca.toFixed(1)}%)
-              </div>
-            </div>
-
-            {/* Achats */}
-            <div className="rounded-lg border border-gray-200 bg-gradient-to-br from-orange-50 to-orange-100 p-4">
-              <div className="mb-2 text-sm font-medium text-gray-600">Achats</div>
-              <div className="mb-1 text-2xl font-bold text-gray-900">
-                {comparaison.periodeActuelle.achats.toLocaleString('fr-FR')} FCFA
-              </div>
-              <div className="text-xs text-gray-600">
-                Période précédente : {comparaison.periodePrecedente.achats.toLocaleString('fr-FR')} FCFA
-              </div>
-              <div className={`mt-2 text-sm font-semibold ${comparaison.evolution.achats >= 0 ? 'text-green-600' : 'text-red-600'
-                }`}>
-                {comparaison.evolution.achats >= 0 ? '↑' : '↓'} {Math.abs(comparaison.evolution.achats).toLocaleString('fr-FR')} FCFA
-                {' '}({comparaison.evolutionPourcent.achats >= 0 ? '+' : ''}{comparaison.evolutionPourcent.achats.toFixed(1)}%)
-              </div>
-            </div>
-
-            {/* Ventes */}
-            <div className="rounded-lg border border-gray-200 bg-gradient-to-br from-green-50 to-green-100 p-4">
-              <div className="mb-2 text-sm font-medium text-gray-600">Nombre de Ventes</div>
-              <div className="mb-1 text-2xl font-bold text-gray-900">
-                {comparaison.periodeActuelle.ventes.toLocaleString('fr-FR')}
-              </div>
-              <div className="text-xs text-gray-600">
-                Période précédente : {comparaison.periodePrecedente.ventes.toLocaleString('fr-FR')}
-              </div>
-              <div className={`mt-2 text-sm font-semibold ${comparaison.evolution.ventes >= 0 ? 'text-green-600' : 'text-red-600'
-                }`}>
-                {comparaison.evolution.ventes >= 0 ? '↑' : '↓'} {Math.abs(comparaison.evolution.ventes).toLocaleString('fr-FR')}
-                {' '}({comparaison.evolutionPourcent.ventes >= 0 ? '+' : ''}{comparaison.evolutionPourcent.ventes.toFixed(1)}%)
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      <div className="grid gap-6 lg:grid-cols-2">
-        <div className="rounded-xl border border-gray-200 bg-white p-6">
-          <div className="mb-4 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-orange-500" />
-              <h2 className="text-xl font-bold text-gray-900">Alertes stock</h2>
-            </div>
-            {alertesPagination && (
-              <span className="text-sm text-gray-500">
-                {alertesPagination.total} alerte{alertesPagination.total > 1 ? 's' : ''}
-              </span>
-            )}
-          </div>
-          {alertes.length === 0 ? (
-            <p className="text-sm text-gray-500">Aucune alerte.</p>
-          ) : (
-            <>
-              <ul className="space-y-3">
-                {alertes
-                  .filter((a) => {
-                    if (!searchTerm) return true
-                    const searchLower = searchTerm.toLowerCase()
-                    return (
-                      a.produit.code.toLowerCase().includes(searchLower) ||
-                      a.produit.designation.toLowerCase().includes(searchLower) ||
-                      a.magasin.code.toLowerCase().includes(searchLower) ||
-                      a.magasin.nom.toLowerCase().includes(searchLower)
-                    )
-                  })
-                  .map((a) => (
-                    <li key={a.id} className="flex items-center justify-between rounded-lg border border-red-200 bg-red-50 p-3">
-                      <div>
-                        <p className="font-medium text-gray-900">{a.produit.designation}</p>
-                        <p className="text-xs text-gray-600">{a.produit.code} · {a.magasin.code}</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-semibold text-red-600">{a.quantite} / {a.produit.seuilMin}</p>
-                        <p className="text-xs text-gray-500">manque {a.manquant}</p>
-                      </div>
-                    </li>
-                  ))}
-              </ul>
-              {alertesPagination && alertesPagination.total > 0 && (
-                <div className="mt-4">
-                  <Pagination
-                    currentPage={alertesPagination.page}
-                    totalPages={alertesPagination.totalPages}
-                    totalItems={alertesPagination.total}
-                    itemsPerPage={alertesPagination.limit}
-                    onPageChange={(page) => {
-                      setAlertesPage(page)
-                      fetchRapports(dateDebut, dateFin, page, topPage)
-                    }}
-                  />
-                </div>
-              )}
-            </>
-          )}
-        </div>
-
-        <div className="rounded-xl border border-gray-200 bg-white p-6">
-          <div className="mb-4 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <TrendingUp className="h-5 w-5 text-blue-500" />
-              <h2 className="text-xl font-bold text-gray-900">Top produits (qté vendue)</h2>
-            </div>
-            {topPagination && (
-              <span className="text-sm text-gray-500">
-                {topPagination.total} produit{topPagination.total > 1 ? 's' : ''}
-              </span>
-            )}
-          </div>
-          {topProduits.length === 0 ? (
-            <p className="text-sm text-gray-500">Aucune vente enregistrée.</p>
-          ) : (
-            <>
-              <ul className="space-y-2">
-                {topProduits
-                  .filter((t) => {
-                    if (!searchTerm) return true
-                    const searchLower = searchTerm.toLowerCase()
-                    return (
-                      t.code.toLowerCase().includes(searchLower) ||
-                      t.designation.toLowerCase().includes(searchLower)
-                    )
-                  })
-                  .map((t, i) => {
-                    const globalIndex = topPagination ? (topPagination.page - 1) * topPagination.limit + i : i
-                    return (
-                      <li key={t.produitId} className="flex items-center justify-between border-b border-gray-100 py-2 last:border-0">
-                        <span className="text-sm font-medium text-gray-500">#{globalIndex + 1}</span>
-                        <span className="flex-1 truncate px-2 text-sm text-gray-900">{t.designation}</span>
-                        <span className="font-semibold text-gray-900">{t.quantiteVendue} unités</span>
-                      </li>
-                    )
-                  })}
-              </ul>
-              {topPagination && topPagination.total > 0 && (
-                <div className="mt-4 border-t pt-4">
-                  <Pagination
-                    currentPage={topPagination.page}
-                    totalPages={topPagination.totalPages}
-                    totalItems={topPagination.total}
-                    itemsPerPage={topPagination.limit}
-                    onPageChange={(page) => {
-                      setTopPage(page)
-                      fetchRapports(dateDebut, dateFin, alertesPage, page)
-                    }}
-                  />
-                </div>
-              )}
-            </>
-          )}
-        </div>
+      <div className="mt-4 flex items-center justify-between border-t pt-4">
+        <span className="text-[10px] text-gray-400">Précédent: {prev.toLocaleString()}</span>
+        <span className={`flex items-center text-xs font-bold ${isUp ? 'text-green-600' : 'text-red-600'}`}>
+          {isUp ? '↑' : '↓'} {Math.abs(evol).toFixed(1)}%
+        </span>
       </div>
+    </div>
+  )
+}
 
-      <div className="rounded-xl border border-gray-200 bg-white p-6">
-        <div className="mb-4 flex items-center gap-2">
-          <ArrowRightLeft className="h-5 w-5 text-violet-500" />
-          <h2 className="text-xl font-bold text-gray-900">Mouvements récents</h2>
-        </div>
-        {mouvements.length === 0 ? (
-          <p className="text-sm text-gray-500">Aucun mouvement. Les mouvements sont créés lors des entrées/sorties de stock.</p>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead>
-                <tr className="bg-gray-50">
-                  <th className="px-4 py-2 text-left text-xs font-semibold uppercase text-gray-600">Date</th>
-                  <th className="px-4 py-2 text-left text-xs font-semibold uppercase text-gray-600">Type</th>
-                  <th className="px-4 py-2 text-left text-xs font-semibold uppercase text-gray-600">Produit</th>
-                  <th className="px-4 py-2 text-left text-xs font-semibold uppercase text-gray-600">Magasin</th>
-                  <th className="px-4 py-2 text-right text-xs font-semibold uppercase text-gray-600">Qté</th>
-                  {(userRole === 'ADMIN' || userRole === 'SUPER_ADMIN') && (
-                    <th className="px-4 py-2 text-center text-xs font-semibold uppercase text-gray-600">Actions</th>
-                  )}
+function StatutBadge({ statut }: { statut: string }) {
+  const styles: any = {
+    PAYE: 'bg-green-100 text-green-700 border-green-200',
+    PARTIEL: 'bg-orange-100 text-orange-700 border-orange-200',
+    CREDIT: 'bg-red-100 text-red-700 border-red-200',
+  }
+  return (
+    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${styles[statut] || 'bg-gray-100 text-gray-600'}`}>
+      {statut}
+    </span>
+  )
+}
+
+function LogistiqueAlertes({ alertes, searchTerm }: any) {
+  return (
+    <div className="border border-gray-200 bg-white p-5 rounded-2xl shadow-sm">
+      <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+        <AlertTriangle className="h-5 w-5 text-orange-500" />
+        Alertes Stock
+      </h3>
+      <div className="space-y-3">
+        {alertes.filter((a: any) => !searchTerm || a.produit.designation.toLowerCase().includes(searchTerm.toLowerCase())).map((a: any) => (
+          <div key={a.id} className="flex items-center justify-between p-3 rounded-xl border border-red-50 bg-red-50/30">
+            <div>
+              <p className="font-bold text-gray-900 text-sm">{a.produit.designation}</p>
+              <p className="text-[10px] text-gray-500 uppercase">{a.produit.code} • {a.magasin.nom}</p>
+            </div>
+            <div className="text-right">
+              <span className="text-red-600 font-black">{a.quantite}</span>
+              <span className="text-gray-400 text-xs"> / {a.produit.seuilMin}</span>
+              <p className="text-[10px] text-red-400 italic">manque {a.manquant}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function LogistiqueTop({ top, searchTerm }: any) {
+  return (
+    <div className="border border-gray-200 bg-white p-5 rounded-2xl shadow-sm">
+      <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+        <TrendingUp className="h-5 w-5 text-blue-500" />
+        Top Ventes (Volume)
+      </h3>
+      <div className="space-y-3">
+        {top.filter((t: any) => !searchTerm || t.designation.toLowerCase().includes(searchTerm.toLowerCase())).map((t: any, i: number) => (
+          <div key={t.produitId} className="flex items-center gap-3">
+            <span className="flex items-center justify-center h-6 w-6 rounded-lg bg-gray-100 text-[10px] font-black text-gray-500">{i + 1}</span>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-gray-800 truncate">{t.designation}</p>
+              <div className="w-full bg-gray-100 h-1.5 rounded-full mt-1 overflow-hidden">
+                <div className="bg-blue-500 h-full rounded-full" style={{ width: `${Math.min(100, (t.quantiteVendue / top[0]?.quantiteVendue) * 100)}%` }} />
+              </div>
+            </div>
+            <span className="text-xs font-bold text-gray-700">{t.quantiteVendue}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function LogistiqueMouvements({ mouvements, searchTerm, userRole }: any) {
+  return (
+    <div className="border border-gray-200 bg-white p-5 rounded-2xl shadow-sm">
+      <h3 className="text-lg font-bold text-gray-900 mb-4">Derniers Mouvements</h3>
+      <div className="overflow-x-auto">
+        <table className="min-w-full">
+          <thead>
+            <tr className="text-left text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b">
+              <th className="px-4 py-3">Date</th>
+              <th className="px-4 py-3">Type</th>
+              <th className="px-4 py-3">Produit</th>
+              <th className="px-4 py-3">Magasin</th>
+              <th className="px-4 py-3 text-right">Qté</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-50">
+            {mouvements.filter((m: any) => !searchTerm || m.produit.designation.toLowerCase().includes(searchTerm.toLowerCase())).map((m: any) => (
+              <tr key={m.id} className="hover:bg-gray-50/50">
+                <td className="px-4 py-3 text-xs text-gray-500">{new Date(m.date).toLocaleString()}</td>
+                <td className="px-4 py-3 text-xs">
+                  <span className={`px-2 py-0.5 rounded uppercase font-bold text-[9px] ${m.type === 'ENTREE' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>{m.type}</span>
+                </td>
+                <td className="px-4 py-3 text-sm font-medium text-gray-800">{m.produit.designation}</td>
+                <td className="px-4 py-3 text-xs text-gray-500">{m.magasin.nom}</td>
+                <td className="px-4 py-3 text-right font-black text-gray-900">{m.quantite}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  )
+}
+
+function PaiementTable({ title, data, type, searchTerm }: any) {
+  return (
+    <div className="border border-gray-200 bg-white p-5 rounded-2xl shadow-sm">
+      <div className="flex items-center justify-between mb-6">
+        <h3 className="text-xl font-black text-gray-900">{title}</h3>
+        <div className="h-2 w-24 bg-gradient-to-r from-orange-400 to-red-500 rounded-full" />
+      </div>
+      <div className="overflow-x-auto">
+        <table className="min-w-full">
+          <thead className="bg-gray-50/50">
+            <tr className="text-left text-xs font-bold text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-4">{type === 'achats' ? 'Fournisseur' : 'Client'}</th>
+              <th className="px-6 py-4 text-center">Transactions</th>
+              <th className="px-6 py-4 text-right">Montant Total</th>
+              <th className="px-6 py-4 text-right">Déjà Payé</th>
+              <th className="px-6 py-4 text-right">Reste à Payer</th>
+              <th className="px-6 py-4 px-10">Progression</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-100">
+            {data.filter((d: any) => (d.client || d.fournisseur).toLowerCase().includes(searchTerm.toLowerCase())).map((d: any, i: number) => {
+              const solde = d.resteAPayer
+              const pourcentage = d.montantTotal > 0 ? (d.montantPaye / d.montantTotal) * 100 : 0
+              return (
+                <tr key={i} className="hover:bg-gray-50 transition-colors group">
+                  <td className="px-6 py-4">
+                    <div className="font-bold text-gray-900 group-hover:text-orange-600 transition-colors">{d.client || d.fournisseur}</div>
+                    <div className="text-[10px] text-gray-400">ID: {d.clientId || d.fournisseurId || '---'}</div>
+                  </td>
+                  <td className="px-6 py-4 text-center">
+                    <span className="inline-flex items-center justify-center h-8 w-8 rounded-full bg-gray-100 text-xs font-bold text-gray-600">
+                      {d.nbVentes || d.nbAchats}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 text-right font-medium text-gray-600">{d.montantTotal.toLocaleString()}</td>
+                  <td className="px-6 py-4 text-right font-semibold text-green-600">{d.montantPaye.toLocaleString()}</td>
+                  <td className="px-6 py-4 text-right">
+                    <span className={`font-black ${solde > 0 ? 'text-red-600' : 'text-emerald-600'}`}>{solde.toLocaleString()}</span>
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="flex items-center gap-3">
+                        <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                            <div className={`h-full transition-all duration-1000 ${pourcentage >= 100 ? 'bg-green-500' : 'bg-orange-500'}`} style={{ width: `${pourcentage}%` }} />
+                        </div>
+                        <span className="text-[10px] font-black text-gray-400">{pourcentage.toFixed(0)}%</span>
+                    </div>
+                  </td>
                 </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {mouvements
-                  .filter((m) => {
-                    if (!searchTerm) return true
-                    const searchLower = searchTerm.toLowerCase()
-                    return (
-                      m.produit.code.toLowerCase().includes(searchLower) ||
-                      m.produit.designation.toLowerCase().includes(searchLower) ||
-                      m.magasin.code.toLowerCase().includes(searchLower) ||
-                      m.magasin.nom.toLowerCase().includes(searchLower)
-                    )
-                  })
-                  .map((m) => (
-                    <tr key={m.id} className="hover:bg-gray-50">
-                      <td className="px-4 py-2 text-sm text-gray-600">
-                        {new Date(m.date).toLocaleString('fr-FR')}
-                      </td>
-                      <td className="px-4 py-2">
-                        <span className={`rounded px-2 py-0.5 text-xs font-medium ${m.type === 'ENTREE' ? 'bg-green-100 text-green-800' : 'bg-orange-100 text-orange-800'}`}>
-                          {m.type}
-                        </span>
-                      </td>
-                      <td className="px-4 py-2 text-sm text-gray-900">{m.produit.designation}</td>
-                      <td className="px-4 py-2 text-sm text-gray-600">{m.magasin.code}</td>
-                      <td className="px-4 py-2 text-right font-medium text-gray-900">{m.quantite}</td>
-                      {(userRole === 'ADMIN' || userRole === 'SUPER_ADMIN') && (
-                        <td className="px-4 py-2 text-center">
-                          <button
-                            onClick={() => handleDeleteMouvement(m.id)}
-                            disabled={deletingId === m.id}
-                            className="rounded p-1.5 text-red-600 hover:bg-red-50 disabled:opacity-50"
-                            title="Supprimer"
-                          >
-                            {deletingId === m.id ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                            ) : (
-                              <Trash2 className="h-4 w-4" />
-                            )}
-                          </button>
-                        </td>
-                      )}
-                    </tr>
-                  ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+              )
+            })}
+            {data.length === 0 && (
+                <tr><td colSpan={6} className="py-20 text-center text-gray-400 italic">Aucune donnée trouvée sur cette période</td></tr>
+            )}
+          </tbody>
+        </table>
       </div>
     </div>
   )

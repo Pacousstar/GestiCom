@@ -16,9 +16,18 @@ function LoginForm() {
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState<string | null>(errorParam === 'config' ? 'Configuration serveur manquante (SESSION_SECRET).' : null)
   const [loading, setLoading] = useState(false)
+  const [hwid, setHwid] = useState<string | null>(null)
   const [attempts, setAttempts] = useState(0)
   const [lockTime, setLockTime] = useState<number | null>(null)
   const [timeRemaining, setTimeRemaining] = useState<number>(0)
+
+  // Charger le HWID
+  useEffect(() => {
+    fetch('/api/license/check')
+      .then(res => res.json())
+      .then(data => setHwid(data.hwid))
+      .catch(() => setHwid(null))
+  }, [])
 
   // Limiter les tentatives de connexion
   useEffect(() => {
@@ -317,6 +326,26 @@ function LoginForm() {
             🔒 Connexion sécurisée par JWT
           </p>
         </div>
+
+        {hwid && (
+          <div className="mt-4 pt-4 border-t border-gray-100">
+            <div className="flex flex-col items-center gap-1">
+              <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Identifiant Machine (HWID)</span>
+              <div className="flex items-center gap-2">
+                <code className="text-[11px] font-black text-orange-600 bg-orange-50 px-2 py-0.5 rounded border border-orange-100">{hwid}</code>
+                <button 
+                  onClick={() => {
+                    navigator.clipboard.writeText(hwid)
+                    alert('ID Copié !')
+                  }}
+                  className="text-[9px] font-bold text-gray-400 hover:text-orange-500 underline uppercase transition-colors"
+                >
+                  Copier
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )

@@ -257,7 +257,7 @@ export default function DashboardPage() {
           Nouvelle Dépense
         </Link>
         <Link
-          href="/dashboard/rapports-ventes"
+          href="/dashboard/rapports"
           className="flex items-center gap-2 rounded-xl bg-white px-5 py-3 text-sm font-bold text-gray-700 border border-orange-100 shadow-sm hover:shadow-md transition-all hover:scale-105"
         >
           <LayoutGrid className="h-4 w-4 text-blue-500" />

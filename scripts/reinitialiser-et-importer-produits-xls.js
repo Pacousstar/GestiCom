@@ -18,7 +18,17 @@ const prisma = new PrismaClient({
   }
 });
 
-const XLS_PATH = 'C:/Users/GSN EXPETISES  GROUP/Projets/INSTALLATION_GESTICOM/Valeur de stock par produit.xls';
+const FILENAME = 'Valeur de stock par produit.xls';
+// On récupère le chemin depuis les arguments ou on cherche dans le dossier parent (racine de l'app ou clé USB)
+let XLS_PATH = process.argv[2] || path.join(__dirname, '..', FILENAME);
+
+// Vérification de secours si le chemin relatif échoue (cas installation Standalone)
+if (!fs.existsSync(XLS_PATH)) {
+  const standalonePath = path.join(process.cwd(), FILENAME);
+  if (fs.existsSync(standalonePath)) {
+    XLS_PATH = standalonePath;
+  }
+}
 
 async function main() {
   console.log('🚀 Démarrage de l\'injection PROPRE Gesticom (v2)...');
@@ -84,7 +94,12 @@ async function main() {
   const adminPassword = await bcrypt.hash('Admin@123', 10);
   await prisma.utilisateur.upsert({
     where: { login: 'admin' },
-    update: { motDePasse: adminPassword, entiteId: entite.id },
+    update: { 
+      motDePasse: adminPassword, 
+      entiteId: entite.id,
+      actif: true,
+      role: 'SUPER_ADMIN'
+    },
     create: {
       login: 'admin',
       nom: 'Administrateur',
