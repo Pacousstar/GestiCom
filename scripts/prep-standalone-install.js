@@ -30,24 +30,36 @@ async function syncStandalone() {
   const appSourcePath = path.join(standalonePath, 'Projets/gesticom2');
 
   try {
-    // 2a. Copier les node_modules de standalone (pour les dépendances Next)
-    if (fs.existsSync(path.join(standalonePath, 'node_modules'))) {
-      console.log('   + node_modules (Next)');
+    // 2a. Définir les chemins sources dans standalone
+    const standaloneModulesPath = path.join(appSourcePath, 'node_modules');
+    const standaloneServerJs = path.join(appSourcePath, 'server.js');
+
+    // 2b. Copier les node_modules de standalone (pour les dépendances Next)
+    // On priorise le dossier imbriqué car c'est là que Next place les dépendances de production
+    if (fs.existsSync(standaloneModulesPath)) {
+      console.log('   + node_modules (Production dependencies)');
+      fs.copySync(standaloneModulesPath, path.join(targetDir, 'node_modules'), { overwrite: true });
+    } else if (fs.existsSync(path.join(standalonePath, 'node_modules'))) {
+      // Fallback sur la racine de standalone si l'autre n'existe pas
+      console.log('   + node_modules (Root dependencies)');
       fs.copySync(path.join(standalonePath, 'node_modules'), path.join(targetDir, 'node_modules'), { overwrite: true });
     }
 
-    // 2b. Copier sever.js de standalone
-    if (fs.existsSync(path.join(standalonePath, 'server.js'))) {
+    // 2c. Copier server.js (essentiel pour le lancement)
+    if (fs.existsSync(standaloneServerJs)) {
       console.log('   + server.js');
+      fs.copySync(standaloneServerJs, path.join(targetDir, 'server.js'), { overwrite: true });
+    } else if (fs.existsSync(path.join(standalonePath, 'server.js'))) {
+      console.log('   + server.js (from root)');
       fs.copySync(path.join(standalonePath, 'server.js'), path.join(targetDir, 'server.js'));
     }
 
-    // 2c. Copier le coeur de l'application depuis le sous-dossier imbriqué
+    // 2d. Copier le coeur de l'application (pages, chunks, etc.)
     if (fs.existsSync(appSourcePath)) {
-      console.log('   + Application core (vrai contenu)');
+      console.log('   + Application core content');
       fs.copySync(appSourcePath, targetDir, {
         overwrite: true,
-        filter: (src) => !src.includes('node_modules') // On gère node_modules séparément pour plus de contrôle
+        filter: (src) => !src.includes('node_modules') && !src.endsWith('server.js')
       });
     }
   } catch (err) {

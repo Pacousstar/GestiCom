@@ -30,6 +30,8 @@ export async function GET(request: NextRequest) {
   const produitId = request.nextUrl.searchParams.get('produitId')
   const categorie = request.nextUrl.searchParams.get('categorie')
 
+  let topClients: any[] = []
+
   // Construire les filtres where
   const stockWhere: { produit: { actif: boolean; id?: number; categorie?: { contains: string } }; magasin?: { entiteId?: number; id?: number } } = {
     produit: { actif: true },
@@ -244,6 +246,37 @@ export async function GET(request: NextRequest) {
     }
   }
 
+  // 6. Top 10 Clients (Nouveau) - Calcul
+  const topClientsRaw = await prisma.vente.groupBy({
+    by: ['clientId', 'clientLibre'],
+    where: {
+      date: deb && fin ? { gte: deb, lte: fin } : undefined,
+      statut: 'VALIDEE',
+      ...(entiteId && session.role !== 'SUPER_ADMIN' ? { entiteId } : {}),
+      ...(magasinId ? { magasinId: Number(magasinId) } : {}),
+    },
+    _sum: { montantTotal: true },
+    orderBy: { _sum: { montantTotal: 'desc' } },
+    take: 10
+  })
+
+  topClients = await Promise.all(topClientsRaw.map(async (c) => {
+    let nom = c.clientLibre || 'Client Divers'
+    let telephone = ''
+    if (c.clientId) {
+      const client = await prisma.client.findUnique({ where: { id: c.clientId }, select: { nom: true, telephone: true } })
+      if (client) {
+        nom = client.nom
+        telephone = client.telephone || ''
+      }
+    }
+    return {
+      nom,
+      telephone,
+      ca: Number(c._sum.montantTotal || 0)
+    }
+  }))
+
   return NextResponse.json({
     alertes,
     alertesPagination: {
@@ -261,6 +294,7 @@ export async function GET(request: NextRequest) {
     },
     mouvements,
     comparaison,
+    topClients,
   }, {
     headers: {
       'Cache-Control': 'no-store, max-age=0',

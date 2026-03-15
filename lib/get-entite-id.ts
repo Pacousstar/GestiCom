@@ -18,5 +18,10 @@ export async function getEntiteId(session: Session): Promise<number> {
     select: { entiteId: true },
   })
   
-  return user?.entiteId || session.entiteId || session.userId
+  const finalId = user?.entiteId || session.entiteId
+  if (finalId) return finalId
+
+  // Fallback ultime : première entité trouvée
+  const firstEntite = await prisma.entite.findFirst({ select: { id: true } })
+  return firstEntite?.id || 0
 }

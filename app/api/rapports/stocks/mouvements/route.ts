@@ -24,9 +24,11 @@ export async function GET(request: NextRequest) {
   }
 
   if (dateDebut && dateFin) {
+    const endDate = new Date(dateFin)
+    endDate.setHours(23, 59, 59, 999)
     where.date = {
       gte: new Date(dateDebut + 'T00:00:00'),
-      lte: new Date(dateFin + 'T23:59:59'),
+      lte: endDate,
     }
   }
 

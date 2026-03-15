@@ -9,7 +9,7 @@ export async function GET(request: NextRequest) {
   if (authError) return authError
 
   try {
-    const utilisateurs = await prisma.utilisateur.findMany({
+    const rawUtilisateurs = await prisma.utilisateur.findMany({
       select: {
         id: true,
         login: true,
@@ -19,17 +19,22 @@ export async function GET(request: NextRequest) {
         permissionsPersonnalisees: true,
         actif: true,
         createdAt: true,
-        entite: {
-          select: {
-            id: true,
-            nom: true,
-          },
-        },
+        entiteId: true,
       },
       orderBy: {
         createdAt: 'desc',
       },
     })
+
+    const entites = await prisma.entite.findMany({
+      select: { id: true, nom: true }
+    })
+    const entiteMap = new Map(entites.map(e => [e.id, e]))
+
+    const utilisateurs = rawUtilisateurs.map(u => ({
+      ...u,
+      entite: entiteMap.get(u.entiteId) || { id: u.entiteId, nom: 'Entité inconnue' }
+    }))
 
     return NextResponse.json(utilisateurs)
   } catch (e) {
