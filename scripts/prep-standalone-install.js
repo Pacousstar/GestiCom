@@ -2,8 +2,8 @@ const fs = require('fs-extra');
 const path = require('path');
 
 async function syncStandalone() {
-  const projectRoot = 'C:/Users/GSN EXPETISES  GROUP/Projets/gesticom2';
-  const targetDir = 'C:/Users/GSN EXPETISES  GROUP/Projets/INSTALLATION_GESTICOM/app';
+  const projectRoot = process.cwd();
+  const targetDir = path.resolve(projectRoot, '../INSTALLATION_GESTICOM/app');
   
   console.log('🚀 Synchronisation mode STANDALONE...');
 
@@ -24,26 +24,35 @@ async function syncStandalone() {
     console.log('⚠️ Avertissement Nettoyage: ' + err.message);
   }
 
-  // 2. Copier le contenu de standalone
-  console.log('📂 Copie du coeur de l\'application (standalone)...');
+  // 2. Copier le contenu de standalone de manière sécurisée
+  console.log('📂 Copie sélective du contenu Standalone...');
   const standalonePath = path.join(projectRoot, '.next/standalone');
-  const nestedAppPath = path.join(standalonePath, 'Projets/gesticom2');
+  const appSourcePath = path.join(standalonePath, 'Projets/gesticom2');
 
-  // Copier toute la racine de standalone (contient node_modules vitaux)
-  fs.copySync(standalonePath, targetDir);
-
-  // Remonter les fichiers de l'app imbriquée à la racine de targetDir
   try {
-    if (fs.existsSync(nestedAppPath)) {
-      console.log('📦 Extraction des fichiers imbriques...');
-      fs.copySync(nestedAppPath, targetDir, { overwrite: true });
-      // Nettoyer le dossier Projets imbrique
-      console.log('🧹 Nettoyage du dossier temporaire Projets...');
-      fs.removeSync(path.join(targetDir, 'Projets'));
+    // 2a. Copier les node_modules de standalone (pour les dépendances Next)
+    if (fs.existsSync(path.join(standalonePath, 'node_modules'))) {
+      console.log('   + node_modules (Next)');
+      fs.copySync(path.join(standalonePath, 'node_modules'), path.join(targetDir, 'node_modules'), { overwrite: true });
+    }
+
+    // 2b. Copier sever.js de standalone
+    if (fs.existsSync(path.join(standalonePath, 'server.js'))) {
+      console.log('   + server.js');
+      fs.copySync(path.join(standalonePath, 'server.js'), path.join(targetDir, 'server.js'));
+    }
+
+    // 2c. Copier le coeur de l'application depuis le sous-dossier imbriqué
+    if (fs.existsSync(appSourcePath)) {
+      console.log('   + Application core (vrai contenu)');
+      fs.copySync(appSourcePath, targetDir, {
+        overwrite: true,
+        filter: (src) => !src.includes('node_modules') // On gère node_modules séparément pour plus de contrôle
+      });
     }
   } catch (err) {
-    console.error('❌ Erreur lors de l\'extraction:', err.message);
-    throw err; // Faire échouer le script proprement avec l'erreur
+    console.error('❌ Erreur lors de la copie standalone:', err.message);
+    throw err;
   }
 
   // 3. Copier les ressources statiques
@@ -69,7 +78,12 @@ async function syncStandalone() {
     const dest = path.join(targetDir, 'node_modules', m);
     if (fs.existsSync(src)) {
       console.log(`   + ${m}`);
-      fs.copySync(src, dest);
+      try {
+        if (fs.existsSync(dest)) fs.removeSync(dest);
+        fs.copySync(src, dest);
+      } catch (err) {
+        console.error(`❌ Erreur lors de la copie de ${m}:`, err.message);
+      }
     }
   });
 
