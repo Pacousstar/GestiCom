@@ -1,0 +1,77 @@
+const fs = require('fs-extra');
+const path = require('path');
+
+async function syncToProd() {
+  const projectRoot = process.cwd();
+  const prodDir = 'C:\\GestiCom\\app';
+  const installDir = 'C:\\Users\\GSN EXPETISES  GROUP\\Projets\\INSTALLATION_GESTICOM\\app';
+  
+  const syncDir = (target) => {
+    console.log(`📂 Déploiement vers ${target}...`);
+    try {
+      if (fs.existsSync(target)) {
+        fs.emptyDirSync(target);
+      } else {
+        fs.ensureDirSync(target);
+      }
+
+      const standalonePath = path.join(projectRoot, '.next/standalone');
+      const appSourcePath = path.join(standalonePath, 'Projets/gesticom2');
+
+      // Dans standalone, Next met les modules à la racine et le code de l'app dans le dossier projet
+      if (fs.existsSync(path.join(standalonePath, 'node_modules'))) {
+        fs.copySync(path.join(standalonePath, 'node_modules'), path.join(target, 'node_modules'));
+      }
+      
+      if (fs.existsSync(appSourcePath)) {
+        fs.copySync(appSourcePath, target, { overwrite: true });
+      }
+
+      // Copier .next/static et public
+      fs.ensureDirSync(path.join(target, '.next/static'));
+      fs.copySync(path.join(projectRoot, '.next/static'), path.join(target, '.next/static'));
+      fs.copySync(path.join(projectRoot, 'public'), path.join(target, 'public'));
+
+      // Config et Prisma
+      fs.ensureDirSync(path.join(target, 'prisma'));
+      fs.copySync(path.join(projectRoot, 'prisma/schema.prisma'), path.join(target, 'prisma/schema.prisma'));
+      fs.copySync(path.join(projectRoot, '.env'), path.join(target, '.env'));
+
+      // Dépendances critiques
+      const critical = ['prisma', '@prisma', 'xlsx-prototype-pollution-fixed', 'bcryptjs', 'fs-extra'];
+      critical.forEach(m => {
+        const src = path.join(projectRoot, 'node_modules', m);
+        const dest = path.join(target, 'node_modules', m);
+        if (fs.existsSync(src)) {
+          fs.copySync(src, dest, { overwrite: true });
+        }
+      });
+
+      // Scripts pour l'installateur
+      fs.ensureDirSync(path.join(target, 'scripts'));
+      const scriptsToCopy = ['import-quincaillerie-pro.js', 'reinitialiser-et-importer-produits-xls.js'];
+      scriptsToCopy.forEach(s => {
+        const src = path.join(projectRoot, 'scripts', s);
+        if (fs.existsSync(src)) {
+          fs.copySync(src, path.join(target, 'scripts', s));
+        }
+      });
+
+    } catch (err) {
+      console.error(`❌ Erreur lors de la copie vers ${target}:`, err.message);
+    }
+  };
+
+  if (!fs.existsSync(path.join(projectRoot, '.next/standalone'))) {
+    console.error('❌ Erreur: .next/standalone introuvable.');
+    return;
+  }
+
+  console.log('🚀 Synchronisation GLOBALE (Production + Installateur)...');
+  syncDir(prodDir);
+  syncDir(installDir);
+
+  console.log('✅ Synchronisation terminée !');
+}
+
+syncToProd().catch(console.error);

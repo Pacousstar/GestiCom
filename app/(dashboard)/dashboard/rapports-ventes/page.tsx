@@ -6,49 +6,80 @@ import Link from 'next/link'
 
 export default function RapportsVentesPage() {
     return (
-        <div className="space-y-6">
+        <div className="space-y-8 animate-in fade-in duration-700">
             <RapportsNav />
-            <div>
-                <h1 className="text-3xl font-bold text-gray-900">Rapports Commerciaux Avancés</h1>
-                <p className="mt-1 text-gray-900">Vue d'ensemble et filtrage des statistiques de vente (indépendant de la comptabilité)</p>
+            
+            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 p-8 text-white shadow-2xl">
+                <div className="relative z-10">
+                    <h1 className="text-4xl font-extrabold tracking-tight">Rapports Commerciaux Avancés</h1>
+                    <p className="mt-3 max-w-2xl text-lg text-gray-300">
+                        Plongez dans l'analyse détaillée de vos performances. Identifiez vos forces, fidélisez vos clients et optimisez votre catalogue avec précision.
+                    </p>
+                </div>
+                <div className="absolute right-0 top-0 -mr-16 -mt-16 h-64 w-64 rounded-full bg-orange-500/10 blur-3xl"></div>
+                <div className="absolute bottom-0 left-0 -ml-16 -mb-16 h-64 w-64 rounded-full bg-blue-500/10 blur-3xl"></div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <Link href="/dashboard/rapports-ventes/vendeurs" className="group">
-                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 flex items-center justify-between hover:shadow-md hover:border-blue-300 transition-all">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <Link href="/dashboard/rapports-ventes/vendeurs" className="group relative">
+                    <div className="absolute -inset-0.5 rounded-2xl bg-gradient-to-r from-blue-500 to-cyan-500 opacity-20 blur transition duration-500 group-hover:opacity-40"></div>
+                    <div className="relative flex h-full flex-col justify-between rounded-2xl border border-white/10 bg-white p-8 transition-all hover:bg-gray-50/50">
                         <div>
-                            <p className="text-sm font-medium text-gray-900 group-hover:text-blue-600 transition-colors">Performance</p>
-                            <h2 className="text-lg font-bold text-gray-900 mt-1">Par Vendeur</h2>
-                            <p className="text-xs text-gray-900 mt-1">Analyser le CA par membre de l'équipe</p>
+                            <div className="mb-6 flex h-14 w-14 items-center justify-center rounded-xl bg-blue-50 text-blue-600 shadow-inner group-hover:bg-blue-600 group-hover:text-white transition-all duration-300">
+                                <Users className="h-7 w-7" />
+                            </div>
+                            <h2 className="text-2xl font-bold text-gray-900">Performance Vendeurs</h2>
+                            <p className="mt-2 text-sm leading-relaxed text-gray-500">
+                                Analysez le chiffre d'affaires et l'efficacité de chaque collaborateur pour booster la motivation.
+                            </p>
                         </div>
-                        <div className="h-12 w-12 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-colors">
-                            <Users className="h-6 w-6" />
+                        <div className="mt-8 flex items-center text-sm font-semibold text-blue-600">
+                            Explorer les statistiques
+                            <svg className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                            </svg>
                         </div>
                     </div>
                 </Link>
 
-                <Link href="/dashboard/rapports-ventes/clients" className="group">
-                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 flex items-center justify-between hover:shadow-md hover:border-green-300 transition-all">
+                <Link href="/dashboard/rapports-ventes/clients" className="group relative">
+                    <div className="absolute -inset-0.5 rounded-2xl bg-gradient-to-r from-green-500 to-emerald-500 opacity-20 blur transition duration-500 group-hover:opacity-40"></div>
+                    <div className="relative flex h-full flex-col justify-between rounded-2xl border border-white/10 bg-white p-8 transition-all hover:bg-gray-50/50">
                         <div>
-                            <p className="text-sm font-medium text-gray-900 group-hover:text-green-600 transition-colors">Fidélité</p>
-                            <h2 className="text-lg font-bold text-gray-900 mt-1">Par Client</h2>
-                            <p className="text-xs text-gray-900 mt-1">Identifier les meilleurs clients (CRM)</p>
+                            <div className="mb-6 flex h-14 w-14 items-center justify-center rounded-xl bg-green-50 text-green-600 shadow-inner group-hover:bg-green-600 group-hover:text-white transition-all duration-300">
+                                <UserCheck className="h-7 w-7" />
+                            </div>
+                            <h2 className="text-2xl font-bold text-gray-900">Analyse Clients</h2>
+                            <p className="mt-2 text-sm leading-relaxed text-gray-500">
+                                Identifiez vos clients les plus fidèles et comprenez leurs habitudes d'achat pour mieux les servir.
+                            </p>
                         </div>
-                        <div className="h-12 w-12 rounded-full bg-green-50 flex items-center justify-center text-green-600 group-hover:bg-green-600 group-hover:text-white transition-colors">
-                            <UserCheck className="h-6 w-6" />
+                        <div className="mt-8 flex items-center text-sm font-semibold text-green-600">
+                            Voir le TOP Clients
+                            <svg className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                            </svg>
                         </div>
                     </div>
                 </Link>
 
-                <Link href="/dashboard/rapports-ventes/produits" className="group">
-                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 flex items-center justify-between hover:shadow-md hover:border-purple-300 transition-all">
+                <Link href="/dashboard/rapports-ventes/produits" className="group relative">
+                    <div className="absolute -inset-0.5 rounded-2xl bg-gradient-to-r from-purple-500 to-indigo-500 opacity-20 blur transition duration-500 group-hover:opacity-40"></div>
+                    <div className="relative flex h-full flex-col justify-between rounded-2xl border border-white/10 bg-white p-8 transition-all hover:bg-gray-50/50">
                         <div>
-                            <p className="text-sm font-medium text-gray-900 group-hover:text-purple-600 transition-colors">Catalogue</p>
-                            <h2 className="text-lg font-bold text-gray-900 mt-1">Par Produit</h2>
-                            <p className="text-xs text-gray-900 mt-1">Top produits et marges générées</p>
+                            <div className="mb-6 flex h-14 w-14 items-center justify-center rounded-xl bg-purple-50 text-purple-600 shadow-inner group-hover:bg-purple-600 group-hover:text-white transition-all duration-300">
+                                <Package className="h-7 w-7" />
+                            </div>
+                            <h2 className="text-2xl font-bold text-gray-900">Rentabilité Produits</h2>
+                            <p className="mt-2 text-sm leading-relaxed text-gray-500">
+                                Prenez des décisions éclairées sur votre stock en identifiant vos meilleures marges et rotations.
+                            </p>
                         </div>
-                        <div className="h-12 w-12 rounded-full bg-purple-50 flex items-center justify-center text-purple-600 group-hover:bg-purple-600 group-hover:text-white transition-colors">
-                            <Package className="h-6 w-6" />
+                        <div className="mt-8 flex items-center text-sm font-semibold text-purple-600">
+                            Analyser le catalogue
+                            <svg className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                            </svg>
                         </div>
                     </div>
                 </Link>

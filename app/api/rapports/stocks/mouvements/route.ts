@@ -58,8 +58,8 @@ export async function GET(request: NextRequest) {
     ])
 
     const totals = {
-      entree: summary.find(s => s.type === 'ENTREE')?._sum.quantite || 0,
-      sortie: summary.find(s => s.type === 'SORTIE')?._sum.quantite || 0,
+      entree: summary.find(s => s.type === 'ENTREE')?._sum?.quantite || 0,
+      sortie: summary.find(s => s.type === 'SORTIE')?._sum?.quantite || 0,
     }
 
     return NextResponse.json({

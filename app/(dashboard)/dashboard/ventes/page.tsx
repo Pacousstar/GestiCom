@@ -1441,8 +1441,12 @@ export default function VentesPage() {
                     showSuccess(`Stock ajouté avec succès (${quantite} unités).`)
                     setStockInsuffisantModal(null)
                     setAjoutStockQuantite('')
-                    // Réessayer l'enregistrement de la vente
-                    await doEnregistrerVente(stockInsuffisantModal.lignes)
+                    // Rafraîchir les produits localement pour mettre à jour les disponibilités
+                    if (typeof refetchProduits === 'function') await refetchProduits()
+                    // Réessayer l'enregistrement de la vente immédiatement
+                    setTimeout(() => {
+                      doEnregistrerVente(stockInsuffisantModal.lignes)
+                    }, 100)
                   } else {
                     showError(data.error || 'Erreur lors de l\'ajout du stock.')
                   }
