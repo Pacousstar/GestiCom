@@ -5,8 +5,8 @@ import { prisma } from '@/lib/db'
 import { requirePermission } from '@/lib/require-role'
 
 type ClientDelegate = {
-  findMany: (args: object) => Promise<Array<{ id: number; nom: string; telephone: string | null; type: string; plafondCredit: number | null; actif: boolean }>>
-  create: (args: object) => Promise<{ id: number; nom: string; telephone: string | null; email: string | null; adresse: string | null; type: string; plafondCredit: number | null }>
+  findMany: (args: object) => Promise<Array<{ id: number; code: string | null; nom: string; telephone: string | null; type: string; plafondCredit: number | null; actif: boolean }>>
+  create: (args: object) => Promise<{ id: number; code: string | null; nom: string; telephone: string | null; email: string | null; adresse: string | null; type: string; plafondCredit: number | null }>
 }
 
 const clientRepo = (prisma as unknown as { client: ClientDelegate }).client
@@ -24,12 +24,13 @@ export async function GET(request: NextRequest) {
   const list = await clientRepo.findMany({
     where: { actif: true },
     orderBy: { nom: 'asc' },
-    select: { id: true, nom: true, telephone: true, type: true, plafondCredit: true, ncc: true },
+    select: { id: true, code: true, nom: true, telephone: true, type: true, plafondCredit: true, ncc: true },
   })
   const filtered = q
     ? list.filter(
       (c) =>
         c.nom.toLowerCase().includes(q) ||
+        (c.code || '').toLowerCase().includes(q) ||
         (c.telephone || '').toLowerCase().includes(q)
     )
     : list
@@ -84,6 +85,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json()
+    let code = body?.code != null ? String(body.code).trim() || null : null
     const nom = String(body?.nom || '').trim()
     const telephone = body?.telephone != null ? String(body.telephone).trim() || null : null
     const email = body?.email != null ? String(body.email).trim() || null : null
@@ -98,8 +100,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Nom du client requis.' }, { status: 400 })
     }
 
+    // Génération automatique du code si non fourni
+    if (!code) {
+      const count = await prisma.client.count()
+      const prefix = nom.charAt(0).toUpperCase() || 'C'
+      code = `${String(count + 1).padStart(6, '0')}${prefix}`
+    }
+
     const c = await clientRepo.create({
-      data: { nom, telephone, email, adresse, type, plafondCredit, ncc, actif: true },
+      data: { code, nom, telephone, email, adresse, type, plafondCredit, ncc, actif: true },
     })
 
     // Invalider le cache pour affichage immédiat

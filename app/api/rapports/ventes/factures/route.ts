@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
         const [ventes, total] = await Promise.all([
             prisma.vente.findMany({
                 where,
-                include: { client: { select: { nom: true } } },
+                include: { client: { select: { nom: true, code: true } } },
                 orderBy: { date: 'desc' },
                 skip,
                 take: limit
@@ -46,6 +46,7 @@ export async function GET(request: NextRequest) {
             numero: v.numero,
             date: v.date,
             client: v.client?.nom || v.clientLibre || 'Client Comptoir',
+            clientCode: v.client?.code || null,
             montantTotal: v.montantTotal,
             montantPaye: v.montantPaye,
             resteAPayer: v.montantTotal - v.montantPaye,

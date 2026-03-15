@@ -17,12 +17,13 @@ export async function GET(request: NextRequest) {
   const list = await prisma.fournisseur.findMany({
     where: { actif: true },
     orderBy: { nom: 'asc' },
-    select: { id: true, nom: true, telephone: true, email: true, ncc: true },
+    select: { id: true, code: true, nom: true, telephone: true, email: true, ncc: true },
   })
   const filtered = q
     ? list.filter(
       (f) =>
         f.nom.toLowerCase().includes(q) ||
+        (f.code || '').toLowerCase().includes(q) ||
         (f.telephone || '').toLowerCase().includes(q) ||
         (f.email || '').toLowerCase().includes(q)
     )
@@ -76,6 +77,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json()
+    let code = body?.code != null ? String(body.code).trim() || null : null
     const nom = String(body?.nom || '').trim()
     const telephone = body?.telephone != null ? String(body.telephone).trim() || null : null
     const email = body?.email != null ? String(body.email).trim() || null : null
@@ -85,8 +87,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Nom du fournisseur requis.' }, { status: 400 })
     }
 
+    // Génération automatique du code si non fourni
+    if (!code) {
+      const count = await prisma.fournisseur.count()
+      const prefix = nom.charAt(0).toUpperCase() || 'F'
+      code = `${String(count + 1).padStart(6, '0')}${prefix}`
+    }
+
     const f = await prisma.fournisseur.create({
-      data: { nom, telephone, email, ncc, actif: true },
+      data: { code, nom, telephone, email, ncc, actif: true },
     })
     // Invalider le cache pour affichage immédiat
     revalidatePath('/dashboard/fournisseurs')

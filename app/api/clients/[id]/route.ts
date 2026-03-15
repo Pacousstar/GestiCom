@@ -3,8 +3,8 @@ import { getSession } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 
 type ClientDelegate = {
-  findUnique: (args: object) => Promise<{ id: number; nom: string; telephone: string | null; type: string; plafondCredit: number | null } | null>
-  update: (args: object) => Promise<{ id: number; nom: string; telephone: string | null; type: string; plafondCredit: number | null }>
+  findUnique: (args: object) => Promise<{ id: number; code: string | null; nom: string; telephone: string | null; type: string; plafondCredit: number | null } | null>
+  update: (args: object) => Promise<{ id: number; code: string | null; nom: string; telephone: string | null; type: string; plafondCredit: number | null }>
   delete: (args: object) => Promise<unknown>
 }
 
@@ -41,6 +41,7 @@ export async function PATCH(
 
   try {
     const body = await request.json()
+    const code = body?.code !== undefined ? (String(body.code).trim() || null) : undefined
     const nom = body?.nom != null ? String(body.nom).trim() : undefined
     const telephone = body?.telephone !== undefined ? (String(body.telephone).trim() || null) : undefined
     const type = body?.type != null
@@ -53,6 +54,7 @@ export async function PATCH(
     const actif = body?.actif !== undefined ? Boolean(body.actif) : undefined
 
     const data: Record<string, unknown> = {}
+    if (code !== undefined) data.code = code
     if (nom !== undefined) data.nom = nom
     if (telephone !== undefined) data.telephone = telephone
     if (type !== undefined) data.type = type

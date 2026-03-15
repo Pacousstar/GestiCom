@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
             where.date = { gte: new Date(start), lte: endDate }
         }
 
-        const clients = await prisma.client.findMany({ select: { id: true, nom: true, telephone: true } })
+        const clients = await prisma.client.findMany({ select: { id: true, code: true, nom: true, telephone: true } })
         const clientMap = new Map(clients.map(c => [c.id, c]))
 
         const ventesClientInfo = await prisma.vente.groupBy({
@@ -36,6 +36,7 @@ export async function GET(request: NextRequest) {
             return {
                 clientId: v.clientId,
                 client: nom,
+                code: v.clientId && clientMap.has(v.clientId) ? clientMap.get(v.clientId)!.code : null,
                 chiffreAffaires: v._sum.montantTotal || 0,
                 frequenceAchat: v._count.id,
             }

@@ -190,6 +190,7 @@ model TransfertLigne {
 // CLIENTS
 model Client {
   id            Int      @id @default(autoincrement())
+  code          String?  @unique
   nom           String
   telephone     String?
   email         String?
@@ -209,6 +210,7 @@ model Client {
 // FOURNISSEURS
 model Fournisseur {
   id        Int      @id @default(autoincrement())
+  code      String?  @unique
   nom       String
   telephone String?
   email     String?

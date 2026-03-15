@@ -12,6 +12,7 @@ import { addToSyncQueue, isOnline } from '@/lib/offline-sync'
 
 type Fournisseur = {
   id: number
+  code: string | null
   nom: string
   telephone: string | null
   email: string | null
@@ -31,7 +32,7 @@ export default function FournisseursPage() {
   const { success: showSuccess, error: showError } = useToast()
   const [currentPage, setCurrentPage] = useState(1)
   const [pagination, setPagination] = useState<{ page: number; limit: number; total: number; totalPages: number } | null>(null)
-  const [formData, setFormData] = useState({ nom: '', telephone: '', email: '', ncc: '' })
+  const [formData, setFormData] = useState({ code: '', nom: '', telephone: '', email: '', ncc: '' })
   const [userRole, setUserRole] = useState<string>('')
   const [selectedHistory, setSelectedHistory] = useState<{ id: number; nom: string } | null>(null)
   const [historyData, setHistoryData] = useState<any[]>([])
@@ -111,6 +112,7 @@ export default function FournisseursPage() {
     if (f) {
       setEditing(f)
       setFormData({
+        code: f.code || '',
         nom: f.nom,
         telephone: f.telephone || '',
         email: f.email || '',
@@ -118,7 +120,7 @@ export default function FournisseursPage() {
       })
     } else {
       setEditing(null)
-      setFormData({ nom: '', telephone: '', email: '', ncc: '' })
+      setFormData({ code: '', nom: '', telephone: '', email: '', ncc: '' })
     }
     setForm(true)
     setErr('')
@@ -129,6 +131,7 @@ export default function FournisseursPage() {
     setErr('')
 
     const validationData = {
+      code: formData.code.trim() || null,
       nom: formData.nom.trim(),
       telephone: formData.telephone.trim() || null,
       email: formData.email.trim() || null,
@@ -254,7 +257,7 @@ export default function FournisseursPage() {
             <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
             <input
               type="search"
-              placeholder="Rechercher par nom, tél. ou email..."
+              placeholder="Rechercher par code, nom, tél. ou email..."
               value={q}
               onChange={(e) => setQ(e.target.value)}
               className="w-full rounded-lg border border-gray-200 py-2 pl-10 pr-4 focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500/20"
@@ -297,6 +300,15 @@ export default function FournisseursPage() {
             {editing ? 'Modifier le fournisseur' : 'Nouveau fournisseur'}
           </h2>
           <form onSubmit={handleSubmit} className="grid gap-4 sm:grid-cols-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Code Fournisseur</label>
+              <input
+                value={formData.code}
+                onChange={(e) => setFormData((f) => ({ ...f, code: e.target.value }))}
+                placeholder="Ex: FRN001"
+                className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 focus:border-orange-500 focus:outline-none"
+              />
+            </div>
             <div>
               <label className="block text-sm font-medium text-gray-700">Nom *</label>
               <input
@@ -361,6 +373,7 @@ export default function FournisseursPage() {
             <table className="min-w-full divide-y divide-gray-200">
               <thead>
                 <tr className="bg-gray-50">
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-gray-600">Code</th>
                   <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-gray-600">Nom</th>
                   <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-gray-600">Tél.</th>
                   <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-gray-600">Email</th>
@@ -372,6 +385,7 @@ export default function FournisseursPage() {
               <tbody className="divide-y divide-gray-200">
                 {list.map((f) => (
                   <tr key={f.id} className="hover:bg-gray-50">
+                    <td className="px-4 py-3 font-mono text-xs font-bold text-gray-600">{f.code || '—'}</td>
                     <td className="px-4 py-3 font-medium text-gray-900">{f.nom}</td>
                     <td className="px-4 py-3 text-sm text-gray-600">{f.telephone || '—'}</td>
                     <td className="px-4 py-3 text-sm text-gray-600">{f.email || '—'}</td>

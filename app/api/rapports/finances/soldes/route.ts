@@ -15,6 +15,7 @@ export async function GET(request: NextRequest) {
         where: { actif: true },
         select: {
           id: true,
+          code: true,
           nom: true,
           type: true,
           ventes: {
@@ -32,6 +33,7 @@ export async function GET(request: NextRequest) {
         const totalPaye = c.ventes.reduce((acc, v) => acc + v.montantPaye, 0)
         return {
           id: c.id,
+          code: c.code,
           nom: c.nom,
           type: c.type,
           totalDu,
@@ -46,6 +48,7 @@ export async function GET(request: NextRequest) {
         where: { actif: true },
         select: {
           id: true,
+          code: true,
           nom: true,
           achats: {
             where: {
@@ -61,6 +64,7 @@ export async function GET(request: NextRequest) {
         const totalPaye = f.achats.reduce((acc, a) => acc + a.montantPaye, 0)
         return {
           id: f.id,
+          code: f.code,
           nom: f.nom,
           totalDu,
           totalPaye,

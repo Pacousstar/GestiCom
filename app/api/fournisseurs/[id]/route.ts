@@ -34,6 +34,7 @@ export async function PATCH(
   try {
     const body = await request.json()
     const data: Record<string, unknown> = {}
+    if (body?.code !== undefined) data.code = String(body.code).trim() || null
     if (body?.nom != null) data.nom = String(body.nom).trim()
     if (body?.telephone !== undefined) data.telephone = String(body.telephone).trim() || null
     if (body?.email !== undefined) data.email = String(body.email).trim() || null

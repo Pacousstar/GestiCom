@@ -44,9 +44,15 @@ async function main() {
   const workbook = XLSX.readFile(XLS_PATH);
   const sheetName = workbook.SheetNames[0];
   const worksheet = workbook.Sheets[sheetName];
-  const data = XLSX.utils.sheet_to_json(worksheet, { raw: false });
+  const rawData = XLSX.utils.sheet_to_json(worksheet, { raw: false });
 
-  console.log(`📊 ${data.length} produits trouvés dans le XLS.`);
+  // Filtrer les lignes vides (où la désignation est absente)
+  const data = rawData.filter(row => {
+    const designation = (row[' Désignation  '] || row['Désignation'] || '').trim();
+    return designation !== '';
+  });
+
+  console.log(`📊 ${data.length} produits valides trouvés dans le XLS.`);
 
   // 2. Nettoyage TOTAL de la base
   console.log('🧹 Nettoyage de la base de données...');
@@ -111,15 +117,15 @@ async function main() {
     }
   });
 
-  // 5. Injection Produits avec ARRONDIS pour Prisma INT
-  console.log('📥 Injection des produits (arrondis vers INT)...');
-  let count = 0;
+  // 5. Injection Produits avec DÉDOUBLONNAGE et DÉSIGNATION
+  console.log('📥 Injection des produits (dédoublonnage + arrondis)...');
+  const uniqueProduits = new Map();
+
   for (const row of data) {
     const designation = (row[' Désignation  '] || row['Désignation'] || '').trim();
     if (!designation) continue;
 
     const stockStr = String(row[' Stock final '] || row['Stock final'] || '0').replace(/[^0-9.-]/g, '');
-    // Prisma attend un Int pour la quantité de stock selon le schéma
     const stock = Math.round(parseFloat(stockStr)) || 0;
 
     const achStr = String(row[' Prix d\'achat (FCFA)  '] || row['Prix d\'achat (FCFA)'] || '0').replace(/[^0-9.-]/g, '');
@@ -128,15 +134,27 @@ async function main() {
     const venStr = String(row[' Prix Vente HT '] || row['Prix Vente HT'] || '0').replace(/[^0-9.-]/g, '');
     const ven = parseFloat(venStr) || 0;
 
-    const code = `PROD-${String(count + 1).padStart(4, '0')}`;
+    if (uniqueProduits.has(designation)) {
+      // Si doublon, on cumule le stock
+      const prod = uniqueProduits.get(designation);
+      prod.stock += stock;
+      console.log(`💡 Doublon détecté et fusionné : ${designation}`);
+    } else {
+      uniqueProduits.set(designation, { stock, ach, ven });
+    }
+  }
 
+  let count = 0;
+  for (const [designation, info] of uniqueProduits.entries()) {
+    const code = `PROD-${String(count + 1).padStart(4, '0')}`;
+    
     const produit = await prisma.produit.create({
       data: {
         code: code,
         designation: designation,
         categorie: 'DIVERS',
-        prixAchat: ach,
-        prixVente: ven,
+        prixAchat: info.ach,
+        prixVente: info.ven,
         unite: 'U',
         actif: true
       }
@@ -146,8 +164,8 @@ async function main() {
       data: {
         produitId: produit.id,
         magasinId: magasin.id,
-        quantite: stock,
-        quantiteInitiale: stock
+        quantite: info.stock,
+        quantiteInitiale: info.stock
       }
     });
 

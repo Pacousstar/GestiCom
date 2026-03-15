@@ -33,11 +33,17 @@ async function syncStandalone() {
   fs.copySync(standalonePath, targetDir);
 
   // Remonter les fichiers de l'app imbriquée à la racine de targetDir
-  if (fs.existsSync(nestedAppPath)) {
-    console.log('📦 Extraction des fichiers imbriques...');
-    fs.copySync(nestedAppPath, targetDir);
-    // Nettoyer le dossier Projets imbrique
-    fs.removeSync(path.join(targetDir, 'Projets'));
+  try {
+    if (fs.existsSync(nestedAppPath)) {
+      console.log('📦 Extraction des fichiers imbriques...');
+      fs.copySync(nestedAppPath, targetDir, { overwrite: true });
+      // Nettoyer le dossier Projets imbrique
+      console.log('🧹 Nettoyage du dossier temporaire Projets...');
+      fs.removeSync(path.join(targetDir, 'Projets'));
+    }
+  } catch (err) {
+    console.error('❌ Erreur lors de l\'extraction:', err.message);
+    throw err; // Faire échouer le script proprement avec l'erreur
   }
 
   // 3. Copier les ressources statiques
@@ -74,6 +80,7 @@ async function syncStandalone() {
   
   fs.ensureDirSync(path.join(targetDir, 'scripts'));
   const scriptsToCopy = [
+    'import-quincaillerie-pro.js',
     'reinitialiser-et-importer-produits-xls.js',
     'clean.js'
   ];
@@ -81,6 +88,7 @@ async function syncStandalone() {
   scriptsToCopy.forEach(s => {
     const src = path.join(projectRoot, 'scripts', s);
     if (fs.existsSync(src)) {
+      console.log(`   + script: ${s}`);
       fs.copySync(src, path.join(targetDir, 'scripts', s));
     }
   });

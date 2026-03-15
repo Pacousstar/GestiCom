@@ -82,26 +82,13 @@ export async function GET(request: NextRequest) {
     prisma.produit.count({ where }),
   ])
 
-  // Filtre insensible à la casse si sqlite like est sensible
-  const filtered = q
-    ? produits.filter(
-      (p) =>
-        p.code.toLowerCase().includes(q) ||
-        p.designation.toLowerCase().includes(q) ||
-        p.categorie.toLowerCase().includes(q)
-    )
-    : produits
-
-  // Recalculer le total si filtre appliqué
-  const filteredTotal = q ? filtered.length : total
-
   const res = NextResponse.json({
-    data: filtered,
+    data: produits,
     pagination: {
       page,
       limit,
-      total: filteredTotal,
-      totalPages: Math.ceil(filteredTotal / limit),
+      total: total,
+      totalPages: Math.ceil(total / limit),
     },
   })
   res.headers.set('Cache-Control', 'no-store, max-age=0')

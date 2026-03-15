@@ -12,6 +12,7 @@ import { addToSyncQueue, isOnline } from '@/lib/offline-sync'
 
 type Client = {
   id: number
+  code: string | null
   nom: string
   telephone: string | null
   type: string
@@ -33,6 +34,7 @@ export default function ClientsPage() {
   const [currentPage, setCurrentPage] = useState(1)
   const [pagination, setPagination] = useState<{ page: number; limit: number; total: number; totalPages: number } | null>(null)
   const [formData, setFormData] = useState({
+    code: '',
     nom: '',
     telephone: '',
     type: 'CASH',
@@ -118,6 +120,7 @@ export default function ClientsPage() {
     if (c) {
       setEditing(c)
       setFormData({
+        code: c.code || '',
         nom: c.nom,
         telephone: c.telephone || '',
         type: c.type,
@@ -126,7 +129,7 @@ export default function ClientsPage() {
       })
     } else {
       setEditing(null)
-      setFormData({ nom: '', telephone: '', type: 'CASH', plafondCredit: '', ncc: '' })
+      setFormData({ code: '', nom: '', telephone: '', type: 'CASH', plafondCredit: '', ncc: '' })
     }
     setForm(true)
     setErr('')
@@ -141,6 +144,7 @@ export default function ClientsPage() {
       : null
 
     const validationData = {
+      code: formData.code.trim() || null,
       nom: formData.nom.trim(),
       telephone: formData.telephone.trim() || null,
       type: formData.type as 'CASH' | 'CREDIT',
@@ -267,7 +271,7 @@ export default function ClientsPage() {
             <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
             <input
               type="search"
-              placeholder="Rechercher par nom ou téléphone..."
+              placeholder="Rechercher par code, nom ou téléphone..."
               value={q}
               onChange={(e) => setQ(e.target.value)}
               className="w-full rounded-lg border border-gray-200 py-2 pl-10 pr-4 focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500/20"
@@ -310,6 +314,15 @@ export default function ClientsPage() {
             {editing ? 'Modifier le client' : 'Nouveau client'}
           </h2>
           <form onSubmit={handleSubmit} className="grid gap-4 sm:grid-cols-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Code Client</label>
+              <input
+                value={formData.code}
+                onChange={(e) => setFormData((f) => ({ ...f, code: e.target.value }))}
+                placeholder="Ex: CLT001"
+                className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 focus:border-orange-500 focus:outline-none"
+              />
+            </div>
             <div>
               <label className="block text-sm font-medium text-gray-700">Nom *</label>
               <input
@@ -388,6 +401,7 @@ export default function ClientsPage() {
             <table className="min-w-full divide-y divide-gray-200">
               <thead>
                 <tr className="bg-gray-50">
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-gray-600">Code</th>
                   <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-gray-600">Nom</th>
                   <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-gray-600">Tél.</th>
                   <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-gray-600">Type</th>
@@ -400,6 +414,7 @@ export default function ClientsPage() {
               <tbody className="divide-y divide-gray-200">
                 {list.map((c) => (
                   <tr key={c.id} className="hover:bg-gray-50">
+                    <td className="px-4 py-3 font-mono text-xs font-bold text-gray-600">{c.code || '—'}</td>
                     <td className="px-4 py-3 font-medium text-gray-900">{c.nom}</td>
                     <td className="px-4 py-3 text-sm text-gray-600">{c.telephone || '—'}</td>
                     <td className="px-4 py-3">

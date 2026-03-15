@@ -44,6 +44,7 @@ type Comparaison = {
 type RapportClient = {
   clientId: number | null
   client: string
+  code: string | null
   chiffreAffaires: number
   frequenceAchat: number
 }
@@ -53,6 +54,7 @@ type RapportPaiement = {
   fournisseurId?: number | null
   client?: string
   fournisseur?: string
+  code?: string | null
   montantTotal: number
   montantPaye: number
   resteAPayer: number
@@ -65,6 +67,7 @@ type RapportFacture = {
   numero: string
   date: string
   client: string
+  clientCode: string | null
   montantTotal: number
   montantPaye: number
   resteAPayer: number
@@ -93,6 +96,7 @@ type NouveauMouvement = {
 
 type SoldeTiers = {
   id: number
+  code: string | null
   nom: string
   type?: string
   totalDu: number
@@ -156,6 +160,8 @@ export default function RapportsPage() {
   const [valeurStock, setValeurStock] = useState<{ data: ValeurStock[], totalValeur: number } | null>(null)
   const [mouvementTotals, setMouvementTotals] = useState<{ entree: number; sortie: number } | null>(null)
   const [categoriesData, setCategoriesData] = useState<RapportCategorie[]>([])
+  const [movPage, setMovPage] = useState(1)
+  const [paginationMov, setPaginationMov] = useState<{ totalPages: number; total: number; limit: number } | null>(null)
 
   // Filter Data
   const [magasins, setMagasins] = useState<Magasin[]>([])
@@ -209,10 +215,12 @@ export default function RapportsPage() {
       setPaginationFactures(dataF.pagination)
 
       // --- NEW RAPPORTS PHASE 2 ---
-      const resMov = await fetch(`/api/rapports/stocks/mouvements?${params.toString()}`)
+      // 216. Mouvements avec pagination
+      const resMov = await fetch(`/api/rapports/stocks/mouvements?${params.toString()}&page=${movPage}`)
       const dataMov = await resMov.json()
       setMouvementsDetailles(dataMov.mouvements || [])
       setMouvementTotals(dataMov.totals || null)
+      setPaginationMov(dataMov.pagination || null)
 
       const resSC = await fetch(`/api/rapports/finances/soldes?type=CLIENT`)
       setSoldesClients(await resSC.json())
@@ -250,7 +258,7 @@ export default function RapportsPage() {
 
   useEffect(() => {
     fetchAllData()
-  }, [dateDebut, dateFin, filtreMagasin, facturesPage])
+  }, [dateDebut, dateFin, filtreMagasin, facturesPage, movPage])
 
   const preset = (days: number) => {
     const end = new Date()
@@ -483,6 +491,17 @@ export default function RapportsPage() {
                         )}
                     </table>
                 </div>
+                {paginationMov && (
+                    <div className="p-4 border-t border-gray-100">
+                        <Pagination 
+                            currentPage={movPage}
+                            totalPages={paginationMov.totalPages}
+                            totalItems={paginationMov.total}
+                            itemsPerPage={paginationMov.limit}
+                            onPageChange={(p) => setMovPage(p)}
+                        />
+                    </div>
+                )}
             </div>
 
             {/* Valorisation du Stock Détaillée */}
@@ -540,18 +559,26 @@ export default function RapportsPage() {
 
         {activeTab === 'categories' && (
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-               <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-xl">
-                  <p className="text-gray-400 text-[10px] font-black uppercase tracking-widest">Totaux Catégories</p>
-                  <div className="mt-2 text-4xl font-black text-indigo-600">{categoriesData.length}</div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+               <div className="bg-white p-5 rounded-3xl border border-gray-100 shadow-xl">
+                  <p className="text-gray-400 text-[9px] font-black uppercase tracking-widest whitespace-nowrap">Totaux Catégories</p>
+                  <div className="mt-1 text-2xl font-black text-indigo-600">{categoriesData.length}</div>
                </div>
-               <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-xl">
-                  <p className="text-gray-400 text-[10px] font-black uppercase tracking-widest">Valeur d'Achat Totale</p>
-                  <div className="mt-2 text-3xl font-black text-rose-600">{categoriesData.reduce((acc, c) => acc + c.valeurAchatStock, 0).toLocaleString()} F</div>
+               <div className="bg-white p-5 rounded-3xl border border-gray-100 shadow-xl">
+                  <p className="text-gray-400 text-[9px] font-black uppercase tracking-widest">Nombre Articles</p>
+                  <div className="mt-1 text-2xl font-black text-blue-600">{categoriesData.reduce((acc, c) => acc + c.nbProduits, 0)}</div>
                </div>
-               <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-xl">
-                  <p className="text-gray-400 text-[10px] font-black uppercase tracking-widest">Valeur de Vente Totale</p>
-                  <div className="mt-2 text-3xl font-black text-emerald-600">{categoriesData.reduce((acc, c) => acc + c.valeurVenteStock, 0).toLocaleString()} F</div>
+               <div className="bg-white p-5 rounded-3xl border border-gray-100 shadow-xl">
+                  <p className="text-gray-400 text-[9px] font-black uppercase tracking-widest">Quantité Totale</p>
+                  <div className="mt-1 text-2xl font-black text-amber-600">{categoriesData.reduce((acc, c) => acc + c.quantiteTotale, 0).toLocaleString()}</div>
+               </div>
+               <div className="bg-white p-5 rounded-3xl border border-gray-100 shadow-xl">
+                  <p className="text-gray-400 text-[9px] font-black uppercase tracking-widest">Valeur Achat</p>
+                  <div className="mt-1 text-xl font-black text-rose-600 truncate">{categoriesData.reduce((acc, c) => acc + c.valeurAchatStock, 0).toLocaleString()} F</div>
+               </div>
+               <div className="bg-white p-5 rounded-3xl border border-gray-100 shadow-xl">
+                  <p className="text-gray-400 text-[9px] font-black uppercase tracking-widest">Valeur Vente</p>
+                  <div className="mt-1 text-xl font-black text-emerald-600 truncate">{categoriesData.reduce((acc, c) => acc + c.valeurVenteStock, 0).toLocaleString()} F</div>
                </div>
             </div>
 
@@ -616,7 +643,9 @@ export default function RapportsPage() {
                         {soldesClients.filter(s => s.nom.toLowerCase().includes(searchTerm.toLowerCase())).map(s => (
                             <div key={s.id} className="flex items-center justify-between p-4 rounded-2xl border border-gray-50 bg-gray-50/30 hover:bg-white hover:shadow-lg transition-all border-l-4 border-l-red-500">
                                 <div>
-                                    <div className="text-sm font-black text-gray-900 uppercase tracking-tighter">{s.nom}</div>
+                                    <div className="text-sm font-black text-gray-900 uppercase tracking-tighter">
+                                        {s.nom} <span className="ml-2 text-[10px] text-gray-400 font-mono">[{s.code || '---'}]</span>
+                                    </div>
                                     <div className="text-[10px] text-gray-400 font-bold">Total Facturé: {s.totalDu.toLocaleString()} FCFA</div>
                                 </div>
                                 <div className="text-right">
@@ -640,7 +669,9 @@ export default function RapportsPage() {
                         {soldesFournisseurs.filter(s => s.nom.toLowerCase().includes(searchTerm.toLowerCase())).map(s => (
                             <div key={s.id} className="flex items-center justify-between p-4 rounded-2xl border border-gray-50 bg-gray-50/30 hover:bg-white hover:shadow-lg transition-all border-l-4 border-l-orange-500">
                                 <div>
-                                    <div className="text-sm font-black text-gray-900 uppercase tracking-tighter">{s.nom}</div>
+                                    <div className="text-sm font-black text-gray-900 uppercase tracking-tighter">
+                                        {s.nom} <span className="ml-2 text-[10px] text-gray-400 font-mono">[{s.code || '---'}]</span>
+                                    </div>
                                     <div className="text-[10px] text-gray-400 font-bold">Total Achats: {s.totalDu.toLocaleString()} FCFA</div>
                                 </div>
                                 <div className="text-right">
@@ -667,7 +698,10 @@ export default function RapportsPage() {
                       className={`w-full text-left p-4 rounded-2xl transition-all border-2 ${selectedClientId === c.clientId ? 'bg-blue-50 border-blue-400 shadow-lg scale-105' : 'hover:bg-gray-50 border-transparent'}`}
                     >
                       <div className="flex justify-between items-center">
-                        <span className="font-black text-gray-800 text-sm italic uppercase tracking-tighter">{c.client}</span>
+                        <div>
+                            <span className="font-black text-gray-800 text-sm italic uppercase tracking-tighter">{c.client}</span>
+                            <div className="text-[9px] text-gray-400 font-mono">{c.code || '---'}</div>
+                        </div>
                         <span className="text-[10px] bg-white border border-gray-200 px-3 py-1 rounded-full font-black text-gray-400">{c.frequenceAchat} Ventes</span>
                       </div>
                       <div className="mt-3 flex items-baseline gap-1">
@@ -784,7 +818,10 @@ export default function RapportsPage() {
                                 <tr key={f.id} className="hover:bg-blue-50/20 transition-all duration-300 group">
                                     <td className="px-6 py-5 text-sm font-black text-blue-600 font-mono tracking-tighter group-hover:scale-110 origin-left transition-transform">{f.numero}</td>
                                     <td className="px-6 py-5 text-[10px] text-gray-400 font-bold uppercase">{new Date(f.date).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })}</td>
-                                    <td className="px-6 py-5 text-sm font-black text-gray-900 group-hover:text-blue-700 transition-colors uppercase italic">{f.client}</td>
+                                    <td className="px-6 py-5">
+                                        <div className="text-sm font-black text-gray-900 group-hover:text-blue-700 transition-colors uppercase italic">{f.client}</div>
+                                        <div className="text-[9px] text-gray-400 font-mono">{f.clientCode || '---'}</div>
+                                    </td>
                                     <td className="px-6 py-5 text-sm text-right font-black text-gray-400 tabular-nums">{f.montantTotal.toLocaleString()}</td>
                                     <td className="px-6 py-5 text-right">
                                         <div className="text-lg font-black text-red-600 tabular-nums">{f.resteAPayer.toLocaleString()}</div>
@@ -956,7 +993,7 @@ function PaiementTable({ title, data, type, searchTerm }: any) {
                 <tr key={i} className="hover:bg-gray-50/80 transition-all duration-500 group">
                   <td className="px-8 py-6">
                     <div className="font-black text-gray-900 uppercase group-hover:text-blue-600 transition-colors tracking-tighter">{d.client || d.fournisseur}</div>
-                    <div className="text-[10px] text-gray-400 font-bold italic">Réf: TIER-{d.clientId || d.fournisseurId || '---'}</div>
+                    <div className="text-[10px] text-gray-400 font-bold italic">CODE: {d.code || '---'}</div>
                   </td>
                   <td className="px-6 py-6 text-center">
                     <span className="inline-flex items-center justify-center min-w-[32px] h-8 px-2 rounded-2xl bg-indigo-50 text-[10px] font-black text-indigo-500 border border-indigo-100 shadow-sm">

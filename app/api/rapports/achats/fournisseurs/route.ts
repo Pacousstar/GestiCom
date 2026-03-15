@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
             where.date = { gte: new Date(start), lte: endDate }
         }
 
-        const fournisseurs = await prisma.fournisseur.findMany({ select: { id: true, nom: true, telephone: true } })
+        const fournisseurs = await prisma.fournisseur.findMany({ select: { id: true, code: true, nom: true, telephone: true } })
         const fournisseurMap = new Map(fournisseurs.map(f => [f.id, f]))
 
         const achatsFournisseurInfo = await prisma.achat.groupBy({
@@ -38,6 +38,7 @@ export async function GET(request: NextRequest) {
             return {
                 fournisseurId: a.fournisseurId,
                 fournisseur: nom,
+                code: a.fournisseurId && fournisseurMap.has(a.fournisseurId) ? fournisseurMap.get(a.fournisseurId)!.code : null,
                 montantTotal: total,
                 montantPaye: paye,
                 resteAPayer: total - paye,
