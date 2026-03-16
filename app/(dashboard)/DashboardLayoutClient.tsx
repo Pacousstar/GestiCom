@@ -64,6 +64,7 @@ const navigation: Array<{
     { name: 'Rapports Vente', href: '/dashboard/rapports-ventes', icon: TrendingUp, permission: 'rapports:view' },
     { name: 'Suivi Fournisseurs', href: '/dashboard/rapports-fournisseurs', icon: Truck, permission: 'rapports:view' },
     { name: 'Inventaire Global', href: '/dashboard/rapports-inventaire', icon: FileText, permission: 'rapports:view' },
+    { name: 'Rentabilité Produits', href: '/dashboard/rapports/rentabilite', icon: TrendingUp, permission: 'rapports:view' },
     { name: 'Comptabilité', href: '/dashboard/comptabilite', icon: Calculator, permission: 'comptabilite:view' },
     { name: 'Utilisateurs', href: '/dashboard/utilisateurs', icon: UserPlus, permission: 'users:view' },
     { name: 'Journal d\'audit', href: '/dashboard/audit', icon: Activity, permission: 'audit:view' },

@@ -74,6 +74,7 @@ export default function VentesPage() {
     montantPaye: '',
     remiseGlobale: '',
     lignes: [] as Ligne[],
+    pointsGagnes: 0,
   })
   const [ajoutProduit, setAjoutProduit] = useState({ produitId: '', quantite: '1', prixUnitaire: '', tva: '', remise: '', recherche: '' })
   const [dateDebut, setDateDebut] = useState('')
@@ -331,6 +332,7 @@ export default function VentesPage() {
     { totalHT: 0, totalTVA: 0, totalRemise: 0, totalAvantRemiseGlobale: 0 }
   )
   const total = Math.max(0, totalAvantRemiseGlobale - (Number(formData.remiseGlobale) || 0))
+  const pointsGagnes = Math.floor(total)
 
   const popupTotal = popupLignes.reduce((s, l) => s + (l.quantite * l.prixUnitaire) * (1 + (l.tva || 0) / 100), 0)
 
@@ -381,6 +383,7 @@ export default function VentesPage() {
           montantPaye: '',
           remiseGlobale: '',
           lignes: [],
+          pointsGagnes: 0,
         })
         setCurrentPage(1)
         showSuccess(MESSAGES.VENTE_ENREGISTREE)
@@ -442,6 +445,11 @@ export default function VentesPage() {
     }
     await doEnregistrerVente(formData.lignes)
   }
+
+  // Calculer points restants pour remise (Fidélité Pro)
+  const clientSel = clients.find(c => c.id === Number(formData.clientId))
+  // @ts-ignore
+  const pointsClient = clientSel?.pointsFidelite || 0
 
   const addLigneInPopup = () => {
     const pid = Number(popupAjoutProduit.produitId)

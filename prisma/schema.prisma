@@ -201,6 +201,7 @@ model Client {
   type          String // "CREDIT" | "CASH"
   plafondCredit Float? // si CREDIT
   soldeInitial  Float    @default(0) // Solde à l'ouverture du compte
+  pointsFidelite Int      @default(0) // Points de fidélité cumulés
   ncc           String? // Numéro de Compte Contribuable (SYSCOHADA)
   actif         Boolean  @default(true)
   createdAt     DateTime @default(now())
@@ -312,6 +313,11 @@ model Parametre {
   backupFrequence   String  @default("QUOTIDIEN") // "QUOTIDIEN" | "HEBDOMADAIRE" | "MENSUEL"
   backupDestination String  @default("LOCAL")     // "LOCAL" | "EMAIL" | "GDRIVE"
   backupEmailDest   String? // Si destination = EMAIL
+  
+  // Fidélisation Pro
+  fideliteActive      Boolean @default(false)
+  fideliteSeuilPoints Int     @default(100)
+  fideliteTauxRemise  Float   @default(5) // Pourcentage de remise une fois le seuil atteint
 
   updatedAt     DateTime @updatedAt
 }
@@ -335,6 +341,7 @@ model Vente {
   montantPaye    Float       @default(0) // avance / montant déjà encaissé
   statutPaiement String      @default("PAYE") // "PAYE" | "PARTIEL" | "CREDIT"
   modePaiement   String // "ESPECES" | "MOBILE_MONEY" | "CREDIT"
+  pointsGagnes   Int         @default(0)
   statut         String      @default("VALIDEE") // "VALIDEE" | "ANNULEE"
   observation    String?
   createdAt      DateTime    @default(now())
@@ -355,6 +362,7 @@ model VenteLigne {
   designation  String  // Copie pour historique
   quantite     Int
   prixUnitaire Float
+  coutUnitaire Float   @default(0) // Prix d'achat au moment de la vente (pour la marge)
   tva          Float   @default(0) // Taux TVA en % (0, 5.5, 10, 19.25...) — 0 = exonoré
   remise       Float   @default(0) // Réduction/Remise par ligne
   montant      Float   // Montant HT

@@ -54,6 +54,11 @@ export const parametresPatchSchema = z.object({
   backupFrequence: z.enum(['QUOTIDIEN', 'HEBDOMADAIRE', 'MENSUEL']).optional(),
   backupDestination: z.enum(['LOCAL', 'EMAIL', 'GDRIVE']).optional(),
   backupEmailDest: z.string().max(MAX_STRING).nullable().optional(),
+
+  // Fidélisation
+  fideliteActive: z.boolean().optional(),
+  fideliteSeuilPoints: z.coerce.number().min(1).optional(),
+  fideliteTauxRemise: z.coerce.number().min(0).max(100).optional(),
 })
 
 /** Produit : code, désignation, catégorie, prix */

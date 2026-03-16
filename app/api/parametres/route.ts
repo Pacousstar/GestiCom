@@ -110,6 +110,10 @@ export async function PATCH(request: NextRequest) {
       if (data.backupDestination !== undefined) update.backupDestination = data.backupDestination
       if (data.backupEmailDest !== undefined) update.backupEmailDest = data.backupEmailDest || null
 
+      if (data.fideliteActive !== undefined) update.fideliteActive = data.fideliteActive
+      if (data.fideliteSeuilPoints !== undefined) update.fideliteSeuilPoints = data.fideliteSeuilPoints
+      if (data.fideliteTauxRemise !== undefined) update.fideliteTauxRemise = data.fideliteTauxRemise
+
       if (Object.keys(update).length > 0) {
         p = await prisma.parametre.update({ where: { id: p.id }, data: update })
       }

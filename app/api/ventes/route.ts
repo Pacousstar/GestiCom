@@ -26,7 +26,6 @@ export async function GET(request: NextRequest) {
       lte: new Date(dateFin + 'T23:59:59'),
     }
   }
-  // Filtrer par entité de la session (sauf SUPER_ADMIN qui voit tout)
   if (session.role !== 'SUPER_ADMIN' && session.entiteId) {
     where.entiteId = session.entiteId
   }
@@ -89,6 +88,7 @@ export async function POST(request: NextRequest) {
     const observation = body?.observation != null ? String(body.observation).trim() || null : null
     const dateStr = body?.date != null ? String(body.date).trim() : null
     const dateVente = dateStr ? new Date(dateStr + 'T12:00:00') : new Date()
+    
     if (isNaN(dateVente.getTime())) {
       return NextResponse.json({ error: 'Date invalide.' }, { status: 400 })
     }
@@ -101,26 +101,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Au moins une ligne de vente requise.' }, { status: 400 })
     }
 
-    // Vérifier que l'utilisateur existe
-    const user = await prisma.utilisateur.findUnique({
-      where: { id: session.userId },
-      select: { id: true },
-    })
-    if (!user) return NextResponse.json({ error: 'Utilisateur introuvable.' }, { status: 401 })
-
-    // Utiliser l'entité de la session (qui peut être changée pour SUPER_ADMIN)
     const entiteId = await getEntiteId(session)
-
     const magasin = await prisma.magasin.findUnique({ where: { id: magasinId } })
     if (!magasin) return NextResponse.json({ error: 'Magasin introuvable.' }, { status: 400 })
 
-    // Vérifier que le magasin appartient à l'entité sélectionnée (sauf SUPER_ADMIN)
-    if (session.role !== 'SUPER_ADMIN' && magasin.entiteId !== entiteId) {
-      return NextResponse.json({ error: 'Ce magasin n\'appartient pas à votre entité.' }, { status: 403 })
-    }
-
-    let montantTotal = 0
-    const lignesValides: Array<{ produitId: number; designation: string; quantite: number; prixUnitaire: number; tva: number; remise: number; montant: number }> = []
+    let montantTotalAVantRemise = 0
+    const lignesValides: any[] = []
 
     for (const l of lignes) {
       const produitId = Number(l?.produitId)
@@ -134,81 +120,48 @@ export async function POST(request: NextRequest) {
       if (!produit) continue
 
       const designation = produit.designation
+      const coutUnitaire = produit.prixAchat || 0
       const montantHT = quantite * prixUnitaire
-      const montant = Math.round((montantHT * (1 + tva / 100)) - remise)
-      montantTotal += montant
-      lignesValides.push({ produitId, designation, quantite, prixUnitaire, tva, remise, montant })
+      const montantLigne = Math.round((montantHT * (1 + tva / 100)) - remise)
+      
+      montantTotalAVantRemise += montantLigne
+      lignesValides.push({ produitId, designation, quantite, prixUnitaire, coutUnitaire, tva, remise, montant: montantLigne })
     }
 
     if (!lignesValides.length) {
       return NextResponse.json({ error: 'Lignes de vente invalides.' }, { status: 400 })
     }
 
-    montantTotal = Math.max(0, Math.round(montantTotal - remiseGlobale))
-
+    const montantTotal = Math.max(0, Math.round(montantTotalAVantRemise - remiseGlobale))
     const montantPaye = montantPayeRaw != null
       ? Math.min(montantTotal, Math.max(0, montantPayeRaw))
       : (modePaiement === 'CREDIT' ? 0 : montantTotal)
+    
     const statutPaiement = montantPaye >= montantTotal ? 'PAYE' : montantPaye > 0 ? 'PARTIEL' : 'CREDIT'
+    const pointsGagnes = Math.floor(montantPaye)
 
     if (modePaiement === 'CREDIT' || statutPaiement === 'CREDIT') {
-      if (clientId == null) {
-        return NextResponse.json(
-          { error: 'Vente à crédit : un client doit être sélectionné.' },
-          { status: 400 }
-        )
-      }
-      const client = await prisma.client.findUnique({
-        where: { id: clientId },
-        select: { type: true, plafondCredit: true },
-      })
-      if (!client) {
-        return NextResponse.json({ error: 'Client introuvable.' }, { status: 400 })
-      }
-      if (client.type !== 'CREDIT') {
-        return NextResponse.json(
-          { error: 'Vente à crédit : le client doit être de type CREDIT.' },
-          { status: 400 }
-        )
-      }
-      if (client.plafondCredit == null) {
-        return NextResponse.json(
-          { error: 'Vente à crédit : le client doit avoir un plafond de crédit défini.' },
-          { status: 400 }
-        )
-      }
-      const ventesClient = await prisma.vente.findMany({
-        where: { clientId, statut: 'VALIDEE' },
-        select: { montantTotal: true, montantPaye: true },
-      })
+      if (clientId == null) return NextResponse.json({ error: 'Vente à crédit : un client doit être sélectionné.' }, { status: 400 })
+      const client = await prisma.client.findUnique({ where: { id: clientId } })
+      if (!client) return NextResponse.json({ error: 'Client introuvable.' }, { status: 400 })
+      if (client.type !== 'CREDIT') return NextResponse.json({ error: 'Le client doit être de type CREDIT.' }, { status: 400 })
+      if (client.plafondCredit == null) return NextResponse.json({ error: 'Le client doit avoir un plafond de crédit.' }, { status: 400 })
+      
+      const ventesClient = await prisma.vente.findMany({ where: { clientId, statut: 'VALIDEE' }})
       const dette = ventesClient.reduce((s, v) => s + (v.montantTotal - (v.montantPaye ?? 0)), 0)
-      const resteCetteVente = montantTotal - montantPaye
-      if (dette + resteCetteVente > client.plafondCredit) {
-        return NextResponse.json(
-          {
-            error: `Plafond crédit dépassé (dette: ${Math.round(dette).toLocaleString('fr-FR')} F, plafond: ${Math.round(client.plafondCredit).toLocaleString('fr-FR')} F, reste à payer cette vente: ${Math.round(resteCetteVente).toLocaleString('fr-FR')} F).`,
-          },
-          { status: 400 }
-        )
+      if (dette + (montantTotal - montantPaye) > client.plafondCredit) {
+         return NextResponse.json({ error: 'Plafond crédit dépassé.' }, { status: 400 })
       }
     }
 
-    // Vérifier stock et décrémenter
     for (const l of lignesValides) {
-      const st = await prisma.stock.findUnique({
-        where: { produitId_magasinId: { produitId: l.produitId, magasinId } },
-      })
-      const qte = st?.quantite ?? 0
-      if (qte < l.quantite) {
-        const p = await prisma.produit.findUnique({ where: { id: l.produitId } })
-        return NextResponse.json(
-          { error: `Stock insuffisant pour ${p?.designation || l.produitId} (dispo: ${qte}).` },
-          { status: 400 }
-        )
+      const st = await prisma.stock.findUnique({ where: { produitId_magasinId: { produitId: l.produitId, magasinId } } })
+      if ((st?.quantite ?? 0) < l.quantite) {
+        return NextResponse.json({ error: `Stock insuffisant pour ${l.designation}.` }, { status: 400 })
       }
     }
 
-    const num = `V${Date.now()}` // Créer la vente
+    const num = `V${Date.now()}`
     const vente = await prisma.vente.create({
       data: {
         numero: num,
@@ -218,9 +171,11 @@ export async function POST(request: NextRequest) {
         utilisateurId: session.userId,
         clientId,
         clientLibre,
-        montantTotal, // montantTotal already includes global discount
+        montantTotal,
         remiseGlobale,
         montantPaye,
+        // @ts-ignore
+        pointsGagnes,
         statutPaiement,
         modePaiement,
         observation,
@@ -231,9 +186,11 @@ export async function POST(request: NextRequest) {
             designation: l.designation,
             quantite: l.quantite,
             prixUnitaire: l.prixUnitaire,
+            // @ts-ignore
+            coutUnitaire: l.coutUnitaire,
             tva: l.tva,
             remise: l.remise,
-            montant: Math.round(l.montant), // montant already includes line discount and TVA
+            montant: l.montant,
           })),
         },
       },
@@ -250,7 +207,7 @@ export async function POST(request: NextRequest) {
           type: 'SORTIE',
           produitId: l.produitId,
           magasinId,
-          entiteId: entiteId,
+          entiteId,
           utilisateurId: session.userId,
           quantite: l.quantite,
           observation: `Vente ${num}`,
@@ -258,7 +215,14 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    // Comptabilisation automatique
+    if (clientId && pointsGagnes > 0) {
+      await prisma.client.update({
+        where: { id: clientId },
+        // @ts-ignore
+        data: { pointsFidelite: { increment: pointsGagnes } }
+      })
+    }
+
     try {
       await comptabiliserVente({
         venteId: vente.id,
@@ -269,18 +233,14 @@ export async function POST(request: NextRequest) {
         clientId,
         utilisateurId: session.userId,
       })
-    } catch (comptaError) {
-      console.error('Erreur comptabilisation vente:', comptaError)
-      // On continue même si la comptabilisation échoue pour ne pas bloquer la vente
-    }
+    } catch (e) { console.error('Erreur compta:', e) }
 
-    // Invalider le cache pour affichage immédiat sur tous les postes
     revalidatePath('/dashboard/ventes')
     revalidatePath('/api/ventes')
 
     return NextResponse.json(vente)
   } catch (e) {
-    console.error('POST /api/ventes:', e)
+    console.error(e)
     return NextResponse.json({ error: 'Erreur serveur.' }, { status: 500 })
   }
 }

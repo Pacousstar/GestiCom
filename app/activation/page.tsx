@@ -70,45 +70,60 @@ export default function ActivationPage() {
     }
 
     return (
-        <div className="min-h-screen bg-[#0f172a] flex items-center justify-center p-4">
-            <div className="max-w-md w-full">
+        <div className="min-h-screen bg-[#0f172a] flex items-center justify-center p-4 relative overflow-hidden">
+            {/* Arrière-plan stylisé */}
+            <div className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] bg-orange-600/10 rounded-full blur-[120px] animate-pulse"></div>
+            <div className="absolute bottom-[-20%] right-[-10%] w-[60%] h-[60%] bg-blue-600/10 rounded-full blur-[120px] animate-pulse delay-700"></div>
+
+            <div className="max-w-md w-full relative z-10">
                 {/* Logo & Header */}
-                <div className="text-center mb-8">
-                    <div className="inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-orange-500/10 mb-6 border border-orange-500/20">
-                        <ShieldAlert className="h-10 w-10 text-orange-500" />
+                <div className="text-center mb-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
+                    <div className="inline-flex items-center justify-center w-24 h-24 rounded-[2rem] bg-orange-500/10 mb-6 border border-white/5 backdrop-blur-sm shadow-2xl">
+                        <ShieldAlert className="h-12 w-12 text-orange-500" />
                     </div>
-                    <h1 className="text-3xl font-black text-white tracking-tight mb-2">Activation GestiCom</h1>
-                    <p className="text-slate-400 font-medium italic">Logiciel de Gestion Commerciale Intégré</p>
+                    <h1 className="text-4xl font-black text-white tracking-tight mb-2">Activation Royale</h1>
+                    <div className="flex items-center justify-center gap-2">
+                        <div className="h-px w-8 bg-orange-500/50"></div>
+                        <p className="text-orange-500 font-bold uppercase tracking-[0.3em] text-[10px]">GestiCom Pro</p>
+                        <div className="h-px w-8 bg-orange-500/50"></div>
+                    </div>
                 </div>
 
                 {/* Content Card */}
-                <div className="bg-slate-900/50 backdrop-blur-xl border border-slate-800 rounded-[2.5rem] p-8 shadow-2xl overflow-hidden relative">
-                    {/* Decorative element */}
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-orange-500/5 blur-3xl rounded-full -mr-16 -mt-16"></div>
+                <div className="bg-slate-900/40 backdrop-blur-3xl border border-white/5 rounded-[3rem] p-10 shadow-2xl overflow-hidden relative group">
+                    {/* Glow effect */}
+                    <div className="absolute -inset-0.5 bg-gradient-to-r from-orange-500 to-orange-400 rounded-[3rem] opacity-0 group-hover:opacity-10 transition duration-1000"></div>
 
-                    <div className="relative space-y-6">
-                        <div className="bg-slate-950/50 rounded-2xl p-6 border border-slate-800/50">
-                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2 block">Identifiant Machine (HWID)</label>
-                            <div className="flex items-center justify-between">
-                                <span className="text-xl font-mono font-black text-white tracking-tighter">{hwid}</span>
-                                <Smartphone className="h-5 w-5 text-slate-700" />
+                    <div className="relative space-y-8">
+                        <div className="bg-black/40 rounded-3xl p-6 border border-white/5">
+                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3 block text-center">Identifiant matériel unique (HWID)</label>
+                            <div className="flex flex-col items-center gap-4">
+                                <span className="text-3xl font-mono font-black text-white tracking-tighter bg-gradient-to-b from-white to-slate-400 bg-clip-text text-transparent">{hwid}</span>
+                                <button 
+                                    onClick={() => {
+                                        navigator.clipboard.writeText(hwid)
+                                        alert('Identifiant copié !')
+                                    }}
+                                    className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 rounded-full transition-all border border-white/5"
+                                >
+                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Copier l'identifiant</span>
+                                    <Smartphone className="h-3 w-3 text-slate-500" />
+                                </button>
                             </div>
                         </div>
 
                         <form onSubmit={handleActivate} className="space-y-6">
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block ml-1">Clé d'Activation</label>
-                                <div className="relative group">
-                                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                                        <Key className="h-4 w-4 text-slate-500 group-focus-within:text-orange-500 transition-colors" />
-                                    </div>
+                            <div className="space-y-3">
+                                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block ml-2">Clé de Licence Professionnelle</label>
+                                <div className="relative group/input">
+                                    <Key className="absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-500 group-focus-within/input:text-orange-500 transition-colors" />
                                     <input
                                         type="text"
                                         required
                                         value={key}
                                         onChange={(e) => setKey(e.target.value.toUpperCase())}
                                         placeholder="XXXX-XXXX-XXXX-XXXX"
-                                        className="w-full bg-slate-950/80 border border-slate-800 text-white rounded-2xl py-4 pl-12 pr-4 outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500 transition-all font-mono tracking-widest placeholder:text-slate-700 uppercase"
+                                        className="w-full bg-black/40 border border-white/10 text-white rounded-[1.5rem] py-5 pl-14 pr-6 outline-none focus:ring-2 focus:ring-orange-500/30 focus:border-orange-500 transition-all font-mono text-lg tracking-widest placeholder:text-slate-800 uppercase"
                                     />
                                 </div>
                             </div>
@@ -116,26 +131,30 @@ export default function ActivationPage() {
                             <button
                                 type="submit"
                                 disabled={activating || status === 'success'}
-                                className="w-full bg-orange-500 hover:bg-orange-600 disabled:opacity-50 disabled:hover:bg-orange-500 text-white font-black py-4 rounded-2xl shadow-lg shadow-orange-500/20 transition-all flex items-center justify-center gap-2 group"
+                                className="w-full bg-orange-500 hover:bg-orange-400 disabled:opacity-50 disabled:hover:bg-orange-500 text-white font-black py-5 rounded-[1.5rem] shadow-2xl shadow-orange-500/20 transition-all flex items-center justify-center gap-3 group/btn hover:scale-[1.02] active:scale-[0.98]"
                             >
                                 {activating ? (
-                                    <Loader2 className="h-5 w-5 animate-spin" />
+                                    <Loader2 className="h-6 w-6 animate-spin" />
                                 ) : status === 'success' ? (
-                                    <ShieldCheck className="h-5 w-5" />
+                                    <ShieldCheck className="h-6 w-6" />
                                 ) : (
                                     <>
-                                        Activer le logiciel
-                                        <CheckCircle className="h-5 w-5 opacity-0 group-hover:opacity-100 -translate-x-2 group-hover:translate-x-0 transition-all" />
+                                        <span className="text-lg uppercase tracking-wider">Activer le logiciel</span>
+                                        <ArrowRight className="h-5 w-5 opacity-0 group-hover/btn:opacity-100 -translate-x-2 group-hover/btn:translate-x-0 transition-all" />
                                     </>
                                 )}
                             </button>
                         </form>
 
                         {message && (
-                            <div className={`p-4 rounded-2xl flex items-center gap-3 animate-in fade-in slide-in-from-top-2 duration-300 ${
+                            <div className={`p-5 rounded-3xl flex items-center gap-4 animate-in fade-in slide-in-from-top-4 duration-500 ${
                                 status === 'success' ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' : 'bg-red-500/10 text-red-500 border border-red-500/20'
                             }`}>
-                                {status === 'success' ? <ShieldCheck className="h-5 w-5 shrink-0" /> : <ShieldAlert className="h-5 w-5 shrink-0" />}
+                                <div className={`h-10 w-10 rounded-2xl flex items-center justify-center flex-shrink-0 ${
+                                    status === 'success' ? 'bg-emerald-500/20' : 'bg-red-500/20'
+                                }`}>
+                                    {status === 'success' ? <ShieldCheck className="h-6 w-6" /> : <ShieldAlert className="h-6 w-6" />}
+                                </div>
                                 <p className="text-sm font-bold leading-tight">{message}</p>
                             </div>
                         )}
@@ -143,16 +162,20 @@ export default function ActivationPage() {
                 </div>
 
                 {/* Footer Info */}
-                <div className="mt-8 text-center space-y-4">
-                    <p className="text-slate-500 text-xs font-medium max-w-[280px] mx-auto leading-relaxed">
-                        Pour obtenir votre clé, veuillez contacter le **DG DIHI** en fournissant l'ID ci-dessus.
+                <div className="mt-12 text-center space-y-6 opacity-60 hover:opacity-100 transition-opacity">
+                    <p className="text-slate-500 text-[10px] font-bold uppercase tracking-widest leading-relaxed">
+                        Pour obtenir votre clé, contactez la Direction <br/>
+                        <span className="text-orange-500/80">GSN EXPERTISES GROUP</span>
                     </p>
-                    <div className="flex items-center justify-center gap-6 opacity-30 grayscale saturate-0 pointer-events-none grayscale-100">
-                        <Building className="h-4 w-4 text-white" />
-                        <span className="text-[10px] font-black text-white tracking-widest uppercase">GSN EXPERTISES GROUP</span>
+                    <div className="flex items-center justify-center gap-4">
+                        <div className="h-px w-4 bg-white/10"></div>
+                        <Building className="h-4 w-4 text-white/20" />
+                        <div className="h-px w-4 bg-white/10"></div>
                     </div>
                 </div>
             </div>
         </div>
     )
 }
+
+import { ArrowRight } from 'lucide-react'
