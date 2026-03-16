@@ -111,27 +111,29 @@ function escapeHtml(s: string): string {
 
 /**
  * Feuille de styles complète pour l'impression (aperçu écran + impression).
- * Exporté pour réutilisation dans l'aperçu Paramètres > Impression.
+ * @param format 'TICKET' | 'A4'
  */
-export function getPrintStyles(): string {
-  return `
+export function getPrintStyles(format: 'TICKET' | 'A4' = 'TICKET'): string {
+    const isA4 = format === 'A4'
+    return `
     * { box-sizing: border-box; }
     body {
       margin: 0;
-      padding: 16px;
+      padding: ${isA4 ? '40px' : '16px'};
       font-family: 'Segoe UI', system-ui, -apple-system, Arial, sans-serif;
-      font-size: 13px;
-      line-height: 1.4;
+      font-size: ${isA4 ? '14px' : '13px'};
+      line-height: 1.5;
       color: #1f2937;
       background: #f9fafb;
     }
     .print-document {
-      max-width: 320px;
+      max-width: ${isA4 ? '800px' : '320px'};
       margin: 0 auto;
-      padding: 24px;
+      padding: ${isA4 ? '40px' : '24px'};
       background: #fff;
-      border-radius: 8px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+      border-radius: ${isA4 ? '0' : '8px'};
+      box-shadow: ${isA4 ? 'none' : '0 1px 3px rgba(0,0,0,0.08)'};
+      min-height: ${isA4 ? '1120px' : 'auto'};
     }
     .print-document h1, .print-document h2 { margin: 0 0 8px; font-size: 1.1em; }
     .print-document p { margin: 4px 0; }
@@ -244,24 +246,46 @@ export function getPrintStyles(): string {
       }
       .print-document {
         max-width: none;
+        width: 100%;
         margin: 0;
-        padding: 12px;
+        padding: ${isA4 ? '20mm' : '5mm'};
         box-shadow: none;
+        border: none;
         border-radius: 0;
       }
       .print-document * { color-adjust: exact; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
       @page {
-        size: A4;
-        margin: 12mm;
+        size: ${isA4 ? 'A4' : '80mm auto'};
+        margin: 0;
       }
     }
+
+    /* Styles spécifiques A4 */
+    .a4-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 40px;
+      margin-bottom: 40px;
+    }
+    .a4-company-info h1 { font-size: 24px; color: #1e40af; margin-bottom: 8px; }
+    .a4-client-info { 
+      background: #f8fafc; 
+      padding: 20px; 
+      border-radius: 8px; 
+      border-left: 4px solid #1e40af;
+    }
+    .a4-client-info h3 { margin: 0 0 8px; font-size: 14px; text-transform: uppercase; color: #64748b; }
+    .a4-client-info p { margin: 4px 0; font-size: 15px; font-weight: 600; }
+    .a4-invoice-meta { text-align: right; }
+    .a4-invoice-meta h2 { font-size: 28px; color: #1e40af; text-transform: uppercase; margin: 0; }
+    .a4-invoice-meta p { font-size: 14px; color: #64748b; margin: 4px 0; }
   `
 }
 
 /**
  * Imprimer un document avec un template
  */
-export async function printDocument(templateId: number | null, type: 'VENTE' | 'ACHAT', data: TemplateData): Promise<void> {
+export async function printDocument(templateId: number | null, type: 'VENTE' | 'ACHAT', data: TemplateData, format: 'TICKET' | 'A4' = 'TICKET'): Promise<void> {
   if (typeof window === 'undefined') return
 
   try {
@@ -285,9 +309,9 @@ export async function printDocument(templateId: number | null, type: 'VENTE' | '
       }
     }
 
-    // Si pas de template, utiliser le template par défaut
+    // Si pas de template, utiliser le template par défaut approprié
     if (!templateContent) {
-      templateContent = getDefaultTemplate(type)
+      templateContent = format === 'A4' ? getDefaultA4Template(type) : getDefaultTemplate(type)
     }
 
     // Ajouter les données de l'entreprise aux données du template
@@ -307,7 +331,7 @@ export async function printDocument(templateId: number | null, type: 'VENTE' | '
 
     // Remplacer les variables
     const html = replaceTemplateVariables(templateContent, data)
-
+    
     // Créer une nouvelle fenêtre pour l'impression
     const printWindow = window.open('', '_blank')
     if (!printWindow) {
@@ -315,7 +339,7 @@ export async function printDocument(templateId: number | null, type: 'VENTE' | '
       return
     }
 
-    const printStyles = getPrintStyles()
+    const printStyles = getPrintStyles(format)
     printWindow.document.write(`
       <!DOCTYPE html>
       <html lang="fr">
@@ -387,6 +411,82 @@ export function getDefaultTemplate(type: 'VENTE' | 'ACHAT'): string {
   <p>Merci de votre visite !</p>
   <p><strong>{ENTREPRISE_NOM}</strong></p>
   {ENTREPRISE_PIED_DE_PAGE ? '<p style="margin-top: 8px; font-size: 10px;">{ENTREPRISE_PIED_DE_PAGE}</p>' : ''}
+</div>
+`
+}
+
+/**
+ * Template Facture A4 Premium
+ */
+export function getDefaultA4Template(type: 'VENTE' | 'ACHAT'): string {
+    const isVente = type === 'VENTE'
+    return `
+<div class="a4-grid">
+  <div class="a4-company-info">
+    <div style="margin-bottom: 20px;">{ENTREPRISE_LOGO}</div>
+    <h1>{ENTREPRISE_NOM}</h1>
+    <p> {ENTREPRISE_LOCALISATION}</p>
+    <p> {ENTREPRISE_CONTACT}</p>
+  </div>
+  <div class="a4-invoice-meta">
+    <h2>FACTURE</h2>
+    <p><strong>N° :</strong> {NUMERO}</p>
+    <p><strong>Date :</strong> {DATE}</p>
+    <p><strong>Heure :</strong> {HEURE}</p>
+    <div style="margin-top: 20px;" class="a4-client-info">
+      <h3>Destinataire</h3>
+      <p>{CLIENT_NOM}</p>
+      {CLIENT_CONTACT ? '<p>{CLIENT_CONTACT}</p>' : ''}
+      {CLIENT_LOCALISATION ? '<p>{CLIENT_LOCALISATION}</p>' : ''}
+      {CLIENT_NCC ? '<p style="font-size: 12px; color: #64748b; margin-top: 8px;">NCC: {CLIENT_NCC}</p>' : ''}
+    </div>
+  </div>
+</div>
+
+<div style="margin: 30px 0;">
+  <p style="font-size: 14px; color: #1e293b; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; margin-bottom: 15px;">
+    <strong>Objet :</strong> Vente de marchandises / prestations du {DATE}
+  </p>
+  {LIGNES}
+</div>
+
+<div style="display: flex; justify-content: flex-end; margin-top: 30px;">
+  <div style="width: 300px; background: #f8fafc; padding: 20px; border-radius: 8px;">
+    <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+      <span>Total Net :</span>
+      <span style="font-weight: 700; font-size: 18px; color: #1e40af;">{TOTAL}</span>
+    </div>
+    {MONTANT_PAYE ? \`
+    <div style="display: flex; justify-content: space-between; margin-bottom: 10px; color: #10b981;">
+      <span>Montant Payé :</span>
+      <span>{MONTANT_PAYE}</span>
+    </div>\` : ''}
+    {RESTE ? \`
+    <div style="display: flex; justify-content: space-between; margin-bottom: 10px; color: #ef4444; font-weight: 600;">
+      <span>Reste à Payer :</span>
+      <span>{RESTE}</span>
+    </div>\` : ''}
+    <div style="border-top: 1px solid #e2e8f0; margin-top: 10px; padding-top: 10px; font-size: 12px; color: #64748b; text-align: center;">
+      Mode de paiement : {MODE_PAIEMENT}
+    </div>
+  </div>
+</div>
+
+{OBSERVATION ? '<div style="margin-top: 40px; padding: 15px; background: #fffbeb; border: 1px dashed #f59e0b; border-radius: 6px; font-size: 13px;"><p style="margin:0"><strong>Note :</strong> {OBSERVATION}</p></div>' : ''}
+
+<div style="margin-top: 60px; display: flex; justify-content: space-between; align-items: flex-end;">
+  <div style="text-align: center; width: 200px; border-top: 1px solid #e2e8f0; padding-top: 10px; font-size: 12px; color: #94a3b8;">
+    Signature Client
+  </div>
+  <div style="text-align: center; width: 200px; border-top: 1px solid #e2e8f0; padding-top: 10px; font-size: 12px; color: #94a3b8;">
+    Cachet de l'entreprise
+  </div>
+</div>
+
+<div class="print-footer" style="margin-top: 100px;">
+  <hr>
+  <p>{ENTREPRISE_NOM} • {ENTREPRISE_CONTACT} • {ENTREPRISE_LOCALISATION}</p>
+  {ENTREPRISE_PIED_DE_PAGE ? '<p style="font-size: 11px;">{ENTREPRISE_PIED_DE_PAGE}</p>' : ''}
 </div>
 `
 }

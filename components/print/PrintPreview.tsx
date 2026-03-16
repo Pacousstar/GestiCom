@@ -8,6 +8,7 @@ import {
     replaceTemplateVariables,
     getPrintStyles,
     getDefaultTemplate,
+    getDefaultA4Template,
     printDocument,
 } from '@/lib/print-templates'
 
@@ -30,6 +31,7 @@ export default function PrintPreview({
     const [selectedTemplateId, setSelectedTemplateId] = useState<number | null>(
         defaultTemplateId || null
     )
+    const [format, setFormat] = useState<'TICKET' | 'A4'>('TICKET')
     const [loading, setLoading] = useState(false)
     const [previewHtml, setPreviewHtml] = useState('')
     const [enterpriseData, setEnterpriseData] = useState<{
@@ -125,7 +127,7 @@ export default function PrintPreview({
                 templateContent = getDefaultTemplate(type)
             }
 
-            if (!templateContent) templateContent = getDefaultTemplate(type)
+            if (!templateContent) templateContent = format === 'A4' ? getDefaultA4Template(type) : getDefaultTemplate(type)
 
             // Préparer les données
             const previewData = { ...data }
@@ -133,18 +135,23 @@ export default function PrintPreview({
             previewData.ENTREPRISE_CONTACT = enterpriseData.contact || previewData.ENTREPRISE_CONTACT || ''
             previewData.ENTREPRISE_LOCALISATION = enterpriseData.localisation || previewData.ENTREPRISE_LOCALISATION || ''
             previewData.ENTREPRISE_PIED_DE_PAGE = enterpriseData.piedDePage || ''
+            
+            // Si A4, on s'assure que le client est bien présent
+            if (format === 'A4' && !previewData.CLIENT_NOM) {
+                previewData.CLIENT_NOM = "Client Comptoir"
+            }
 
             // Traitement du logo
             if (logo) {
                 previewData.ENTREPRISE_LOGO = logo.startsWith('data:')
-                    ? `<img src="${logo}" alt="Logo" style="max-width: 150px; height: auto; display: block; margin: 0 auto;" />`
+                    ? `<img src="${logo}" alt="Logo" style="max-width: 200px; height: auto; display: block;" />`
                     : logo
             } else {
                 previewData.ENTREPRISE_LOGO = ''
             }
 
             const htmlContent = replaceTemplateVariables(templateContent, previewData)
-            const styles = getPrintStyles()
+            const styles = getPrintStyles(format)
 
             // Construire le document complet pour l'iframe
             const fullHtml = `
@@ -168,7 +175,7 @@ export default function PrintPreview({
         }
 
         generatePreview()
-    }, [isOpen, selectedTemplateId, data, type, enterpriseData, templates])
+    }, [isOpen, selectedTemplateId, data, type, enterpriseData, templates, format])
 
     // Mettre à jour l'iframe
     useEffect(() => {
@@ -217,7 +224,7 @@ export default function PrintPreview({
     }
 
     const handlePrint = async () => {
-        await printDocument(selectedTemplateId, type, data)
+        await printDocument(selectedTemplateId, type, data, format)
         onClose()
     }
 
@@ -262,14 +269,43 @@ export default function PrintPreview({
                                     </option>
                                 ))}
                             </select>
-                            <p className="mt-2 text-xs text-gray-500">
+                        </div>
+
+                        <div>
+                            <label className="mb-2 block text-sm font-medium text-gray-700">
+                                Format du document
+                            </label>
+                            <div className="grid grid-cols-2 gap-2">
+                                <button
+                                    onClick={() => setFormat('TICKET')}
+                                    className={`rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${
+                                        format === 'TICKET'
+                                            ? 'border-orange-600 bg-orange-50 text-orange-700'
+                                            : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'
+                                    }`}
+                                >
+                                    Ticket (80mm)
+                                </button>
+                                <button
+                                    onClick={() => setFormat('A4')}
+                                    className={`rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${
+                                        format === 'A4'
+                                            ? 'border-orange-600 bg-orange-50 text-orange-700'
+                                            : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'
+                                    }`}
+                                >
+                                    Facture (A4)
+                                </button>
+                            </div>
+                        </div>
+
+                        <p className="mt-n4 text-xs text-gray-500">
                                 Vous pouvez configurer plus de modèles dans{' '}
                                 <a href="/dashboard/parametres/impression" className="text-orange-600 hover:underline">
                                     Paramètres &gt; Impression
                                 </a>
                                 .
                             </p>
-                        </div>
 
                         <div className="mt-auto flex flex-col gap-3">
                             {emailModalOpen ? (
@@ -329,12 +365,12 @@ export default function PrintPreview({
                                 <Loader2 className="h-8 w-8 animate-spin text-orange-600" />
                             </div>
                         ) : (
-                            <div className="w-[380px] min-h-[500px] bg-white shadow-lg rounded-sm overflow-hidden transform scale-95 origin-top">
+                            <div className={`${format === 'A4' ? 'w-[700px]' : 'w-[380px]'} min-h-[500px] bg-white shadow-lg rounded-sm overflow-hidden transform scale-95 origin-top`}>
                                 {/* Iframe pour isoler le style */}
                                 <iframe
                                     ref={iframeRef}
                                     title="Aperçu impression"
-                                    className="w-full h-[600px] border-none"
+                                    className={`w-full ${format === 'A4' ? 'h-[900px]' : 'h-[600px]'} border-none`}
                                 />
                             </div>
                         )}
