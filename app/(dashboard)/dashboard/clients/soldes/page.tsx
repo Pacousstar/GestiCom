@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { Search, Loader2, Download, Filter, Wallet, FileText, Landmark } from 'lucide-react'
-import { useToast } from '@/hooks/use-toast'
+import { useToast } from '@/hooks/useToast'
 
 interface SoldeClient {
   id: number

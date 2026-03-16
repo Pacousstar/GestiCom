@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { Search, Loader2, Calendar, User, CreditCard, Hash, Coins, Download } from 'lucide-react'
-import { useToast } from '@/hooks/use-toast'
+import { useToast } from '@/hooks/useToast'
 
 interface Paiement {
   id: number
