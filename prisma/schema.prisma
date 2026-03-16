@@ -56,6 +56,8 @@ model Utilisateur {
   operationsBancaires OperationBancaire[]
   DashboardPreference DashboardPreference?
   transferts          Transfert[]
+  reglementsVente    ReglementVente[]
+  reglementsAchat    ReglementAchat[]
 }
 
 // MAGASINS
@@ -195,31 +197,76 @@ model Client {
   telephone     String?
   email         String?
   adresse       String?
+  localisation  String? // Localisation géographique
   type          String // "CREDIT" | "CASH"
   plafondCredit Float? // si CREDIT
+  soldeInitial  Float    @default(0) // Solde à l'ouverture du compte
   ncc           String? // Numéro de Compte Contribuable (SYSCOHADA)
   actif         Boolean  @default(true)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
-  ventes Vente[]
+  ventes     Vente[]
+  reglements ReglementVente[]
 
   @@index([actif])
 }
 
 // FOURNISSEURS
 model Fournisseur {
-  id        Int      @id @default(autoincrement())
-  code      String?  @unique
-  nom       String
-  telephone String?
-  email     String?
-  ncc       String? // Numéro de Compte Contribuable (SYSCOHADA)
-  actif     Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id           Int      @id @default(autoincrement())
+  code         String?  @unique
+  nom          String
+  telephone    String?
+  email        String?
+  localisation String? // Localisation géographique
+  ncc          String? // Numéro de Compte Contribuable (SYSCOHADA)
+  actif        Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
-  achats Achat[]
+  achats     Achat[]
+  reglements ReglementAchat[]
+}
+
+// RÈGLEMENTS CLIENTS
+model ReglementVente {
+  id            Int         @id @default(autoincrement())
+  date          DateTime    @default(now())
+  montant       Float
+  modePaiement  String // "ESPECES" | "MOBILE_MONEY" | "VIREMENT" | "CHEQUE"
+  venteId       Int? // Optionnel : lien direct avec une facture
+  vente         Vente?      @relation(fields: [venteId], references: [id], onDelete: SetNull)
+  clientId      Int
+  client        Client      @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  utilisateurId Int
+  utilisateur   Utilisateur @relation(fields: [utilisateurId], references: [id])
+  observation   String?
+  createdAt     DateTime    @default(now())
+
+  @@index([date])
+  @@index([clientId])
+  @@index([venteId])
+}
+
+// RÈGLEMENTS FOURNISSEURS
+model ReglementAchat {
+  id            Int         @id @default(autoincrement())
+  date          DateTime    @default(now())
+  montant       Float
+  modePaiement  String
+  achatId       Int?
+  achat         Achat?      @relation(fields: [achatId], references: [id], onDelete: SetNull)
+  fournisseurId Int
+  fournisseur   Fournisseur @relation(fields: [fournisseurId], references: [id], onDelete: Cascade)
+  utilisateurId Int
+  utilisateur   Utilisateur @relation(fields: [utilisateurId], references: [id])
+  observation   String?
+  createdAt     DateTime    @default(now())
+
+  @@index([date])
+  @@index([fournisseurId])
+  @@index([achatId])
 }
 
 // CAISSE (mouvements entrée/sortie)
@@ -292,7 +339,8 @@ model Vente {
   observation    String?
   createdAt      DateTime    @default(now())
 
-  lignes VenteLigne[]
+  lignes     VenteLigne[]
+  reglements ReglementVente[]
 
   @@index([date])
   @@index([numero])
@@ -333,7 +381,8 @@ model Achat {
   observation      String?
   createdAt        DateTime     @default(now())
 
-  lignes AchatLigne[]
+  lignes     AchatLigne[]
+  reglements ReglementAchat[]
 
   @@index([date])
 }

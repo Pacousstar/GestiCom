@@ -73,6 +73,8 @@ export const clientSchema = z.object({
   type: z.enum(['CASH', 'CREDIT'], { message: 'Le type doit être CASH ou CREDIT.' }),
   plafondCredit: z.coerce.number().min(0, 'Le plafond de crédit doit être positif.').nullable().optional(),
   ncc: z.string().max(50, 'Le NCC ne peut pas dépasser 50 caractères.').trim().nullable().optional(),
+  localisation: z.string().max(MAX_STRING).trim().nullable().optional(),
+  soldeInitial: z.coerce.number().min(0).default(0),
 }).refine(
   (data) => {
     if (data.type === 'CREDIT' && (!data.plafondCredit || data.plafondCredit <= 0)) {
@@ -92,6 +94,7 @@ export const fournisseurSchema = z.object({
   telephone: z.string().max(20, 'Le téléphone ne peut pas dépasser 20 caractères.').trim().nullable().optional(),
   email: z.string().email('Email invalide.').max(100, 'L\'email ne peut pas dépasser 100 caractères.').trim().nullable().optional(),
   ncc: z.string().max(50, 'Le NCC ne peut pas dépasser 50 caractères.').trim().nullable().optional(),
+  localisation: z.string().max(MAX_STRING).trim().nullable().optional(),
 })
 
 /** Magasin : code, nom, localisation */

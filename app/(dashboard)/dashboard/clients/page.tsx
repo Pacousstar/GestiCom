@@ -18,6 +18,8 @@ type Client = {
   type: string
   plafondCredit: number | null
   ncc: string | null
+  localisation: string | null
+  soldeInitial: number
   dette?: number
 }
 
@@ -40,6 +42,8 @@ export default function ClientsPage() {
     type: 'CASH',
     plafondCredit: '',
     ncc: '',
+    localisation: '',
+    soldeInitial: '',
   })
   const [userRole, setUserRole] = useState<string>('')
   const [selectedHistory, setSelectedHistory] = useState<{ id: number; nom: string } | null>(null)
@@ -126,10 +130,12 @@ export default function ClientsPage() {
         type: c.type,
         plafondCredit: c.plafondCredit != null ? String(c.plafondCredit) : '',
         ncc: c.ncc || '',
+        localisation: c.localisation || '',
+        soldeInitial: c.soldeInitial != null ? String(c.soldeInitial) : '',
       })
     } else {
       setEditing(null)
-      setFormData({ code: '', nom: '', telephone: '', type: 'CASH', plafondCredit: '', ncc: '' })
+      setFormData({ code: '', nom: '', telephone: '', type: 'CASH', plafondCredit: '', ncc: '', localisation: '', soldeInitial: '' })
     }
     setForm(true)
     setErr('')
@@ -150,6 +156,8 @@ export default function ClientsPage() {
       type: formData.type as 'CASH' | 'CREDIT',
       plafondCredit: plaf,
       ncc: formData.ncc.trim() || null,
+      localisation: formData.localisation.trim() || null,
+      soldeInitial: formData.soldeInitial ? Number(formData.soldeInitial) : 0,
     }
 
     const validation = validateForm(clientSchema, validationData)
@@ -329,7 +337,26 @@ export default function ClientsPage() {
               <input
                 value={formData.ncc}
                 onChange={(e) => setFormData((f) => ({ ...f, ncc: e.target.value }))}
-                placeholder="Numéro de compte contribuable"
+                placeholder="Ex: 0000000X"
+                className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 focus:border-orange-500 focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Localisation</label>
+              <input
+                value={formData.localisation}
+                onChange={(e) => setFormData((f) => ({ ...f, localisation: e.target.value }))}
+                placeholder="Ex: Abidjan, Cocody"
+                className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 focus:border-orange-500 focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Solde Initial (Déposé)</label>
+              <input
+                type="number"
+                value={formData.soldeInitial}
+                onChange={(e) => setFormData((f) => ({ ...f, soldeInitial: e.target.value }))}
+                placeholder="0"
                 className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 focus:border-orange-500 focus:outline-none"
               />
             </div>
@@ -379,6 +406,7 @@ export default function ClientsPage() {
                   <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-gray-600">Tél.</th>
                   <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-gray-600">Type</th>
                   <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-gray-600">NCC</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-gray-600">Localisation</th>
                   <th className="px-4 py-3 text-right text-xs font-semibold uppercase text-gray-600">Plafond</th>
                   <th className="px-4 py-3 text-right text-xs font-semibold uppercase text-gray-600">Dette</th>
                   <th className="px-4 py-3"></th>
@@ -396,6 +424,7 @@ export default function ClientsPage() {
                       </span>
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-600">{c.ncc || '—'}</td>
+                    <td className="px-4 py-3 text-sm text-gray-600">{c.localisation || '—'}</td>
                     <td className="px-4 py-3 text-right text-sm text-gray-600">
                       {c.type === 'CREDIT' && c.plafondCredit != null
                         ? `${Number(c.plafondCredit).toLocaleString('fr-FR')} F`

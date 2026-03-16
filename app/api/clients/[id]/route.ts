@@ -3,8 +3,8 @@ import { getSession } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 
 type ClientDelegate = {
-  findUnique: (args: object) => Promise<{ id: number; code: string | null; nom: string; telephone: string | null; type: string; plafondCredit: number | null } | null>
-  update: (args: object) => Promise<{ id: number; code: string | null; nom: string; telephone: string | null; type: string; plafondCredit: number | null }>
+  findUnique: (args: object) => Promise<{ id: number; code: string | null; nom: string; telephone: string | null; type: string; plafondCredit: number | null; localisation: string | null; soldeInitial: number } | null>
+  update: (args: object) => Promise<{ id: number; code: string | null; nom: string; telephone: string | null; type: string; plafondCredit: number | null; localisation: string | null; soldeInitial: number }>
   delete: (args: object) => Promise<unknown>
 }
 
@@ -51,6 +51,8 @@ export async function PATCH(
       ? (type === 'CREDIT' ? Math.max(0, Number(body.plafondCredit) || 0) : null)
       : undefined
     const ncc = body?.ncc !== undefined ? (String(body.ncc).trim() || null) : undefined
+    const localisation = body?.localisation !== undefined ? (String(body.localisation).trim() || null) : undefined
+    const soldeInitial = body?.soldeInitial !== undefined ? Number(body.soldeInitial) || 0 : undefined
     const actif = body?.actif !== undefined ? Boolean(body.actif) : undefined
 
     const data: Record<string, unknown> = {}
@@ -60,6 +62,8 @@ export async function PATCH(
     if (type !== undefined) data.type = type
     if (plafondCredit !== undefined) data.plafondCredit = plafondCredit
     if (ncc !== undefined) data.ncc = ncc
+    if (localisation !== undefined) data.localisation = localisation
+    if (soldeInitial !== undefined) data.soldeInitial = soldeInitial
     if (actif !== undefined) data.actif = actif
 
     const c = await clientRepo.update({ where: { id }, data: data as object })

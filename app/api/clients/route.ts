@@ -5,8 +5,8 @@ import { prisma } from '@/lib/db'
 import { requirePermission } from '@/lib/require-role'
 
 type ClientDelegate = {
-  findMany: (args: object) => Promise<Array<{ id: number; code: string | null; nom: string; telephone: string | null; type: string; plafondCredit: number | null; actif: boolean }>>
-  create: (args: object) => Promise<{ id: number; code: string | null; nom: string; telephone: string | null; email: string | null; adresse: string | null; type: string; plafondCredit: number | null }>
+  findMany: (args: object) => Promise<Array<{ id: number; code: string | null; nom: string; telephone: string | null; type: string; plafondCredit: number | null; localisation: string | null; soldeInitial: number; actif: boolean }>>
+  create: (args: object) => Promise<{ id: number; code: string | null; nom: string; telephone: string | null; email: string | null; adresse: string | null; localisation: string | null; type: string; plafondCredit: number | null; soldeInitial: number }>
 }
 
 const clientRepo = (prisma as unknown as { client: ClientDelegate }).client
@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
   const list = await clientRepo.findMany({
     where: { actif: true },
     orderBy: { nom: 'asc' },
-    select: { id: true, code: true, nom: true, telephone: true, type: true, plafondCredit: true, ncc: true },
+    select: { id: true, code: true, nom: true, telephone: true, type: true, plafondCredit: true, ncc: true, localisation: true, soldeInitial: true },
   })
   const filtered = q
     ? list.filter(
@@ -61,7 +61,10 @@ export async function GET(request: NextRequest) {
 
   const result = paginated.map((c) => {
     const base = { ...c }
-    if (c.type === 'CREDIT') (base as { dette?: number }).dette = detteByClient[c.id] ?? 0
+    if (c.type === 'CREDIT') {
+      const totalVentes = detteByClient[c.id] ?? 0
+      ;(base as any).dette = Math.max(0, totalVentes - (c.soldeInitial || 0))
+    }
     return base
   })
 
@@ -95,6 +98,8 @@ export async function POST(request: NextRequest) {
       ? Math.max(0, Number(body.plafondCredit))
       : null
     const ncc = body?.ncc != null ? String(body.ncc).trim() || null : null
+    const localisation = body?.localisation != null ? String(body.localisation).trim() || null : null
+    const soldeInitial = body?.soldeInitial != null ? Number(body.soldeInitial) || 0 : 0
 
     if (!nom) {
       return NextResponse.json({ error: 'Nom du client requis.' }, { status: 400 })
@@ -108,7 +113,7 @@ export async function POST(request: NextRequest) {
     }
 
     const c = await clientRepo.create({
-      data: { code, nom, telephone, email, adresse, type, plafondCredit, ncc, actif: true },
+      data: { code, nom, telephone, email, adresse, localisation, type, plafondCredit, ncc, soldeInitial, actif: true },
     })
 
     // Invalider le cache pour affichage immédiat

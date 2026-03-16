@@ -215,6 +215,26 @@ export async function comptabiliserReglementVente(data: {
     referenceId: data.venteId,
     utilisateurId: data.utilisateurId,
   })
+
+  // === AJOUT : Enregistrement dans ReglementVente ===
+  const vente = await prisma.vente.findUnique({
+    where: { id: data.venteId },
+    select: { clientId: true }
+  })
+
+  if (vente?.clientId) {
+    await prisma.reglementVente.create({
+      data: {
+        date: data.date,
+        montant: data.montant,
+        modePaiement: data.modePaiement,
+        venteId: data.venteId,
+        clientId: vente.clientId,
+        utilisateurId: data.utilisateurId,
+        observation: `Règlement facture ${data.numeroVente}`,
+      }
+    })
+  }
 }
 
 /**
@@ -342,6 +362,26 @@ export async function comptabiliserReglementAchat(data: {
     referenceId: data.achatId,
     utilisateurId: data.utilisateurId,
   })
+
+  // === AJOUT : Enregistrement dans ReglementAchat ===
+  const achat = await prisma.achat.findUnique({
+    where: { id: data.achatId },
+    select: { fournisseurId: true }
+  })
+
+  if (achat?.fournisseurId) {
+    await prisma.reglementAchat.create({
+      data: {
+        date: data.date,
+        montant: data.montant,
+        modePaiement: data.modePaiement,
+        achatId: data.achatId,
+        fournisseurId: achat.fournisseurId,
+        utilisateurId: data.utilisateurId,
+        observation: `Règlement achat ${data.numeroAchat}`,
+      }
+    })
+  }
 }
 
 /**

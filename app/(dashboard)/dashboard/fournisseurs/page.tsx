@@ -17,6 +17,7 @@ type Fournisseur = {
   telephone: string | null
   email: string | null
   ncc: string | null
+  localisation: string | null
   dette?: number
 }
 
@@ -32,7 +33,7 @@ export default function FournisseursPage() {
   const { success: showSuccess, error: showError } = useToast()
   const [currentPage, setCurrentPage] = useState(1)
   const [pagination, setPagination] = useState<{ page: number; limit: number; total: number; totalPages: number } | null>(null)
-  const [formData, setFormData] = useState({ code: '', nom: '', telephone: '', email: '', ncc: '' })
+  const [formData, setFormData] = useState({ code: '', nom: '', telephone: '', email: '', ncc: '', localisation: '' })
   const [userRole, setUserRole] = useState<string>('')
   const [selectedHistory, setSelectedHistory] = useState<{ id: number; nom: string } | null>(null)
   const [historyData, setHistoryData] = useState<any[]>([])
@@ -117,10 +118,11 @@ export default function FournisseursPage() {
         telephone: f.telephone || '',
         email: f.email || '',
         ncc: f.ncc || '',
+        localisation: f.localisation || '',
       })
     } else {
       setEditing(null)
-      setFormData({ code: '', nom: '', telephone: '', email: '', ncc: '' })
+      setFormData({ code: '', nom: '', telephone: '', email: '', ncc: '', localisation: '' })
     }
     setForm(true)
     setErr('')
@@ -136,6 +138,7 @@ export default function FournisseursPage() {
       telephone: formData.telephone.trim() || null,
       email: formData.email.trim() || null,
       ncc: formData.ncc.trim() || null,
+      localisation: formData.localisation.trim() || null,
     }
 
     const validation = validateForm(fournisseurSchema, validationData)
@@ -317,6 +320,15 @@ export default function FournisseursPage() {
                 className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 focus:border-orange-500 focus:outline-none"
               />
             </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Localisation</label>
+              <input
+                value={formData.localisation}
+                onChange={(e) => setFormData((f) => ({ ...f, localisation: e.target.value }))}
+                placeholder="Ex: Abidjan, Port-Bouët"
+                className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 focus:border-orange-500 focus:outline-none"
+              />
+            </div>
             <div className="flex gap-2 sm:col-span-2">
               <button type="submit" className="rounded-lg bg-orange-500 px-4 py-2 text-white hover:bg-orange-600">
                 {editing ? 'Enregistrer' : 'Créer'}
@@ -351,7 +363,8 @@ export default function FournisseursPage() {
                   <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-gray-600">Tél.</th>
                   <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-gray-600">Email</th>
                   <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-gray-600">NCC</th>
-                  <th className="px-4 py-3 text-right text-xs font-semibold uppercase text-gray-600">Solde</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-gray-600">Localisation</th>
+                  <th className="px-4 py-3 text-right text-xs font-semibold uppercase text-gray-600">Crédit Fournisseur</th>
                   <th className="px-4 py-3"></th>
                 </tr>
               </thead>
@@ -363,6 +376,7 @@ export default function FournisseursPage() {
                     <td className="px-4 py-3 text-sm text-gray-600">{f.telephone || '—'}</td>
                     <td className="px-4 py-3 text-sm text-gray-600">{f.email || '—'}</td>
                     <td className="px-4 py-3 text-sm text-gray-600">{f.ncc || '—'}</td>
+                    <td className="px-4 py-3 text-sm text-gray-600">{f.localisation || '—'}</td>
                     <td className={`px-4 py-3 text-right text-sm font-bold ${f.dette && f.dette > 0 ? 'text-red-600' : 'text-green-600'}`}>
                       {Number(f.dette ?? 0).toLocaleString('fr-FR')} F
                     </td>
