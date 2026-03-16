@@ -180,22 +180,7 @@ export default function DepensesPage() {
       observation: formData.observation.trim() || null,
     }
 
-    // Vérifier si on est hors-ligne
-    if (!isOnline()) {
-      const url = editing ? `/api/depenses/${editing.id}` : '/api/depenses'
-      const method = editing ? 'PATCH' : 'POST'
-      addToSyncQueue({
-        action: editing ? 'UPDATE' : 'CREATE',
-        entity: 'DEPENSE',
-        entityId: editing?.id,
-        data: requestData,
-        endpoint: url,
-        method: method as 'POST' | 'PATCH',
-      })
-      resetForm()
-      showSuccess(editing ? 'Dépense modifiée localement. Elle sera synchronisée dès que la connexion sera rétablie.' : 'Dépense enregistrée localement. Elle sera synchronisée dès que la connexion sera rétablie.')
-      return
-    }
+    // Dans GestiCom Offline, l'enregistrement se fait toujours directement vers le serveur local.
 
     try {
       const url = editing ? `/api/depenses/${editing.id}` : '/api/depenses'

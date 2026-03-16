@@ -107,7 +107,7 @@ export default function DashboardLayoutClient({
   const { toasts, removeToast, success: showSuccess, error: showError } = useToast()
   const pathname = usePathname()
   const router = useRouter()
-  const [isOnline, setIsOnline] = useState(true)
+  const [isServerConnected, setIsServerConnected] = useState(true)
   const [syncQueueLength, setSyncQueueLength] = useState(0)
   const [syncing, setSyncing] = useState(false)
   const [toutesLues, setToutesLues] = useState(false)
@@ -125,49 +125,39 @@ export default function DashboardLayoutClient({
     return () => clearInterval(interval)
   }, [])
 
-  // Surveiller le statut en ligne/hors-ligne
+  // Surveiller le statut du serveur local (Heartbeat)
   useEffect(() => {
-    setIsOnline(navigator.onLine)
+    const checkServer = async () => {
+      try {
+        const res = await fetch('/api/auth/check', { method: 'GET' });
+        setIsServerConnected(res.ok);
+      } catch (e) {
+        setIsServerConnected(false);
+      }
+    };
 
-    const handleOnline = () => {
-      setIsOnline(true)
-      syncPendingOperations()
-    }
-    const handleOffline = () => setIsOnline(false)
+    checkServer();
+    const interval = setInterval(checkServer, 10000); // Toutes les 10 secondes
 
-    window.addEventListener('online', handleOnline)
-    window.addEventListener('offline', handleOffline)
-
-    // DEV ONLY: Désactiver les Service Workers obsolètes (workbox) qui interceptent et bloquent /api/ en mode dev
-    if (process.env.NODE_ENV === 'development' && typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
-      navigator.serviceWorker.getRegistrations().then((registrations) => {
-        for (const registration of registrations) {
-          registration.unregister();
-        }
-      });
-    }
-
-    // Vérifier la file d'attente au chargement
-    checkSyncQueue()
-
-    return () => {
-      window.removeEventListener('online', handleOnline)
-      window.removeEventListener('offline', handleOffline)
-    }
+    return () => clearInterval(interval);
   }, [])
+
+  // Vérifier la file d'attente au chargement
+  useEffect(() => {
+    checkSyncQueue();
+  }, []);
 
   // Vérifier la file d'attente toutes les 30 secondes
   useEffect(() => {
     const interval = setInterval(() => {
-      if (document.hidden) return; // Ne rien faire en arrière-plan
-
-      checkSyncQueue()
-      if (isOnline) {
-        syncPendingOperations()
+      if (document.hidden) return;
+      checkSyncQueue();
+      if (isServerConnected) {
+        syncPendingOperations();
       }
-    }, 30000)
-    return () => clearInterval(interval)
-  }, [isOnline])
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [isServerConnected]);
 
   function checkSyncQueue() {
     if (typeof window === 'undefined') return
@@ -180,7 +170,7 @@ export default function DashboardLayoutClient({
   }
 
   async function syncPendingOperations() {
-    if (typeof window === 'undefined' || !isOnline || syncing) return
+    if (typeof window === 'undefined' || !isServerConnected || syncing) return
 
     try {
       const queueStr = localStorage.getItem('gesticom_sync_queue')
@@ -479,14 +469,14 @@ export default function DashboardLayoutClient({
               </form>
             </div>
             <div className="flex items-center gap-2">
-              {/* Indicateur de statut en ligne/hors-ligne */}
-              {!isOnline && (
-                <div className="flex items-center gap-2 rounded-lg bg-orange-100 px-3 py-1.5 text-sm text-orange-800">
-                  <div className="h-2 w-2 rounded-full bg-orange-600 animate-pulse"></div>
-                  <span>Hors-ligne</span>
+              {/* Indicateur de statut du serveur local */}
+              {!isServerConnected && (
+                <div className="flex items-center gap-2 rounded-lg bg-red-100 px-3 py-1.5 text-sm text-red-800">
+                  <div className="h-2 w-2 rounded-full bg-red-600 animate-pulse"></div>
+                  <span>Serveur Déconnecté</span>
                 </div>
               )}
-              {isOnline && syncQueueLength > 0 && (
+              {isServerConnected && syncQueueLength > 0 && (
                 <div className="flex items-center gap-2 rounded-lg bg-blue-100 px-3 py-1.5 text-sm text-blue-800">
                   {syncing ? (
                     <>

@@ -212,27 +212,8 @@ export default function StockPage() {
       observation: entreeForm.observation.trim() || undefined,
     }
 
-    // Vérifier si on est hors-ligne
-    if (!isOnline()) {
-      addToSyncQueue({
-        action: 'CREATE',
-        entity: 'STOCK',
-        data: requestData,
-        endpoint: '/api/stock/entree',
-        method: 'POST',
-      })
-      setShowEntree(false)
-      setEntreeForm({
-        date: new Date().toISOString().split('T')[0],
-        magasinId: '',
-        produitId: '',
-        quantite: '1',
-        observation: '',
-      })
-      showSuccess('Entrée de stock enregistrée localement. Elle sera synchronisée dès que la connexion sera rétablie.')
-      setSaving(false)
-      return
-    }
+    // Dans GestiCom Offline, on enregistre toujours directement vers le serveur local.
+    // La file d'attente (SyncQueue) est gérée dans le catch en cas de défaillance du serveur.
 
     try {
       const res = await fetch('/api/stock/entree', {
@@ -278,27 +259,7 @@ export default function StockPage() {
       observation: sortieForm.observation.trim() || undefined,
     }
 
-    // Vérifier si on est hors-ligne
-    if (!isOnline()) {
-      addToSyncQueue({
-        action: 'CREATE',
-        entity: 'STOCK',
-        data: requestData,
-        endpoint: '/api/stock/sortie',
-        method: 'POST',
-      })
-      setShowSortie(false)
-      setSortieForm({
-        date: new Date().toISOString().split('T')[0],
-        magasinId: '',
-        produitId: '',
-        quantite: '1',
-        observation: '',
-      })
-      showSuccess('Sortie de stock enregistrée localement. Elle sera synchronisée dès que la connexion sera rétablie.')
-      setSaving(false)
-      return
-    }
+    // Dans GestiCom Offline, on enregistre toujours directement vers le serveur local.
 
     try {
       const res = await fetch('/api/stock/sortie', {

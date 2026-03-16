@@ -113,19 +113,7 @@ export default function CaissePage() {
       montant,
     }
 
-    // Vérifier si on est hors-ligne
-    if (!isOnline()) {
-      addToSyncQueue({
-        action: 'CREATE',
-        entity: 'CAISSE',
-        data: requestData,
-        endpoint: '/api/caisse',
-        method: 'POST',
-      })
-      setFormOpen(false)
-      showSuccess(formType === 'ENTREE' ? 'Entrée enregistrée localement. Elle sera synchronisée dès que la connexion sera rétablie.' : 'Sortie enregistrée localement. Elle sera synchronisée dès que la connexion sera rétablie.')
-      return
-    }
+    // Dans GestiCom Offline, l'enregistrement se fait toujours directement vers le serveur local.
 
     setSaving(true)
     try {

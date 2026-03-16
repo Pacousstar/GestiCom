@@ -318,29 +318,7 @@ export default function AchatsPage() {
       })),
     }
 
-    // Vérifier si on est hors-ligne
-    if (!isOnline()) {
-      // Ajouter à la file d'attente
-      addToSyncQueue({
-        action: 'CREATE',
-        entity: 'ACHAT',
-        data: requestData,
-        endpoint: '/api/achats',
-        method: 'POST',
-      })
-      showSuccess('Achat enregistré localement. Il sera synchronisé dès que la connexion sera rétablie.')
-      setForm(false)
-      setFormData({
-        date: new Date().toISOString().split('T')[0],
-        magasinId: '',
-        fournisseurId: '',
-        fournisseurLibre: '',
-        modePaiement: 'ESPECES',
-        montantPaye: '',
-        lignes: [],
-      })
-      return
-    }
+    // Dans GestiCom Offline, l'enregistrement se fait toujours directement vers le serveur local.
 
     try {
       const res = await fetch('/api/achats', {

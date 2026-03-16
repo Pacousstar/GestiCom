@@ -18,7 +18,7 @@ const prisma = new PrismaClient({
   }
 });
 
-const FILENAME = 'Valeur de stock par produit.xls';
+const FILENAME = 'Quincaillerie ETB.xlsx';
 // On récupère le chemin depuis les arguments ou on cherche dans le dossier parent (racine de l'app ou clé USB)
 let XLS_PATH = process.argv[2] || path.join(__dirname, '..', FILENAME);
 

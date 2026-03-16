@@ -145,34 +145,7 @@ export default function FournisseursPage() {
       return
     }
 
-    // Vérifier si on est hors-ligne
-    if (!isOnline()) {
-      if (editing) {
-        addToSyncQueue({
-          action: 'UPDATE',
-          entity: 'FOURNISSEUR',
-          entityId: editing.id,
-          data: validationData,
-          endpoint: `/api/fournisseurs/${editing.id}`,
-          method: 'PATCH',
-        })
-        showSuccess('Fournisseur modifié localement. Il sera synchronisé dès que la connexion sera rétablie.')
-      } else {
-        addToSyncQueue({
-          action: 'CREATE',
-          entity: 'FOURNISSEUR',
-          data: validationData,
-          endpoint: '/api/fournisseurs',
-          method: 'POST',
-        })
-        showSuccess('Fournisseur enregistré localement. Il sera synchronisé dès que la connexion sera rétablie.')
-      }
-      setForm(false)
-      setEditing(null)
-      setCurrentPage(1)
-      fetchList(1)
-      return
-    }
+    // Dans GestiCom Offline, l'enregistrement se fait toujours directement vers le serveur local.
 
     try {
       if (editing) {
@@ -468,6 +441,22 @@ export default function FournisseursPage() {
                        <span className="font-mono text-sm font-bold text-gray-900">{h.numero}</span>
                        <span className="text-xs text-gray-500">{new Date(h.date).toLocaleDateString('fr-FR')}</span>
                     </div>
+
+                    <div className="mt-2 mb-4 space-y-2">
+                      {h.lignes && h.lignes.length > 0 && h.lignes.map((l: any, idx: number) => (
+                        <div key={idx} className="flex items-start justify-between text-[11px] text-gray-600 border-b border-gray-100 pb-1 last:border-0">
+                          <div className="flex-1">
+                            <span className="font-bold text-gray-800">{l.quantite}</span>
+                            <span className="mx-1">x</span>
+                            <span>{l.produit?.designation || l.designation}</span>
+                          </div>
+                          <div className="font-medium text-gray-900">
+                            {(l.quantite * l.prixUnitaire).toLocaleString()} F
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
                     <div className="flex items-center justify-between">
                        <p className="text-lg font-bold text-gray-900">{h.montantTotal.toLocaleString()} F</p>
                        <span className={`text-[10px] px-2 py-0.5 rounded font-bold uppercase ${h.statutPaiement === 'PAYE' ? 'bg-green-100 text-green-800' : 'bg-orange-100 text-orange-800'}`}>

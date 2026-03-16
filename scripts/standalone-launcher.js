@@ -38,57 +38,9 @@ if (fs.existsSync(envPath)) {
   })
 }
 
-const dbProject = path.join(projectRoot, 'prisma', 'gesticom.db')
-const prismaStandaloneDir = path.join(standaloneDir, 'prisma')
-const dbStandalone = path.join(prismaStandaloneDir, 'gesticom.db')
-
-if (!fs.existsSync(dbProject)) {
-  console.warn('Attention: prisma/gesticom.db introuvable. Lancez "npx prisma db push" et "npm run db:seed".')
-} else {
-  if (!fs.existsSync(prismaStandaloneDir)) {
-    fs.mkdirSync(prismaStandaloneDir, { recursive: true })
-  }
-  fs.copyFileSync(dbProject, dbStandalone)
-}
-
-// DATABASE_URL : chemin SANS espaces (SQLite/Prisma échoue avec des espaces dans le chemin, ex. "GSN EXPETISES  GROUP")
-const dbAbs = path.resolve(standaloneDir, 'prisma', 'gesticom.db')
-
-function toFileUrl(p, win32NoThirdSlash) {
-  const s = String(p).replace(/\\/g, '/')
-  return win32NoThirdSlash ? 'file:' + s : 'file:///' + s
-}
-
-let databaseUrl = toFileUrl(dbAbs, false)
-let dbToPersist = dbStandalone
-
-if (process.platform === 'win32' && dbAbs.includes(' ') && fs.existsSync(dbStandalone)) {
-  // Copier la base vers un chemin SANS espaces (Prisma/SQLite sous Windows)
-  const candidates = [
-    path.join('C:', 'Users', 'Public', 'gesticom', 'gesticom.db'),
-    path.join('C:', 'gesticom', 'gesticom.db'),
-  ]
-  for (const fallbackDb of candidates) {
-    const fallbackDir = path.dirname(fallbackDb)
-    try {
-      if (!fs.existsSync(fallbackDir)) fs.mkdirSync(fallbackDir, { recursive: true })
-      fs.copyFileSync(dbStandalone, fallbackDb)
-      databaseUrl = toFileUrl(fallbackDb, true)
-      dbToPersist = fallbackDb
-      console.log('[GestiCom] Base SQLite utilisee: ' + fallbackDb)
-      break
-    } catch (e) {
-      if (fallbackDb === candidates[candidates.length - 1]) {
-        console.warn(
-          '[GestiCom] Impossible de copier la base vers un chemin sans espaces. ' +
-          'Conseil: deplacez le projet vers C:\\Projets\\gesticom ou executer en administrateur.'
-        )
-      }
-    }
-  }
-}
-
-process.env.DATABASE_URL = databaseUrl
+// DATABASE_URL : On laisse lib/db.ts gérer le verrouillage sur C:/gesticom/gesticom.db en production.
+// On s'assure juste que les variables d'environnement de base sont présentes.
+const databaseUrl = process.env.DATABASE_URL || "file:C:/gesticom/gesticom.db";
 
 // Fichier lu par le bootstrap AVANT require(server)
 fs.writeFileSync(path.join(standaloneDir, '.database_url'), databaseUrl, 'utf8')
@@ -134,6 +86,9 @@ if (!fs.existsSync(staticStandalone)) {
 process.env.NODE_ENV = process.env.NODE_ENV || 'production'
 process.env.PORT = process.env.PORT || '3000'
 
+console.log('[GestiCom] Lancement du moteur de production...');
+console.log('[GestiCom] DATABASE_URL=' + databaseUrl);
+
 const child = spawn('node', ['run-standalone.js'], {
   cwd: standaloneDir,
   env: process.env,
@@ -151,13 +106,7 @@ child.on('error', (err) => {
   process.exit(1)
 })
 child.on('exit', (code) => {
-  if (fs.existsSync(dbToPersist) && fs.existsSync(dbProject)) {
-    try {
-      fs.copyFileSync(dbToPersist, dbProject)
-    } catch (e) {
-      console.warn('Impossible de recopier la base vers le projet:', e.message)
-    }
-  }
+  console.log('[GestiCom] Arret du moteur de production.');
   cronChild.kill('SIGINT') // S'assurer de tuer le processus de background
   process.exit(code || 0)
 })

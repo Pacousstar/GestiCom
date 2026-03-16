@@ -7,31 +7,30 @@ import { prisma } from './db'
  * Pour les autres, utilise l'entiteId de l'utilisateur en base (sécurité).
  */
 export async function getEntiteId(session: Session): Promise<number> {
-  if (session.role === 'SUPER_ADMIN') {
-    // SUPER_ADMIN peut utiliser l'entité sélectionnée dans la session
-    return session.entiteId || session.userId // Fallback si pas défini
+  const potentialId = (session.role === 'SUPER_ADMIN')
+    ? (session.entiteId || 0)
+    : 0;
+
+  // Si on a un ID de session (pour SUPER_ADMIN), on vérifie son existence
+  if (potentialId > 0) {
+    const exists = await prisma.entite.findUnique({ where: { id: potentialId }, select: { id: true } });
+    if (exists) return potentialId;
   }
-  
-  // Pour les autres rôles ou si SUPER_ADMIN n'a pas d'entité valide
+
+  // Pour les autres rôles ou si l'ID de session est invalide, on cherche l'ID de l'utilisateur en base
   const user = await prisma.utilisateur.findUnique({
     where: { id: session.userId },
     select: { entiteId: true },
-  })
-  
-  const potentialId = user?.entiteId || session.entiteId
+  });
 
-  if (potentialId) {
-    // Vérifier si l'entité existe vraiment en base
-    const exists = await prisma.entite.findUnique({
-      where: { id: potentialId },
-      select: { id: true }
-    })
-    if (exists) return potentialId
+  if (user?.entiteId) {
+    const exists = await prisma.entite.findUnique({ where: { id: user.entiteId }, select: { id: true } });
+    if (exists) return user.entiteId;
   }
 
-  // Fallback ultime : première entité trouvée (pour éviter P2003)
-  const firstEntite = await prisma.entite.findFirst({ select: { id: true } })
-  if (firstEntite) return firstEntite.id
+  // Fallback ultime : première entité trouvée
+  const firstEntite = await prisma.entite.findFirst({ select: { id: true } });
+  if (firstEntite) return firstEntite.id;
 
-  return 0 // Cas théorique sans aucune entité
+  return 0; // Aucune entité en base
 }

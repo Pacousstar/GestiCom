@@ -338,20 +338,7 @@ export default function ProduitsPage() {
       quantiteInitiale: Math.max(0, Number(formData.quantiteInitiale) || 0),
     }
 
-    // Vérifier si on est hors-ligne
-    if (!isOnline()) {
-      addToSyncQueue({
-        action: 'CREATE',
-        entity: 'PRODUIT',
-        data: requestData,
-        endpoint: '/api/produits',
-        method: 'POST',
-      })
-      setForm(false)
-      setFormData({ code: '', codeBarres: '', designation: '', categorie: 'DIVERS', unite: 'unite', magasinId: '', prixAchat: '', prixVente: '', seuilMin: '5', quantiteInitiale: '0' })
-      showSuccess('Produit enregistré localement. Il sera synchronisé dès que la connexion sera rétablie.')
-      return
-    }
+    // Dans GestiCom Offline, on enregistre toujours vers le serveur local.
 
     try {
       const res = await fetch('/api/produits', {

@@ -142,7 +142,9 @@ export async function syncAll(): Promise<{ success: number; failed: number; erro
  */
 export function isOnline(): boolean {
   if (typeof window === 'undefined') return true
-  return navigator.onLine
+  // Dans une application installée localement, le "vrai" onLine est la disponibilité du serveur local.
+  // navigator.onLine ne concerne que l'internet mondial, ce qui est non pertinent ici.
+  return true 
 }
 
 /**

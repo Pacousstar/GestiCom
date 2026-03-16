@@ -185,22 +185,7 @@ export default function ChargesPage() {
       return
     }
 
-    // Vérifier si on est hors-ligne
-    if (!isOnline()) {
-      const url = editing ? `/api/charges/${editing.id}` : '/api/charges'
-      const method = editing ? 'PATCH' : 'POST'
-      addToSyncQueue({
-        action: editing ? 'UPDATE' : 'CREATE',
-        entity: 'CHARGE',
-        entityId: editing?.id,
-        data: validationData,
-        endpoint: url,
-        method: method as 'POST' | 'PATCH',
-      })
-      resetForm()
-      showSuccess(editing ? 'Charge modifiée localement. Elle sera synchronisée dès que la connexion sera rétablie.' : 'Charge enregistrée localement. Elle sera synchronisée dès que la connexion sera rétablie.')
-      return
-    }
+    // Dans GestiCom Offline, l'enregistrement se fait toujours directement vers le serveur local.
 
     setSaving(true)
     try {

@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import dynamic from 'next/dynamic'
 import { useSearchParams } from 'next/navigation'
-import { ShoppingCart, Plus, Loader2, Trash2, XCircle, Eye, FileSpreadsheet, Printer, X, Search, Camera } from 'lucide-react'
+import { ShoppingCart, Plus, Loader2, Trash2, XCircle, Eye, FileSpreadsheet, Printer, X, Search, Camera, Wallet, ChevronRight } from 'lucide-react'
 import { printDocument, generateLignesHTML, type TemplateData } from '@/lib/print-templates'
 import PrintPreview from '@/components/print/PrintPreview'
 import { useToast } from '@/hooks/useToast'
@@ -106,6 +106,9 @@ export default function VentesPage() {
   } | null>(null)
   const [ajoutStockQuantite, setAjoutStockQuantite] = useState('')
   const [ajoutStockSaving, setAjoutStockSaving] = useState(false)
+  const [showReglement, setShowReglement] = useState<{ id: number; numero: string; reste: number } | null>(null)
+  const [reglementData, setReglementData] = useState({ montant: '', modePaiement: 'ESPECES' })
+  const [savingReglement, setSavingReglement] = useState(false)
 
   // Récupérer le templateId par défaut pour VENTE
   // Récupérer le templateId par défaut pour VENTE
@@ -354,34 +357,8 @@ export default function VentesPage() {
       })),
     }
 
-    // Vérifier si on est hors-ligne
-    if (!isOnline()) {
-      // Ajouter à la file d'attente
-      addToSyncQueue({
-        action: 'CREATE',
-        entity: 'VENTE',
-        data: requestData,
-        endpoint: '/api/ventes',
-        method: 'POST',
-      })
-      setSubmitting(false)
-      showSuccess('Vente enregistrée localement. Elle sera synchronisée dès que la connexion sera rétablie.')
-      setForm(false)
-      setAddLignesPopupOpen(false)
-      setPopupLignes([])
-      setPopupAjoutProduit({ produitId: '', quantite: '1', prixUnitaire: '', tva: '', remise: '', recherche: '' })
-      setFormData({
-        date: new Date().toISOString().split('T')[0],
-        magasinId: '',
-        clientId: '',
-        clientLibre: '',
-        modePaiement: 'ESPECES',
-        montantPaye: '',
-        remiseGlobale: '',
-        lignes: [],
-      })
-      return
-    }
+    // Dans GestiCom Offline, on tente toujours l'enregistrement direct vers le serveur local.
+    // La file d'attente (SyncQueue) n'est utilisée que si le serveur local est injoignable (géré dans le catch).
 
     try {
       const res = await fetch('/api/ventes', {
@@ -631,6 +608,38 @@ export default function VentesPage() {
     }
   }
 
+  const handleReglement = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!showReglement) return
+    setSavingReglement(true)
+    try {
+      const res = await fetch(`/api/ventes/${showReglement.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          montant: Number(reglementData.montant),
+          modePaiement: reglementData.modePaiement
+        }),
+      })
+      if (res.ok) {
+        showSuccess('Règlement enregistré avec succès.')
+        setShowReglement(null)
+        setReglementData({ montant: '', modePaiement: 'ESPECES' })
+        fetchVentes()
+        if (detailVente?.id === showReglement.id) {
+          handleVoirDetail(showReglement.id)
+        }
+      } else {
+        const d = await res.json()
+        showError(d.error || 'Erreur lors du règlement.')
+      }
+    } catch (e) {
+      showError('Erreur réseau.')
+    } finally {
+      setSavingReglement(false)
+    }
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
@@ -773,6 +782,7 @@ export default function VentesPage() {
                 >
                   <option value="ESPECES">Espèces</option>
                   <option value="MOBILE_MONEY">Mobile money</option>
+                  <option value="VIREMENT">Virement</option>
                   <option value="CREDIT">Crédit</option>
                 </select>
               </div>
@@ -939,33 +949,34 @@ export default function VentesPage() {
               </div>
             </div>
 
-            {formData.modePaiement === 'CREDIT' && (
+            {formData.lignes.length > 0 && (
               <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
-                <h3 className="mb-3 text-sm font-semibold text-amber-900">Paiement à crédit</h3>
-                <div className="grid gap-4 sm:grid-cols-2">
+                <h3 className="mb-2 text-sm font-semibold text-gray-700">Paiement (avance / reste à payer)</h3>
+                <div className="grid gap-3 sm:grid-cols-3">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">Montant payé (avance) FCFA</label>
+                    <label className="block text-xs font-medium text-gray-500">Total à payer</label>
+                    <p className="mt-0.5 font-semibold text-gray-900">{total.toLocaleString('fr-FR')} FCFA</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Montant payé (avance)</label>
                     <input
                       type="number"
                       min="0"
                       step="1"
                       value={formData.montantPaye}
                       onChange={(e) => setFormData((f) => ({ ...f, montantPaye: e.target.value }))}
-                      placeholder="0 si tout à crédit"
-                      className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 focus:border-orange-500 focus:outline-none"
+                      placeholder={formData.modePaiement === 'CREDIT' ? '0' : String(total)}
+                      className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-gray-900 bg-white focus:border-orange-500 focus:outline-none"
                     />
+                    <p className="mt-1 text-xs text-gray-500">Laisser vide = tout payé (sauf si Crédit)</p>
                   </div>
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium text-gray-700">Total de la vente : {total.toLocaleString('fr-FR')} FCFA</p>
-                    <p className="text-sm font-medium text-gray-700">Reste à payer</p>
-                    <p className="text-lg font-bold text-amber-800">
-                      {Math.max(0, total - (formData.montantPaye !== '' ? Number(formData.montantPaye) : 0)).toLocaleString('fr-FR')} FCFA
+                  <div>
+                    <label className="block text-xs font-medium text-gray-500">Reste à payer</label>
+                    <p className="mt-0.5 font-semibold text-amber-800">
+                      {Math.max(0, total - (Number(formData.montantPaye) || 0)).toLocaleString('fr-FR')} FCFA
                     </p>
                   </div>
                 </div>
-                {total === 0 && (
-                  <p className="mt-2 text-xs text-amber-700">Ajoutez des lignes ci-dessus pour que le reste à payer se calcule.</p>
-                )}
               </div>
             )}
 
@@ -1192,6 +1203,15 @@ export default function VentesPage() {
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-1">
+                          {v.statutPaiement !== 'PAYE' && v.statut !== 'ANNULEE' && (
+                            <button
+                              onClick={() => setShowReglement({ id: v.id, numero: v.numero, reste: Number(v.montantTotal) - (Number(v.montantPaye) || 0) })}
+                              className="rounded p-1.5 text-orange-600 hover:bg-orange-100"
+                              title="Enregistrer un règlement"
+                            >
+                              <Wallet className="h-4 w-4" />
+                            </button>
+                          )}
                           <button
                             onClick={() => handleVoirDetail(v.id)}
                             disabled={loadingDetail === v.id}
@@ -1261,6 +1281,18 @@ export default function VentesPage() {
                   <Printer className="h-4 w-4" />
                   Imprimer
                 </button>
+                {detailVente.statutPaiement !== 'PAYE' && detailVente.statut !== 'ANNULEE' && (
+                  <button
+                    onClick={() => {
+                      setShowReglement({ id: detailVente.id, numero: detailVente.numero, reste: Number(detailVente.montantTotal) - (Number(detailVente.montantPaye) || 0) })
+                    }}
+                    className="rounded-lg border-2 border-orange-300 bg-orange-50 px-3 py-2 text-sm font-medium text-orange-700 hover:bg-orange-100 flex items-center gap-1.5"
+                    title="Enregistrer un nouveau règlement"
+                  >
+                    <Wallet className="h-4 w-4" />
+                    Régler
+                  </button>
+                )}
                 <button onClick={() => setDetailVente(null)} className="rounded p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-700">×</button>
               </div>
             </div>
@@ -1441,12 +1473,14 @@ export default function VentesPage() {
                     showSuccess(`Stock ajouté avec succès (${quantite} unités).`)
                     setStockInsuffisantModal(null)
                     setAjoutStockQuantite('')
-                    // Rafraîchir les produits localement pour mettre à jour les disponibilités
-                    if (typeof refetchProduits === 'function') await refetchProduits()
-                    // Réessayer l'enregistrement de la vente immédiatement
+                    
+                    // Rafraîchir les produits pour mettre à jour les disponibilités locales
+                    refetchProduits()
+                    
+                    // Réessayer l'enregistrement de la vente après un court délai pour laisser le state se mettre à jour
                     setTimeout(() => {
                       doEnregistrerVente(stockInsuffisantModal.lignes)
-                    }, 100)
+                    }, 500)
                   } else {
                     showError(data.error || 'Erreur lors de l\'ajout du stock.')
                   }
@@ -1511,6 +1545,63 @@ export default function VentesPage() {
           data={printData}
           defaultTemplateId={defaultTemplateId}
         />
+      )}
+
+      {showReglement && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-md rounded-xl border border-orange-200 bg-white p-6 shadow-xl">
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-gray-900">Règlement Client {showReglement.numero}</h2>
+              <button onClick={() => setShowReglement(null)} className="rounded p-1 hover:bg-gray-100"><X className="h-5 w-5 text-gray-500" /></button>
+            </div>
+            <form onSubmit={handleReglement} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Reste à payer</label>
+                <div className="mt-1 text-lg font-bold text-orange-600">{showReglement.reste.toLocaleString('fr-FR')} FCFA</div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Montant du règlement *</label>
+                <input
+                  type="number"
+                  required
+                  max={showReglement.reste}
+                  value={reglementData.montant}
+                  onChange={(e) => setReglementData(prev => ({ ...prev, montant: e.target.value }))}
+                  placeholder={`Max ${showReglement.reste}`}
+                  className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-gray-900 bg-white focus:border-orange-500 focus:outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Mode de paiement</label>
+                <select
+                  value={reglementData.modePaiement}
+                  onChange={(e) => setReglementData(prev => ({ ...prev, modePaiement: e.target.value }))}
+                  className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 focus:border-orange-500 focus:outline-none"
+                >
+                  <option value="ESPECES">Espèces</option>
+                  <option value="MOBILE_MONEY">Mobile money</option>
+                  <option value="VIREMENT">Virement</option>
+                </select>
+              </div>
+              <div className="flex gap-2 pt-2">
+                <button
+                  type="submit"
+                  disabled={savingReglement}
+                  className="flex-1 rounded-lg bg-orange-500 px-4 py-2 text-white hover:bg-orange-600 disabled:opacity-60"
+                >
+                  {savingReglement ? <Loader2 className="h-4 w-4 animate-spin mx-auto" /> : 'Enregistrer le règlement'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowReglement(null)}
+                  className="rounded-lg border-2 border-gray-400 bg-gray-200 px-4 py-2 font-medium text-gray-900 hover:bg-gray-300"
+                >
+                  Annuler
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
 
       {/* Modal scanner code-barres — chargé dynamiquement, 100% offline */}

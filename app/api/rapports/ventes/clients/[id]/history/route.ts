@@ -32,7 +32,17 @@ export async function GET(
             where,
             orderBy: { date: 'desc' },
             include: {
-                magasin: { select: { nom: true } }
+                magasin: { select: { nom: true } },
+                lignes: {
+                    include: {
+                        produit: {
+                            select: {
+                                designation: true,
+                                code: true
+                            }
+                        }
+                    }
+                }
             }
         })
 

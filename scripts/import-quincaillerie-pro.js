@@ -4,11 +4,18 @@ const path = require('path');
 const fs = require('fs');
 
 const prisma = new PrismaClient();
-// On récupère le chemin depuis l'argument ou on utilise le chemin par défaut
-const filePath = process.argv[2] || 'C:/Users/GSN EXPETISES  GROUP/Projets/INSTALLATION_GESTICOM/Quincaillerie ETB.xlsx';
+const bcrypt = require('bcryptjs');
+
+// On récupère le chemin depuis l'argument ou on cherche dans le dossier parent (kit d'installation)
+let filePath = process.argv[2];
+if (!filePath) {
+  // Fallback intelligent : si on est dans C:\GestiCom\app\scripts, on cherche la quincaillerie dans le parent du parent
+  filePath = path.join(__dirname, '..', '..', 'Quincaillerie ETB.xlsx');
+}
 
 async function main() {
   console.log('--- Démarrage de l\'importation Quincaillerie PRO (FIX) ---');
+  console.log('Source :', filePath);
   
   try {
     if (!fs.existsSync(filePath)) {
@@ -25,6 +32,7 @@ async function main() {
     console.log('--- Nettoyage de la base de données (RAZ) ---');
     await prisma.$executeRawUnsafe('PRAGMA foreign_keys = OFF;');
     
+    // On vide TOUT sauf Utilisateur (qu'on va mettre à jour)
     const tables = [
       'VenteLigne', 'AchatLigne', 'TransfertLigne', 'Stock', 'Mouvement',
       'Vente', 'Achat', 'Transfert', 'Depense', 'Charge', 'EcritureComptable',
@@ -34,11 +42,8 @@ async function main() {
     for (const table of tables) {
       const tableName = table.charAt(0).toLowerCase() + table.slice(1);
       try {
-        await prisma[tableName].deleteMany({});
-        console.log(`Table ${table} vidée.`);
-      } catch (e) {
-        console.log(`Note: Table ${table} non vidée ou inexistante (${e.message}).`);
-      }
+          await prisma[tableName].deleteMany({});
+      } catch (e) {}
     }
     
     await prisma.$executeRawUnsafe('PRAGMA foreign_keys = ON;');
@@ -65,7 +70,28 @@ async function main() {
       }
     });
 
-    // 2. Recherche d'un admin pour l'entité si nécessaire (mais ici on fait juste l'import produits)
+    // 2. Rétablissement de l'Administrateur (ID 1)
+    const hash = await bcrypt.hash('Admin@123', 10);
+    const admin = await prisma.utilisateur.upsert({
+      where: { id: 1 },
+      update: {
+        entiteId: entite.id,
+        motDePasse: hash,
+        nom: 'Administrateur',
+        login: 'admin',
+        actif: true
+      },
+      create: {
+        id: 1,
+        login: 'admin',
+        nom: 'Administrateur',
+        motDePasse: hash,
+        role: 'SUPER_ADMIN',
+        entiteId: entite.id,
+        actif: true
+      }
+    });
+    console.log('✅ Administrateur opérationnel (admin / Admin@123)');
     
     // 3. Regroupement par désignation (Dédoublonnage)
     const uniqueMap = new Map();

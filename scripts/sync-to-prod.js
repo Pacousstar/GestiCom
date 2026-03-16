@@ -8,6 +8,7 @@ async function syncToProd() {
   
   const syncDir = (target) => {
     console.log(`📂 Déploiement vers ${target}...`);
+    console.log(`🏠 Racine projet : ${projectRoot}`);
     try {
       if (fs.existsSync(target)) {
         fs.emptyDirSync(target);
@@ -15,8 +16,8 @@ async function syncToProd() {
         fs.ensureDirSync(target);
       }
 
-      const standalonePath = path.join(projectRoot, '.next/standalone');
-      const appSourcePath = path.join(standalonePath, 'Projets/gesticom2');
+      const standalonePath = path.join(projectRoot, '.next', 'standalone');
+      const appSourcePath = standalonePath; // Dans cette config, tout est à la racine de standalone
 
       // Dans standalone, Next met les modules à la racine et le code de l'app dans le dossier projet
       if (fs.existsSync(path.join(standalonePath, 'node_modules'))) {
@@ -36,6 +37,9 @@ async function syncToProd() {
       fs.ensureDirSync(path.join(target, 'prisma'));
       fs.copySync(path.join(projectRoot, 'prisma/schema.prisma'), path.join(target, 'prisma/schema.prisma'));
       fs.copySync(path.join(projectRoot, '.env'), path.join(target, '.env'));
+      if (fs.existsSync(path.join(projectRoot, '.database_url'))) {
+        fs.copySync(path.join(projectRoot, '.database_url'), path.join(target, '.database_url'));
+      }
 
       // Dépendances critiques
       const critical = ['prisma', '@prisma', 'xlsx-prototype-pollution-fixed', 'bcryptjs', 'fs-extra'];
@@ -62,12 +66,21 @@ async function syncToProd() {
     }
   };
 
-  if (!fs.existsSync(path.join(projectRoot, '.next/standalone'))) {
-    console.error('❌ Erreur: .next/standalone introuvable.');
-    return;
-  }
-
   console.log('🚀 Synchronisation GLOBALE (Production + Installateur)...');
+  const standaloneCandidate = path.join(projectRoot, '.next', 'standalone');
+  console.log(`🔍 Vérification standalone : ${standaloneCandidate}`);
+  if (!fs.existsSync(standaloneCandidate)) {
+    console.error('❌ Erreur: .next/standalone introuvable.');
+    // Chercher un niveau au dessus au cas où Next l'a mis à la racine du workspace
+    const workspaceCandidate = path.join(projectRoot, '..', '..', '.next', 'standalone');
+    console.log(`🔍 Recherche alternative : ${workspaceCandidate}`);
+    if (fs.existsSync(workspaceCandidate)) {
+       console.log('✅ Trouvé à la racine du workspace !');
+       // Ajustement des chemins si nécessaire
+    } else {
+       return;
+    }
+  }
   syncDir(prodDir);
   syncDir(installDir);
 

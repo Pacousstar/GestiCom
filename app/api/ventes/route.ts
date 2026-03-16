@@ -81,7 +81,7 @@ export async function POST(request: NextRequest) {
     const magasinId = Number(body?.magasinId)
     const clientId = body?.clientId != null ? Number(body.clientId) : null
     const clientLibre = body?.clientLibre != null ? String(body.clientLibre).trim() || null : null
-    const modePaiement = ['ESPECES', 'MOBILE_MONEY', 'CREDIT'].includes(String(body?.modePaiement || ''))
+    const modePaiement = ['ESPECES', 'MOBILE_MONEY', 'VIREMENT', 'CREDIT'].includes(String(body?.modePaiement || ''))
       ? String(body.modePaiement)
       : 'ESPECES'
     const remiseGlobale = body?.remiseGlobale != null ? Math.max(0, Number(body.remiseGlobale) || 0) : 0

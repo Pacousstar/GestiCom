@@ -17,49 +17,17 @@ if (process.env.NODE_ENV !== 'production' && process.platform === 'win32') {
     } catch (_) { }
   }
 }
-// Production (portable) : URL = C:\GestiCom-Portable\database_url.txt (priorité), sinon LOCALAPPDATA, puis .database_url.
+// Production : VERROUILLAGE TOTAL sur la base centrale C:\gesticom\gesticom.db
 if (process.env.NODE_ENV === 'production') {
-  try {
-    const hasValidUrl = process.env.DATABASE_URL?.startsWith('file:')
-    if (!hasValidUrl && process.platform === 'win32') {
-      const prodPath = path.join('C:', 'GestiCom-Portable', 'database_url.txt')
-      if (fs.existsSync(prodPath)) {
-        const url = fs.readFileSync(prodPath, 'utf8').trim()
-        if (url) process.env.DATABASE_URL = url
-      }
-      if (!process.env.DATABASE_URL && process.env.LOCALAPPDATA) {
-        const fixedPath = path.join(process.env.LOCALAPPDATA, 'GestiComPortable', 'database_url.txt')
-        if (fs.existsSync(fixedPath)) {
-          const url = fs.readFileSync(fixedPath, 'utf8').trim()
-          if (url) process.env.DATABASE_URL = url
-        }
-      }
-    }
-    if (!hasValidUrl && !process.env.DATABASE_URL) {
-      const cwdFile = path.join(process.cwd(), '.database_url')
-      if (fs.existsSync(cwdFile)) {
-        const url = fs.readFileSync(cwdFile, 'utf8').trim()
-        if (url) process.env.DATABASE_URL = url
-      }
-    }
-  } catch (_) {
-    // ignorer
-  }
-  // Sous Windows, SQLite (erreur 14) peut refuser les chemins avec %20 ; on décode l'URL pour utiliser des espaces réels
-  if (process.env.DATABASE_URL && process.platform === 'win32' && process.env.DATABASE_URL.startsWith('file:')) {
-    try {
-      const raw = process.env.DATABASE_URL
-      const decoded = 'file:' + decodeURIComponent(raw.replace(/^file:\/?\/?/, ''))
-      if (decoded !== raw) process.env.DATABASE_URL = decoded
-    } catch (_) {
-      // garder l'URL telle quelle
-    }
-  }
-  if (!process.env.DATABASE_URL) {
-    console.error('[lib/db] ERREUR: DATABASE_URL non défini en production')
-  } else {
-    console.log('[lib/db] DATABASE_URL=' + process.env.DATABASE_URL)
-  }
+  const centralDb = "C:/gesticom/gesticom.db";
+  
+  // On force le chemin absolu standard GSN - AUCUNE EXCEPTION
+  process.env.DATABASE_URL = `file:${centralDb}`;
+  
+  console.log('==========================================================');
+  console.log('[lib/db] PRODUCTION : BASE DE DONNEES VERROUILLEE SUR :');
+  console.log('         ' + process.env.DATABASE_URL);
+  console.log('==========================================================');
 }
 
 export const prisma = globalForPrisma.prisma ?? new PrismaClient({

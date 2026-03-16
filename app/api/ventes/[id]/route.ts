@@ -95,3 +95,73 @@ export async function DELETE(
     return NextResponse.json({ error: 'Erreur serveur.' }, { status: 500 })
   }
 }
+
+/** Mise à jour du règlement (Enregistrer un paiement sur une vente à crédit) */
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const session = await getSession()
+  if (!session) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+
+  const id = Number((await params).id)
+  try {
+    const body = await request.json()
+    const montantReglement = Math.max(0, Number(body?.montant) || 0)
+    const modePaiement = body?.modePaiement || 'ESPECES'
+
+    if (montantReglement <= 0) {
+      return NextResponse.json({ error: 'Montant invalide.' }, { status: 400 })
+    }
+
+    const vente = await prisma.vente.findUnique({
+      where: { id },
+      include: { magasin: true }
+    })
+
+    if (!vente) return NextResponse.json({ error: 'Vente introuvable.' }, { status: 404 })
+
+    const nouveauMontantPaye = Math.min(vente.montantTotal, (vente.montantPaye || 0) + montantReglement)
+    const nouveauStatut = nouveauMontantPaye >= vente.montantTotal ? 'PAYE' : 'PARTIEL'
+
+    // 1. Mettre à jour la vente
+    const updatedVente = await prisma.vente.update({
+      where: { id },
+      data: {
+        montantPaye: nouveauMontantPaye,
+        statutPaiement: nouveauStatut
+      }
+    })
+
+    // 2. Enregistrer le mouvement de caisse
+    await prisma.caisse.create({
+      data: {
+        date: new Date(),
+        magasinId: vente.magasinId,
+        type: 'ENTREE',
+        motif: `Règlement Vente ${vente.numero}`,
+        montant: montantReglement,
+        utilisateurId: session.userId,
+      }
+    })
+
+    // 3. Comptabilisation
+    const { comptabiliserReglementVente } = await import('@/lib/comptabilisation')
+    await comptabiliserReglementVente({
+      venteId: vente.id,
+      numeroVente: vente.numero,
+      date: new Date(),
+      montant: montantReglement,
+      modePaiement: modePaiement,
+      utilisateurId: session.userId,
+    })
+
+    revalidatePath('/dashboard/ventes')
+    revalidatePath('/api/ventes')
+    
+    return NextResponse.json(updatedVente)
+  } catch (e) {
+    console.error('PATCH /api/ventes/[id]:', e)
+    return NextResponse.json({ error: 'Erreur serveur.' }, { status: 500 })
+  }
+}

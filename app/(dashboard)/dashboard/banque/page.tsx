@@ -217,18 +217,7 @@ export default function BanquePage() {
       compteId: compteIdFinal,
     }
 
-    if (!isOnline()) {
-      addToSyncQueue({
-        action: editingBanque ? 'UPDATE' : 'CREATE',
-        entity: 'BANQUE',
-        data: requestData,
-        endpoint: editingBanque ? `/api/banques/${editingBanque.id}` : '/api/banques',
-        method: editingBanque ? 'PATCH' : 'POST',
-      })
-      resetFormBanque()
-      showSuccess(editingBanque ? 'Banque modifiée localement.' : 'Banque créée localement.')
-      return
-    }
+    // Dans GestiCom Offline, l'enregistrement se fait toujours directement vers le serveur local.
 
     setSaving(true)
     try {
@@ -286,18 +275,7 @@ export default function BanquePage() {
       observation: formOperationData.observation.trim() || null,
     }
 
-    if (!isOnline()) {
-      addToSyncQueue({
-        action: 'CREATE',
-        entity: 'OPERATION_BANQUE',
-        data: requestData,
-        endpoint: '/api/banques/operations',
-        method: 'POST',
-      })
-      resetFormOperation()
-      showSuccess('Opération enregistrée localement.')
-      return
-    }
+    // Dans GestiCom Offline, l'enregistrement se fait toujours directement vers le serveur local.
 
     setSaving(true)
     try {
