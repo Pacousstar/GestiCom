@@ -13,6 +13,9 @@ import {
   DollarSign,
   Receipt,
   ShoppingBag,
+  Download,
+  Share2,
+  FileSpreadsheet
 } from 'lucide-react'
 import InitButton from './InitButton'
 import DiagnosticButton from './DiagnosticButton'
@@ -258,6 +261,29 @@ export default async function ComptabilitePage({
           Appliquer
         </button>
       </form>
+
+      <div className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-blue-200 bg-blue-50 p-6 shadow-sm">
+        <div>
+          <h2 className="text-lg font-bold text-blue-900">Exports Experts (GestiCom Pro)</h2>
+          <p className="text-sm text-blue-700">Générez vos fichiers pour votre expert-comptable (Format Sage SAS ou Excel).</p>
+        </div>
+        <div className="flex gap-3">
+          <a
+            href={`/api/comptabilite/export-pro?type=SAGE&mois=${mois}&annee=${annee}&dateDebut=${annee}-${String(mois).padStart(2, '0')}-01&dateFin=${annee}-${String(mois).padStart(2, '0')}-${new Date(annee, mois, 0).getDate()}`}
+            className="flex items-center gap-2 rounded-xl bg-blue-600 px-6 py-3 font-bold text-white hover:bg-blue-700 shadow-md transition-all transform active:scale-95"
+          >
+            <Share2 className="h-5 w-5" />
+            Export Sage (.txt)
+          </a>
+          <a
+            href={`/api/comptabilite/export-pro?type=EXCEL&mois=${mois}&annee=${annee}&dateDebut=${annee}-${String(mois).padStart(2, '0')}-01&dateFin=${annee}-${String(mois).padStart(2, '0')}-${new Date(annee, mois, 0).getDate()}`}
+            className="flex items-center gap-2 rounded-xl border-2 border-green-600 bg-white px-6 py-3 font-bold text-green-700 hover:bg-green-50 shadow-md transition-all transform active:scale-95"
+          >
+            <FileSpreadsheet className="h-5 w-5" />
+            Synthèse Excel
+          </a>
+        </div>
+      </div>
 
       <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-amber-800">
         <p className="text-sm font-medium">

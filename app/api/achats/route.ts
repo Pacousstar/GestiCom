@@ -177,21 +177,39 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    // LOGIQUE : Un produit peut être dans plusieurs magasins, mais chaque achat crée/ajoute au stock du magasin spécifié
-    // Un produit enregistré dans un magasin lors d'un achat ne sera pas automatiquement ajouté dans les autres magasins
+    // Mise à jour des stocks et du PAMP
     for (const l of lignesValides) {
-      // Vérifier si le produit a déjà un stock dans le magasin de l'achat
+      // 1. Récupérer le produit et son stock global pour le calcul du PAMP
+      const targetProduit = await prisma.produit.findUnique({
+        where: { id: l.produitId },
+        include: { stocks: true }
+      })
+
+      if (targetProduit) {
+        const stockGlobalActuel = targetProduit.stocks.reduce((acc, s) => acc + s.quantite, 0)
+        const pampActuel = targetProduit.pamp || targetProduit.prixAchat || 0
+        
+        // Formule PAMP : ((Stock_Actuel * PAMP_Actuel) + (Qte_Achetee * Prix_Achat_Nouveau)) / (Stock_Actuel + Qte_Achetee)
+        const nouveauStockGlobal = stockGlobalActuel + l.quantite
+        const nouveauPamp = ((stockGlobalActuel * pampActuel) + (l.quantite * l.prixUnitaire)) / nouveauStockGlobal
+        
+        await prisma.produit.update({
+          where: { id: l.produitId },
+          data: { pamp: nouveauPamp }
+        })
+      }
+
+      // 2. Gérer le stock par magasin
       let st = await prisma.stock.findUnique({
         where: { produitId_magasinId: { produitId: l.produitId, magasinId } },
       })
 
       if (!st) {
-        // Le produit n'a pas de stock dans ce magasin, créer un nouveau stock dans le magasin de l'achat
-        // Même si le produit a un stock dans un autre magasin, on crée un stock séparé pour ce magasin
         st = await prisma.stock.create({
           data: { produitId: l.produitId, magasinId, quantite: 0, quantiteInitiale: 0 },
         })
       }
+
       await prisma.mouvement.create({
         data: {
           type: 'ENTREE',
@@ -203,6 +221,7 @@ export async function POST(request: NextRequest) {
           observation: `Achat ${num}`,
         },
       })
+
       await prisma.stock.update({
         where: { id: st.id },
         data: { quantite: { increment: l.quantite } },

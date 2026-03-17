@@ -17,28 +17,35 @@ async function syncToProd() {
       }
 
       const standalonePath = path.join(projectRoot, '.next', 'standalone');
-      const appSourcePath = standalonePath; // Dans cette config, tout est à la racine de standalone
+      let appSourcePath = standalonePath;
+
+      // Next.js met souvent l'app dans standalone/nom-du-projet ou standalone/Projets/nom-du-projet
+      const internalPath = path.join(standalonePath, 'Projets', 'gesticom2');
+      if (fs.existsSync(internalPath)) {
+        appSourcePath = internalPath;
+        console.log(`📍 Source de l'application trouvée dans : ${appSourcePath}`);
+      }
 
       // Dans standalone, Next met les modules à la racine et le code de l'app dans le dossier projet
       if (fs.existsSync(path.join(standalonePath, 'node_modules'))) {
-        fs.copySync(path.join(standalonePath, 'node_modules'), path.join(target, 'node_modules'));
+        fs.copySync(path.join(standalonePath, 'node_modules'), path.join(target, 'node_modules'), { dereference: true });
       }
       
       if (fs.existsSync(appSourcePath)) {
-        fs.copySync(appSourcePath, target, { overwrite: true });
+        fs.copySync(appSourcePath, target, { overwrite: true, dereference: true });
       }
 
       // Copier .next/static et public
       fs.ensureDirSync(path.join(target, '.next/static'));
-      fs.copySync(path.join(projectRoot, '.next/static'), path.join(target, '.next/static'));
-      fs.copySync(path.join(projectRoot, 'public'), path.join(target, 'public'));
+      fs.copySync(path.join(projectRoot, '.next/static'), path.join(target, '.next/static'), { dereference: true });
+      fs.copySync(path.join(projectRoot, 'public'), path.join(target, 'public'), { dereference: true });
 
       // Config et Prisma
       fs.ensureDirSync(path.join(target, 'prisma'));
-      fs.copySync(path.join(projectRoot, 'prisma/schema.prisma'), path.join(target, 'prisma/schema.prisma'));
-      fs.copySync(path.join(projectRoot, '.env'), path.join(target, '.env'));
+      fs.copySync(path.join(projectRoot, 'prisma/schema.prisma'), path.join(target, 'prisma/schema.prisma'), { dereference: true });
+      fs.copySync(path.join(projectRoot, '.env'), path.join(target, '.env'), { dereference: true });
       if (fs.existsSync(path.join(projectRoot, '.database_url'))) {
-        fs.copySync(path.join(projectRoot, '.database_url'), path.join(target, '.database_url'));
+        fs.copySync(path.join(projectRoot, '.database_url'), path.join(target, '.database_url'), { dereference: true });
       }
 
       // Dépendances critiques
@@ -47,7 +54,7 @@ async function syncToProd() {
         const src = path.join(projectRoot, 'node_modules', m);
         const dest = path.join(target, 'node_modules', m);
         if (fs.existsSync(src)) {
-          fs.copySync(src, dest, { overwrite: true });
+          fs.copySync(src, dest, { overwrite: true, dereference: true });
         }
       });
 
@@ -57,7 +64,7 @@ async function syncToProd() {
       scriptsToCopy.forEach(s => {
         const src = path.join(projectRoot, 'scripts', s);
         if (fs.existsSync(src)) {
-          fs.copySync(src, path.join(target, 'scripts', s));
+          fs.copySync(src, path.join(target, 'scripts', s), { dereference: true });
         }
       });
 

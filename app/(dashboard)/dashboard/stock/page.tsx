@@ -14,8 +14,17 @@ type StockRow = {
   quantite: number
   quantiteInitiale: number
   createdAt?: string
-  produit: { id: number; code: string; designation: string; categorie: string; seuilMin: number; prixAchat: number | null; prixVente: number | null }
+  produit: { id: number; code: string; designation: string; categorie: string; seuilMin: number; prixAchat: number | null; pamp: number | null; prixVente: number | null }
   magasin: { id: number; code: string; nom: string }
+}
+
+type AlerteRupture = {
+  id: number
+  code: string
+  designation: string
+  stockActuel: number
+  vitesseVenteQuotidienne: number
+  joursRestants: number
 }
 
 export default function StockPage() {
@@ -77,6 +86,9 @@ export default function StockPage() {
   } | null>(null)
   const [ajoutStockQuantite, setAjoutStockQuantite] = useState('')
   const [ajoutStockSaving, setAjoutStockSaving] = useState(false)
+  const [alertesRupture, setAlertesRupture] = useState<AlerteRupture[]>([])
+  const [showIntelligence, setShowIntelligence] = useState(false)
+  const [loadingIntelligence, setLoadingIntelligence] = useState(false)
 
   const refetchProduits = () => {
     fetch('/api/produits?complet=1')
@@ -86,6 +98,25 @@ export default function StockPage() {
       })
       .catch(() => setProduits([]))
   }
+
+  const fetchIntelligence = async () => {
+    setLoadingIntelligence(true)
+    try {
+      const res = await fetch('/api/rapports/alertes-stock')
+      if (res.ok) {
+        const data = await res.json()
+        setAlertesRupture(data)
+      }
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setLoadingIntelligence(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchIntelligence()
+  }, [])
 
   useEffect(() => {
     Promise.all([
@@ -596,6 +627,13 @@ export default function StockPage() {
           <ClipboardList className="h-4 w-4" />
           Inventaire
         </button>
+        <button
+          onClick={() => { setShowIntelligence(true); fetchIntelligence(); }}
+          className="flex items-center gap-2 rounded-lg border-2 border-blue-500 bg-blue-50 px-3 py-2 text-sm font-medium text-blue-800 hover:bg-blue-100 shadow-sm"
+        >
+          <Loader2 className={`h-4 w-4 ${loadingIntelligence ? 'animate-spin' : ''}`} />
+          Intelligence Stock {alertesRupture.length > 0 && <span className="rounded-full bg-red-600 px-1.5 py-0.5 text-[10px] text-white animate-pulse">{alertesRupture.length}</span>}
+        </button>
         {alertes.length > 0 && (
           <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
             <AlertTriangle className="h-5 w-5" />
@@ -955,7 +993,8 @@ export default function StockPage() {
                   <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-gray-600">Magasin</th>
                   <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-gray-600">Code</th>
                   <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-gray-600">Désignation</th>
-                  <th className="px-4 py-3 text-right text-xs font-semibold uppercase text-gray-600">Prix achat</th>
+                  <th className="px-4 py-3 text-right text-xs font-semibold uppercase text-gray-600">P.A (Init)</th>
+                  <th className="px-4 py-3 text-right text-xs font-semibold uppercase text-gray-600">PAMP (Pro)</th>
                   <th className="px-4 py-3 text-right text-xs font-semibold uppercase text-gray-600">Qté</th>
                   <th className="px-4 py-3 text-right text-xs font-semibold uppercase text-gray-600">Qté init.</th>
                   <th className="px-4 py-3 text-right text-xs font-semibold uppercase text-gray-600">Seuil</th>
@@ -974,8 +1013,11 @@ export default function StockPage() {
                       <td className="px-4 py-3 text-sm text-gray-600">{s.magasin.code}</td>
                       <td className="px-4 py-3 font-mono text-sm text-gray-900">{s.produit.code}</td>
                       <td className="px-4 py-3 text-sm text-gray-900">{s.produit.designation}</td>
-                      <td className="px-4 py-3 text-right text-sm text-gray-600">
+                      <td className="px-4 py-3 text-right text-xs text-gray-500 italic">
                         {s.produit.prixAchat != null ? `${Number(s.produit.prixAchat).toLocaleString('fr-FR')} F` : '-'}
+                      </td>
+                      <td className="px-4 py-3 text-right text-sm font-bold text-blue-700">
+                        {s.produit.pamp != null && s.produit.pamp > 0 ? `${Math.round(s.produit.pamp).toLocaleString('fr-FR')} F` : (s.produit.prixAchat != null ? `${Number(s.produit.prixAchat).toLocaleString('fr-FR')} F` : '-')}
                       </td>
                       <td className="px-4 py-3 text-right">
                         <span className={`font-medium ${faible ? 'text-red-600' : 'text-gray-900'}`}>
@@ -1262,6 +1304,80 @@ export default function StockPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Intelligence Stock : Prédiction Rupture */}
+      {showIntelligence && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={() => setShowIntelligence(false)}>
+          <div className="w-full max-w-3xl rounded-2xl border border-blue-200 bg-white p-6 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <div className="mb-6 flex items-center justify-between border-b pb-4">
+              <div className="flex items-center gap-3">
+                <div className="rounded-full bg-blue-100 p-2">
+                  <AlertTriangle className="h-6 w-6 text-blue-600" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-gray-900 text-blue-800">Intelligence Prédictive : Alertes 10 Jours</h3>
+                  <p className="text-sm text-gray-500">Basé sur les tendances de vente des 30 derniers jours</p>
+                </div>
+              </div>
+              <button 
+                  onClick={() => setShowIntelligence(false)} 
+                  className="rounded-full p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors"
+              >
+                <X className="h-6 w-6" />
+              </button>
+            </div>
+
+            {loadingIntelligence ? (
+              <div className="flex justify-center py-20">
+                <Loader2 className="h-10 w-10 animate-spin text-blue-500" />
+              </div>
+            ) : alertesRupture.length === 0 ? (
+              <div className="rounded-xl border border-green-200 bg-green-50 p-10 text-center">
+                <p className="text-green-800 font-medium">Aucun risque de rupture détecté pour les 10 prochains jours ! 🚀</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto rounded-xl border border-gray-200">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Produit</th>
+                      <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase">Stock</th>
+                      <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase">Ventes/Jour</th>
+                      <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase">Autonomie</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200 bg-white">
+                    {alertesRupture.map((a) => (
+                      <tr key={a.id} className="hover:bg-blue-50/50">
+                        <td className="px-4 py-4">
+                          <div className="font-bold text-gray-900">{a.designation}</div>
+                          <div className="text-xs text-gray-500">{a.code}</div>
+                        </td>
+                        <td className="px-4 py-4 text-right font-medium">{a.stockActuel}</td>
+                        <td className="px-4 py-4 text-right text-gray-600">{a.vitesseVenteQuotidienne.toFixed(2)}</td>
+                        <td className="px-4 py-4 text-right">
+                          <span className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-bold ${a.joursRestants <= 3 ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}`}>
+                            {a.joursRestants} jours
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+            
+            <div className="mt-6 flex justify-end">
+              <button
+                onClick={() => setShowIntelligence(false)}
+                className="rounded-xl bg-blue-600 px-6 py-2.5 font-bold text-white hover:bg-blue-700 shadow-md transform active:scale-95 transition-all"
+              >
+                Fermer
+              </button>
+            </div>
           </div>
         </div>
       )}

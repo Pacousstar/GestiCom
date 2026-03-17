@@ -4,11 +4,11 @@ import { jwtVerify } from 'jose'
 
 const COOKIE_NAME = 'gesticom_session'
 
-const PUBLIC_PATHS = ['/', '/login']
+const PUBLIC_PATHS = ['/', '/login', '/activation']
 
 function isPublic(pathname: string): boolean {
   if (PUBLIC_PATHS.includes(pathname)) return true
-  if (pathname.startsWith('/_next') || pathname.startsWith('/api/auth')) return true
+  if (pathname.startsWith('/_next') || pathname.startsWith('/api/auth') || pathname.startsWith('/api/license')) return true
   if (pathname === '/favicon.ico' || pathname.startsWith('/images/') || pathname.match(/\.(ico|png|svg|jpg|jpeg|webp)$/)) return true
   return false
 }

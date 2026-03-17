@@ -120,7 +120,7 @@ export async function POST(request: NextRequest) {
       if (!produit) continue
 
       const designation = produit.designation
-      const coutUnitaire = produit.prixAchat || 0
+      const coutUnitaire = produit.pamp || produit.prixAchat || 0
       const montantHT = quantite * prixUnitaire
       const montantLigne = Math.round((montantHT * (1 + tva / 100)) - remise)
       

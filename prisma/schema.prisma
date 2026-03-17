@@ -93,6 +93,7 @@ model Produit {
   unite       String   @default("unite") // Unité de mesure : "unite", "kg", "g", "m", "m2", "litre", "boite", "heure", "service"
   prixAchat   Float?
   prixVente   Float?
+  pamp        Float?   @default(0) // Prix d'Achat Moyen Pondéré
   seuilMin    Int      @default(5)
   actif       Boolean  @default(true)
   createdAt   DateTime @default(now())

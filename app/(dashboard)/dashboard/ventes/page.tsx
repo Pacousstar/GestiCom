@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import dynamic from 'next/dynamic'
 import { useSearchParams } from 'next/navigation'
-import { ShoppingCart, Plus, Loader2, Trash2, XCircle, Eye, FileSpreadsheet, Printer, X, Search, Camera, Wallet, ChevronRight } from 'lucide-react'
+import { ShoppingCart, Plus, Loader2, Trash2, XCircle, Eye, FileSpreadsheet, Printer, X, Search, Camera, Wallet, ChevronRight, CreditCard } from 'lucide-react'
 import { printDocument, generateLignesHTML, type TemplateData } from '@/lib/print-templates'
 import PrintPreview from '@/components/print/PrintPreview'
 import { useToast } from '@/hooks/useToast'
@@ -664,6 +664,14 @@ export default function VentesPage() {
           Nouvelle vente
           <span className="hidden sm:inline text-xs opacity-75 ml-1">(Ctrl+N)</span>
         </button>
+        <a
+          href="/dashboard/ventes/rapide"
+          className="flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 shadow-md transition-all"
+          title="Ouvrir l'interface Vente Rapide"
+        >
+          <CreditCard className="h-4 w-4" />
+          Vente Rapide (PRO)
+        </a>
       </div>
 
       <div className="flex flex-wrap items-end gap-3 rounded-xl border border-gray-200 bg-gray-50 p-3">
