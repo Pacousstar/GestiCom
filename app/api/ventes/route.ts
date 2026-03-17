@@ -6,6 +6,7 @@ import { logAction } from '@/lib/audit'
 import { comptabiliserVente } from '@/lib/comptabilisation'
 import { getEntiteId } from '@/lib/get-entite-id'
 import { requirePermission } from '@/lib/require-role'
+import { ensureActivated } from '@/lib/security'
 
 export async function GET(request: NextRequest) {
   const session = await getSession()

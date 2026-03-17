@@ -56,8 +56,10 @@ export async function DELETE(
 ) {
   const session = await getSession()
   if (!session) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  if (session.role !== 'SUPER_ADMIN') {
-    return NextResponse.json({ error: 'Seul le Super Administrateur peut supprimer définitivement un fournisseur.' }, { status: 403 })
+
+  // Note: On accepte désormais les ADMIN pour la suppression à souhait
+  if (session.role !== 'SUPER_ADMIN' && session.role !== 'ADMIN') {
+    return NextResponse.json({ error: 'Droits insuffisants pour supprimer un fournisseur.' }, { status: 403 })
   }
 
   const id = Number((await params).id)
@@ -66,7 +68,7 @@ export async function DELETE(
   }
 
   try {
-    await prisma.achat.updateMany({ where: { fournisseurId: id }, data: { fournisseurId: null } })
+    // Note: Le schéma Prisma gère le cascade pour les Achats et Règlements.
     await prisma.fournisseur.delete({ where: { id } })
     return NextResponse.json({ ok: true })
   } catch (e) {

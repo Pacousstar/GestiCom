@@ -17,96 +17,78 @@ const fs = require('fs')
 
 const projectRoot = path.join(__dirname, '..')
 const standaloneDir = path.join(projectRoot, '.next', 'standalone')
-const serverPath = path.join(standaloneDir, 'server.js')
 
-if (!fs.existsSync(serverPath)) {
-  console.error('Erreur: .next/standalone/server.js introuvable. Lancez d\'abord: npm run build')
+// Recherche récursive de server.js dans .next/standalone
+function findServerJs(dir) {
+    if (!fs.existsSync(dir)) return null;
+    const files = fs.readdirSync(dir);
+    for (const file of files) {
+        const fullPath = path.join(dir, file);
+        if (file === 'server.js') return fullPath;
+        if (fs.statSync(fullPath).isDirectory() && file !== 'node_modules') {
+            const found = findServerJs(fullPath);
+            if (found) return found;
+        }
+    }
+    return null;
+}
+
+const serverPath = findServerJs(standaloneDir)
+
+if (!serverPath) {
+  console.error('Erreur: server.js introuvable dans .next/standalone. Vérifiez votre build.');
   process.exit(1)
 }
 
-// Charger .env (SESSION_SECRET, etc.) — on écrase DATABASE_URL plus bas
-const envPath = path.join(projectRoot, '.env')
-if (fs.existsSync(envPath)) {
-  const content = fs.readFileSync(envPath, 'utf8')
-  content.split(/\r?\n/).forEach((line) => {
-    const m = line.match(/^([^#=]+)=(.*)$/)
-    if (m) {
-      const key = m[1].trim()
-      let val = m[2].trim().replace(/^["']|["']$/g, '')
-      process.env[key] = val
-    }
-  })
-}
+const serverDir = path.dirname(serverPath)
+console.log('[Launcher] Moteur detecte dans : ' + serverDir)
 
-// DATABASE_URL : On laisse lib/db.ts gérer le verrouillage sur C:/gesticom/gesticom.db en production.
-// On s'assure juste que les variables d'environnement de base sont présentes.
+// Configuration DATABASE_URL
 const databaseUrl = process.env.DATABASE_URL || "file:C:/gesticom/gesticom.db";
+process.env.DATABASE_URL = databaseUrl;
+process.env.NODE_ENV = 'production';
 
-// Fichier lu par le bootstrap AVANT require(server)
-fs.writeFileSync(path.join(standaloneDir, '.database_url'), databaseUrl, 'utf8')
+// Fichier de configuration pour le bootstrap
+fs.writeFileSync(path.join(serverDir, '.database_url'), databaseUrl, 'utf8')
 
-// .env dans standalone pour que Next/chargeurs .env trouvent DATABASE_URL (et SESSION_SECRET)
-const standaloneEnv = [
-  'DATABASE_URL="' + databaseUrl.replace(/"/g, '\\"') + '"',
-  'SESSION_SECRET="' + (process.env.SESSION_SECRET || '').replace(/"/g, '\\"') + '"',
-  'NODE_ENV=production',
-  'PORT=' + (process.env.PORT || '3000'),
-].join('\n')
-fs.writeFileSync(path.join(standaloneDir, '.env'), standaloneEnv, 'utf8')
-
-// Bootstrap : définit DATABASE_URL puis charge server.js
 const runStandalone = `'use strict';
-var p = require('path'), fs = require('fs');
-var f = p.join(__dirname, '.database_url');
+const p = require('path'), fs = require('fs');
+const f = p.join(__dirname, '.database_url');
 if (fs.existsSync(f)) { process.env.DATABASE_URL = fs.readFileSync(f, 'utf8').trim(); }
+console.log('[Server] Lancement avec DATABASE_URL=' + process.env.DATABASE_URL);
 require('./server.js');
 `
-fs.writeFileSync(path.join(standaloneDir, 'run-standalone.js'), runStandalone, 'utf8')
+fs.writeFileSync(path.join(serverDir, 'run-standalone.js'), runStandalone, 'utf8')
 
-// Copier public et .next/static dans standalone si absents
-const pubStandalone = path.join(standaloneDir, 'public')
-const staticStandalone = path.join(standaloneDir, '.next', 'static')
-if (!fs.existsSync(pubStandalone)) {
-  const pub = path.join(projectRoot, 'public')
-  if (fs.existsSync(pub)) {
-    fs.cpSync(pub, pubStandalone, { recursive: true })
-    console.log('Copié public/ vers standalone')
-  }
-}
-if (!fs.existsSync(staticStandalone)) {
-  const st = path.join(projectRoot, '.next', 'static')
-  if (fs.existsSync(st)) {
-    const nextDir = path.join(standaloneDir, '.next')
-    if (!fs.existsSync(nextDir)) fs.mkdirSync(nextDir, { recursive: true })
-    fs.cpSync(st, staticStandalone, { recursive: true })
-    console.log('Copié .next/static vers standalone')
-  }
+// S'assurer que public et .next/static sont à côté de server.js
+const pubDest = path.join(serverDir, 'public')
+const staticDest = path.join(serverDir, '.next', 'static')
+
+if (!fs.existsSync(pubDest)) {
+    const pubSource = path.join(projectRoot, 'public')
+    if (fs.existsSync(pubSource)) {
+        fs.cpSync(pubSource, pubDest, { recursive: true })
+        console.log('[Launcher] Copie public/ vers ' + pubDest)
+    }
 }
 
-process.env.NODE_ENV = process.env.NODE_ENV || 'production'
-process.env.PORT = process.env.PORT || '3000'
+if (!fs.existsSync(staticDest)) {
+    const staticSource = path.join(projectRoot, '.next', 'static')
+    if (fs.existsSync(staticSource)) {
+        if (!fs.existsSync(path.dirname(staticDest))) fs.mkdirSync(path.dirname(staticDest), { recursive: true })
+        fs.cpSync(staticSource, staticDest, { recursive: true })
+        console.log('[Launcher] Copie static/ vers ' + staticDest)
+    }
+}
 
-console.log('[GestiCom] Lancement du moteur de production...');
-console.log('[GestiCom] DATABASE_URL=' + databaseUrl);
-
+console.log('[GestiCom] Lancement...');
 const child = spawn('node', ['run-standalone.js'], {
-  cwd: standaloneDir,
+  cwd: serverDir,
   env: process.env,
   stdio: 'inherit',
 })
 
-const cronChild = spawn('node', [path.join(projectRoot, 'scripts', 'cron-backups.js')], {
-  cwd: projectRoot,
-  env: process.env,
-  stdio: 'inherit',
-})
-
-child.on('error', (err) => {
-  console.error('Erreur:', err)
-  process.exit(1)
-})
 child.on('exit', (code) => {
-  console.log('[GestiCom] Arret du moteur de production.');
-  cronChild.kill('SIGINT') // S'assurer de tuer le processus de background
+  console.log('[GestiCom] Arret du moteur (Code ' + code + ')');
   process.exit(code || 0)
 })

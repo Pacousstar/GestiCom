@@ -95,19 +95,28 @@ export default function ActivationPage() {
                     <div className="absolute -inset-0.5 bg-gradient-to-r from-orange-500 to-orange-400 rounded-[3rem] opacity-0 group-hover:opacity-10 transition duration-1000"></div>
 
                     <div className="relative space-y-8">
-                        <div className="bg-black/40 rounded-3xl p-6 border border-white/5">
-                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3 block text-center">Identifiant matériel unique (HWID)</label>
-                            <div className="flex flex-col items-center gap-4">
-                                <span className="text-3xl font-mono font-black text-white tracking-tighter bg-gradient-to-b from-white to-slate-400 bg-clip-text text-transparent">{hwid}</span>
+                        <div className="bg-black/60 rounded-[2.5rem] p-8 border border-white/10 shadow-inner group-hover:border-orange-500/30 transition-colors">
+                            <label className="text-[10px] font-bold text-orange-500 uppercase tracking-[0.2em] mb-4 block text-center">Votre Identifiant Machine Unique</label>
+                            <div className="flex flex-col items-center gap-6">
+                                <div className="relative">
+                                    <div className="absolute -inset-4 bg-orange-500/20 blur-xl rounded-full opacity-50 group-hover:opacity-100 transition-opacity"></div>
+                                    <span className="relative text-4xl font-mono font-black text-white tracking-tight bg-gradient-to-b from-white to-slate-500 bg-clip-text text-transparent italic">
+                                        {hwid}
+                                    </span>
+                                </div>
+                                <div className="flex items-center gap-2 px-3 py-1 bg-orange-500/10 rounded-lg border border-orange-500/20">
+                                    <ShieldCheck className="h-3 w-3 text-orange-500" />
+                                    <span className="text-[9px] font-bold text-orange-500 uppercase tracking-widest">ID Certifié GestiCom</span>
+                                </div>
                                 <button 
                                     onClick={() => {
                                         navigator.clipboard.writeText(hwid)
-                                        alert('Identifiant copié !')
+                                        alert('Identifiant copié ! Communiquez-le à GSN EXPERTISES GROUP pour recevoir votre clé.')
                                     }}
-                                    className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 rounded-full transition-all border border-white/5"
+                                    className="flex items-center gap-2 px-6 py-3 bg-white/5 hover:bg-white/10 rounded-2xl transition-all border border-white/5 group/copy active:scale-95"
                                 >
-                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Copier l'identifiant</span>
-                                    <Smartphone className="h-3 w-3 text-slate-500" />
+                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest group-hover/copy:text-white transition-colors">Copier pour l'envoyer par WhatsApp</span>
+                                    <Smartphone className="h-4 w-4 text-slate-500 group-hover/copy:text-orange-500 transition-colors" />
                                 </button>
                             </div>
                         </div>

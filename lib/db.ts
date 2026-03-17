@@ -17,25 +17,26 @@ if (process.env.NODE_ENV !== 'production' && process.platform === 'win32') {
     } catch (_) { }
   }
 }
-// Production : VERROUILLAGE TOTAL sur la base centrale C:\gesticom\gesticom.db
-if (process.env.NODE_ENV === 'production') {
+// On utilise la DATABASE_URL du .env en priorité absolue.
+// Si rien n'est défini, on tente une détection intelligente mais sans verrouillage forcé.
+if (!process.env.DATABASE_URL) {
   const centralDb = "C:/gesticom/gesticom.db";
-  
-  // On force le chemin absolu standard GSN - AUCUNE EXCEPTION
-  process.env.DATABASE_URL = `file:${centralDb}`;
-  
-  console.log('==========================================================');
-  console.log('[lib/db] PRODUCTION : BASE DE DONNEES VERROUILLEE SUR :');
-  console.log('         ' + process.env.DATABASE_URL);
-  console.log('==========================================================');
+  if (fs.existsSync(centralDb)) {
+    process.env.DATABASE_URL = `file:${centralDb}`;
+  }
 }
 
+if (process.env.DATABASE_URL) {
+  console.log('[lib/db] Connecté à : ' + process.env.DATABASE_URL);
+}
+
+const dbUrl = process.env.DATABASE_URL || "file:C:/gesticom/gesticom.db";
+
 export const prisma = globalForPrisma.prisma ?? new PrismaClient({
-  log: process.env.NODE_ENV === 'production' ? ['error'] : ['error', 'warn'], // Moins de logs verbeux
-  // Optimisations pour SQLite sur Windows
+  log: ['error'], 
   datasources: {
     db: {
-      url: process.env.DATABASE_URL,
+      url: dbUrl,
     },
   },
 })

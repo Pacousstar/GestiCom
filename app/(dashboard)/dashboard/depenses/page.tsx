@@ -228,7 +228,7 @@ export default function DepensesPage() {
   }
 
   const handleDelete = async (id: number) => {
-    if (!confirm('Supprimer cette dépense ? Cette action est irréversible.')) return
+    if (!confirm('Supprimer cette dépense ? Toutes les écritures comptables et règlements associés seront également supprimés. Cette action est irréversible.')) return
     try {
       const res = await fetch(`/api/depenses/${id}`, { method: 'DELETE' })
       if (res.ok) {
@@ -474,7 +474,7 @@ export default function DepensesPage() {
                           >
                             <Edit2 className="h-4 w-4" />
                           </button>
-                          {userRole === 'SUPER_ADMIN' && (
+                          {(userRole === 'SUPER_ADMIN' || userRole === 'ADMIN') && (
                             <button
                               onClick={() => handleDelete(d.id)}
                               className="rounded-lg p-1 text-red-600 hover:bg-red-50"

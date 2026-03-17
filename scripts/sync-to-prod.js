@@ -58,15 +58,25 @@ async function syncToProd() {
         }
       });
 
-      // Scripts pour l'installateur
+      // Scripts pour l'installateur et maintenance
       fs.ensureDirSync(path.join(target, 'scripts'));
-      const scriptsToCopy = ['import-quincaillerie-pro.js', 'reinitialiser-et-importer-produits-xls.js'];
+      const scriptsToCopy = [
+        'import-quincaillerie-pro.js', 
+        'reinitialiser-et-importer-produits-xls.js',
+        'reparer-admin.js'
+      ];
       scriptsToCopy.forEach(s => {
         const src = path.join(projectRoot, 'scripts', s);
         if (fs.existsSync(src)) {
           fs.copySync(src, path.join(target, 'scripts', s), { dereference: true });
         }
       });
+
+      // Copier MISE-A-JOUR.bat à la racine
+      const updateBat = path.join(projectRoot, 'MISE-A-JOUR.bat');
+      if (fs.existsSync(updateBat)) {
+        fs.copySync(updateBat, path.join(target, 'MISE-A-JOUR.bat'), { dereference: true });
+      }
 
     } catch (err) {
       console.error(`❌ Erreur lors de la copie vers ${target}:`, err.message);
@@ -88,8 +98,13 @@ async function syncToProd() {
        return;
     }
   }
+  const prodETB = 'C:\\Users\\GSN EXPETISES  GROUP\\Projets\\INSTALLATION_GESTICOM_client_ETB';
+  const prodVide = 'C:\\Users\\GSN EXPETISES  GROUP\\Projets\\INSTALLATION_GESTICOM_bd_vide';
+  
   syncDir(prodDir);
   syncDir(installDir);
+  syncDir(prodETB);
+  syncDir(prodVide);
 
   console.log('✅ Synchronisation terminée !');
 }

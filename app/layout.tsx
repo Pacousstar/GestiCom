@@ -27,6 +27,8 @@ export const viewport: Viewport = {
 };
 
 import SecurityWrapper from "@/components/SecurityWrapper";
+import { ActivationProvider } from "@/contexts/ActivationContext";
+import ActivationModal from "@/components/ActivationModal";
 
 export default function RootLayout({
   children,
@@ -36,9 +38,12 @@ export default function RootLayout({
   return (
     <html lang="fr">
       <body className="antialiased bg-gray-50">
-        <SecurityWrapper>
-          {children}
-        </SecurityWrapper>
+        <ActivationProvider>
+          <SecurityWrapper>
+            {children}
+            <ActivationModal />
+          </SecurityWrapper>
+        </ActivationProvider>
       </body>
     </html>
   );

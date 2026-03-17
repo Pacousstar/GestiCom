@@ -93,10 +93,12 @@ function findDatabaseFile(originalPath?: string): string | null {
     path.join(cwd, 'prisma', 'prisma', 'gesticom.db'), // Cas où Prisma génère dans prisma/prisma
     path.join(cwd, 'data', 'gesticom.db'),
     path.join(cwd, 'gesticom.db'),
-    // Emplacements Windows par défaut
-    path.join('C:', 'gesticom_portable_data', 'gesticom.db'),
-    path.join('C:', 'Users', 'Public', 'gesticom', 'gesticom.db'),
-    path.join('C:', 'gesticom', 'gesticom.db'),
+    // Emplacements Windows par défaut - Ignorer pendant le build pour éviter les erreurs de tracing standalone
+    ...(process.env.NEXT_PHASE !== 'phase-production-build' ? [
+      path.join('C:', 'gesticom_portable_data', 'gesticom.db'),
+      path.join('C:', 'Users', 'Public', 'gesticom', 'gesticom.db'),
+      path.join('C:', 'gesticom', 'gesticom.db'),
+    ] : []),
     // Si un chemin original était fourni, l'inclure aussi
     ...(originalPath ? [originalPath] : []),
   ]

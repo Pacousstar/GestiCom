@@ -60,3 +60,45 @@ export async function PATCH(
     return NextResponse.json({ error: 'Erreur serveur.' }, { status: 500 })
   }
 }
+
+export async function DELETE(
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const session = await getSession()
+  if (!session) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+
+  const id = Number((await params).id)
+  if (!Number.isInteger(id) || id < 1) {
+    return NextResponse.json({ error: 'ID produit invalide.' }, { status: 400 })
+  }
+
+  try {
+    // Hard Delete : Suppression réelle de la base
+    // Note: Le schéma Prisma gère le cascade (onDelete: Cascade) pour les Stocks, Ventes, Achats, etc.
+    const p = await prisma.produit.delete({
+      where: { id },
+    })
+
+    const ipAddress = getIpAddress(_request)
+    await logModification(
+      session,
+      'PRODUIT',
+      id,
+      `Suppression définitive du produit ${p.code} - ${p.designation}`,
+      { code: p.code },
+      { status: 'DELETED' },
+      ipAddress
+    )
+
+    revalidatePath('/dashboard/produits')
+    revalidatePath('/api/produits')
+
+    return NextResponse.json({ success: true })
+  } catch (e: unknown) {
+    const err = e as { code?: string }
+    if (err?.code === 'P2025') return NextResponse.json({ error: 'Produit introuvable.' }, { status: 404 })
+    console.error('DELETE /api/produits/[id]:', e)
+    return NextResponse.json({ error: 'Erreur serveur.' }, { status: 500 })
+  }
+}

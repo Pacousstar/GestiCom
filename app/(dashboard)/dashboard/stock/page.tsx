@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Loader2, AlertTriangle, Plus, Pencil, X, Search, Minus, ClipboardList, FileSpreadsheet, Download } from 'lucide-react'
+import { Loader2, AlertTriangle, Plus, Pencil, Trash2, X, Search, Minus, ClipboardList, FileSpreadsheet, Download } from 'lucide-react'
 import { useToast } from '@/hooks/useToast'
 import { formatApiError } from '@/lib/validation-helpers'
 import { addToSyncQueue, isOnline } from '@/lib/offline-sync'
@@ -59,6 +59,8 @@ export default function StockPage() {
   const [saving, setSaving] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
   const [showCreateProduit, setShowCreateProduit] = useState(false)
+  const [deletingStock, setDeletingStock] = useState<StockRow | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
   const [pagination, setPagination] = useState<{ page: number; limit: number; total: number; totalPages: number } | null>(null)
   const [createProduitData, setCreateProduitData] = useState<{ magasinId: string; produitId?: string; afterCreate?: () => void } | null>(null)
@@ -568,6 +570,26 @@ export default function StockPage() {
     }
   }
 
+  const handleDeleteStock = async () => {
+    if (!deletingStock || !deletingStock.id) return
+    setIsDeleting(true)
+    try {
+      const res = await fetch(`/api/stock/${deletingStock.id}`, { method: 'DELETE' })
+      if (res.ok) {
+        setDeletingStock(null)
+        refetch()
+        showSuccess('Ligne de stock supprimée avec succès.')
+      } else {
+        const d = await res.json()
+        showError(d.error || 'Erreur lors de la suppression.')
+      }
+    } catch (e) {
+      showError('Erreur réseau lors de la suppression.')
+    } finally {
+      setIsDeleting(false)
+    }
+  }
+
   return (
     <div className="space-y-6">
       <div>
@@ -1030,13 +1052,24 @@ export default function StockPage() {
                         {s.createdAt ? formatDate(s.createdAt, { includeTime: true }) : '-'}
                       </td>
                       <td className="px-4 py-3">
-                        <button
-                          onClick={() => openEdit(s)}
-                          className="rounded p-1.5 text-gray-500 hover:bg-gray-100 hover:text-orange-600"
-                          title="Modifier"
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </button>
+                        <div className="flex gap-1">
+                          <button
+                            onClick={() => openEdit(s)}
+                            className="rounded p-1.5 text-gray-400 hover:bg-gray-100 hover:text-orange-600"
+                            title="Modifier"
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </button>
+                          {s.id != null && (
+                            <button
+                              onClick={() => setDeletingStock(s)}
+                              className="rounded p-1.5 text-gray-400 hover:bg-gray-100 hover:text-red-600"
+                              title="Supprimer cette ligne de stock"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   )
@@ -1379,7 +1412,39 @@ export default function StockPage() {
               </button>
             </div>
           </div>
+          {/* Modal Confirmation Suppression Stock */}
+      {deletingStock && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setDeletingStock(null)}>
+          <div className="w-full max-w-sm rounded-xl border border-gray-200 bg-white p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
+            <div className="mb-4 flex items-center gap-3 text-red-600">
+              <div className="rounded-full bg-red-100 p-2">
+                <AlertTriangle className="h-6 w-6" />
+              </div>
+              <h3 className="text-lg font-bold">Supprimer le stock ?</h3>
+            </div>
+            <p className="mb-6 text-sm text-gray-600">
+              Voulez-vous supprimer la ligne de stock pour **{deletingStock.produit.designation}** dans **{deletingStock.magasin.nom}** ?
+              Cette action est définitive.
+            </p>
+            <div className="flex gap-3">
+              <button
+                disabled={isDeleting}
+                onClick={handleDeleteStock}
+                className="flex-1 rounded-lg bg-red-600 px-4 py-2 font-bold text-white hover:bg-red-700 disabled:opacity-50"
+              >
+                {isDeleting ? 'Suppression...' : 'Confirmer'}
+              </button>
+              <button
+                onClick={() => setDeletingStock(null)}
+                className="flex-1 rounded-lg border-2 border-gray-300 bg-white px-4 py-2 font-bold text-gray-700 hover:bg-gray-50"
+              >
+                Annuler
+              </button>
+            </div>
+          </div>
         </div>
+      )}
+    </div>
       )}
     </div>
   )

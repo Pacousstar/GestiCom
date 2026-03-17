@@ -104,7 +104,7 @@ export default function ClientsPage() {
   }
 
   const handleDelete = async (c: Client) => {
-    if (!confirm(`Supprimer le client « ${c.nom} » ? Cette action est irréversible.`)) return
+    if (!confirm(`Supprimer le client « ${c.nom} » ? Toutes les données historiques liées (ventes, paiements) seront également supprimées via la suppression en cascade. Cette action est irréversible.`)) return
     try {
       const res = await fetch(`/api/clients/${c.id}`, { method: 'DELETE' })
       if (res.ok) {
@@ -449,7 +449,7 @@ export default function ClientsPage() {
                           >
                             <Pencil className="h-4 w-4" />
                           </button>
-                        {userRole === 'SUPER_ADMIN' && (
+                        {(userRole === 'SUPER_ADMIN' || userRole === 'ADMIN') && (
                           <button
                             onClick={() => handleDelete(c)}
                             className="rounded p-1.5 text-red-600 hover:bg-red-50"

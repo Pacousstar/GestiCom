@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { Search, Plus, Upload, Download, Loader2, Pencil, X } from 'lucide-react'
+import { Search, Plus, Upload, Download, Loader2, Pencil, Trash2, AlertTriangle, FileSpreadsheet, X } from 'lucide-react'
 import { useToast } from '@/hooks/useToast'
 import { produitSchema } from '@/lib/validations'
 import { validateForm, formatApiError } from '@/lib/validation-helpers'
@@ -41,6 +41,8 @@ export default function ProduitsPage() {
   const [editPrix, setEditPrix] = useState({ prixAchat: '', prixVente: '' })
   const [err, setErr] = useState('')
   const [savingPrix, setSavingPrix] = useState(false)
+  const [deleting, setDeleting] = useState<Produit | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
   const { success: showSuccess, error: showError } = useToast()
   const [currentPage, setCurrentPage] = useState(1)
   const [pagination, setPagination] = useState<{ page: number; limit: number; total: number; totalPages: number } | null>(null)
@@ -192,6 +194,26 @@ export default function ProduitsPage() {
       setErr(errorMsg)
       showError(errorMsg)
     } finally { setSavingPrix(false) }
+  }
+
+  const handleDelete = async () => {
+    if (!deleting) return
+    setIsDeleting(true)
+    try {
+      const res = await fetch(`/api/produits/${deleting.id}`, { method: 'DELETE' })
+      const data = await res.json()
+      if (res.ok) {
+        setDeleting(null)
+        fetchList()
+        showSuccess(data.softDeleted ? 'Produit archivé ( historique conservé).' : 'Produit supprimé définitivement.')
+      } else {
+        showError(data.error || 'Erreur lors de la suppression.')
+      }
+    } catch (e) {
+      showError('Erreur réseau lors de la suppression.')
+    } finally {
+      setIsDeleting(false)
+    }
   }
 
   const handleImportExcel = async () => {
@@ -620,14 +642,24 @@ export default function ProduitsPage() {
                       {formatDate(p.createdAt, { includeTime: true })}
                     </td>
                     <td className="px-4 py-3">
-                      <button
-                        type="button"
-                        onClick={() => openEditPrix(p)}
-                        className="rounded p-1.5 text-gray-500 hover:bg-gray-100 hover:text-orange-600"
-                        title="Modifier prix"
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </button>
+                      <div className="flex gap-1">
+                        <button
+                          type="button"
+                          onClick={() => openEditPrix(p)}
+                          className="rounded p-1.5 text-gray-400 hover:bg-gray-100 hover:text-orange-600"
+                          title="Modifier prix"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setDeleting(p)}
+                          className="rounded p-1.5 text-gray-400 hover:bg-gray-100 hover:text-red-600"
+                          title="Supprimer ce produit"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -683,6 +715,38 @@ export default function ProduitsPage() {
                 <button type="button" onClick={() => setEditing(null)} className="rounded-lg border-2 border-gray-400 bg-gray-200 px-4 py-2 font-medium text-gray-900">Annuler</button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+      {/* Modal Confirmation Suppression */}
+      {deleting && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setDeleting(null)}>
+          <div className="w-full max-w-sm rounded-xl border border-gray-200 bg-white p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
+            <div className="mb-4 flex items-center gap-3 text-red-600">
+              <div className="rounded-full bg-red-100 p-2">
+                <AlertTriangle className="h-6 w-6" />
+              </div>
+              <h3 className="text-lg font-bold">Confirmer la suppression</h3>
+            </div>
+            <p className="mb-6 text-sm text-gray-600">
+              Voulez-vous vraiment supprimer le produit **{deleting.designation}** ({deleting.code}) ? 
+              **Attention :** Cette opération est définitive et supprimera également tout l'historique associé (stocks, ventes, achats, mouvements) via la suppression en cascade.
+            </p>
+            <div className="flex gap-3">
+              <button
+                disabled={isDeleting}
+                onClick={handleDelete}
+                className="flex-1 rounded-lg bg-red-600 px-4 py-2 font-bold text-white hover:bg-red-700 disabled:opacity-50"
+              >
+                {isDeleting ? 'Suppression...' : 'Oui, supprimer'}
+              </button>
+              <button
+                onClick={() => setDeleting(null)}
+                className="flex-1 rounded-lg border-2 border-gray-300 bg-white px-4 py-2 font-bold text-gray-700 hover:bg-gray-50"
+              >
+                Annuler
+              </button>
+            </div>
           </div>
         </div>
       )}

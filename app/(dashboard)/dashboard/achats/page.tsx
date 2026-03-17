@@ -778,10 +778,10 @@ export default function AchatsPage() {
                         >
                           {loadingDetail === a.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Eye className="h-4 w-4" />}
                         </button>
-                        {userRole === 'SUPER_ADMIN' && (
+                        {(userRole === 'SUPER_ADMIN' || userRole === 'ADMIN') && (
                           <button
                             onClick={async () => {
-                              if (!confirm(`Supprimer définitivement l'achat ${a.numero} ? Stock et comptabilité seront mis à jour. Irréversible.`)) return
+                            if (!confirm(`Supprimer définitivement l'achat ${a.numero} ? Toutes les données liées (lignes, écritures, règlements) seront supprimées. Cette action est irréversible.`)) return
                               setSupprimant(a.id)
                               try {
                                 const res = await fetch(`/api/achats/${a.id}`, { method: 'DELETE' })

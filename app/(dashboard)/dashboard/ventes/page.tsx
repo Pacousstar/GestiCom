@@ -585,7 +585,7 @@ export default function VentesPage() {
   }
 
   const handleSupprimer = async (v: { id: number; numero: string }) => {
-    if (!confirm(`Supprimer définitivement la vente ${v.numero} ? Stock et comptabilité seront mis à jour. Cette action est irréversible.`)) return
+    if (!confirm(`Supprimer définitivement la vente ${v.numero} ? Toutes les données liées (lignes, écritures, règlements) seront supprimées. Cette action est irréversible.`)) return
     setSupprimant(v.id)
     setErr('')
     try {
@@ -1246,7 +1246,7 @@ export default function VentesPage() {
                               <XCircle className="h-4 w-4" />
                             </button>
                           )}
-                          {userRole === 'SUPER_ADMIN' && (
+                          {(userRole === 'SUPER_ADMIN' || userRole === 'ADMIN') && (
                             <button
                               onClick={() => handleSupprimer(v)}
                               disabled={supprimant === v.id}

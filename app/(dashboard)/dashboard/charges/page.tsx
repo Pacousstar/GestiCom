@@ -217,7 +217,7 @@ export default function ChargesPage() {
   }
 
   const handleDelete = async (id: number) => {
-    if (!confirm('Supprimer cette charge ? Cette action est irréversible.')) return
+    if (!confirm('Supprimer cette charge ? Toutes les écritures comptables associées seront également supprimées. Cette action est irréversible.')) return
     try {
       const res = await fetch(`/api/charges/${id}`, { method: 'DELETE' })
       if (res.ok) {
@@ -460,7 +460,7 @@ export default function ChargesPage() {
                           >
                             <Edit2 className="h-4 w-4" />
                           </button>
-                          {userRole === 'SUPER_ADMIN' && (
+                          {(userRole === 'SUPER_ADMIN' || userRole === 'ADMIN') && (
                             <button
                               type="button"
                               onClick={() => handleDelete(c.id)}

@@ -7,9 +7,9 @@
 const path = require('path')
 const bcrypt = require('bcryptjs')
 
-// Forcer l'utilisation de la base prisma/gesticom.db
-const dbPath = path.resolve(__dirname, '..', 'prisma', 'gesticom.db')
-process.env.DATABASE_URL = `file:${dbPath.replace(/\\/g, '/')}`
+// Forcer l'utilisation de la base de PRODUCTION
+const dbPath = 'C:/gesticom/gesticom.db'
+process.env.DATABASE_URL = `file:${dbPath}`
 
 const { PrismaClient } = require('@prisma/client')
 const prisma = new PrismaClient()

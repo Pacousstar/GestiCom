@@ -93,7 +93,7 @@ export default function FournisseursPage() {
   }
 
   const handleDelete = async (f: Fournisseur) => {
-    if (!confirm(`Supprimer le fournisseur « ${f.nom} » ? Cette action est irréversible.`)) return
+    if (!confirm(`Supprimer le fournisseur « ${f.nom} » ? Toutes les données historiques liées (achats, paiements) seront également supprimées via la suppression en cascade. Cette action est irréversible.`)) return
     try {
       const res = await fetch(`/api/fournisseurs/${f.id}`, { method: 'DELETE' })
       if (res.ok) {
@@ -396,7 +396,7 @@ export default function FournisseursPage() {
                           >
                             <Pencil className="h-4 w-4" />
                           </button>
-                        {userRole === 'SUPER_ADMIN' && (
+                        {(userRole === 'SUPER_ADMIN' || userRole === 'ADMIN') && (
                           <button
                             onClick={() => handleDelete(f)}
                             className="rounded p-1.5 text-red-600 hover:bg-red-50"
