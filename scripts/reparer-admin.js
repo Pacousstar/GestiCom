@@ -8,8 +8,40 @@ async function main() {
   
   const adminPassword = 'Admin@123';
   const hashedPassword = await bcrypt.hash(adminPassword, 10);
-
   try {
+
+    // 1. S'assurer qu'au moins une entité existe
+    let entite = await prisma.entite.findFirst();
+    if (!entite) {
+      console.log('➕ Création de l\'entité par défaut...');
+      entite = await prisma.entite.create({
+        data: {
+          code: 'SIEGE',
+          nom: 'SIÈGE SOCIAL',
+          type: 'PRINCIPAL',
+          localisation: 'Ville',
+          active: true
+        }
+      });
+      console.log('✅ Entité "SIÈGE SOCIAL" créée.');
+    }
+
+    // 2. S'assurer qu'au moins un magasin existe
+    let magasin = await prisma.magasin.findFirst();
+    if (!magasin) {
+      console.log('➕ Création du magasin par défaut...');
+      magasin = await prisma.magasin.create({
+        data: {
+          code: 'MAG001',
+          nom: 'MAGASIN PRINCIPAL',
+          localisation: 'Siège',
+          entiteId: entite.id,
+          actif: true
+        }
+      });
+      console.log('✅ Magasin "MAGASIN PRINCIPAL" créé.');
+    }
+
     const admin = await prisma.utilisateur.findFirst({
       where: { login: 'admin' }
     });
@@ -20,8 +52,9 @@ async function main() {
         data: {
           nom: 'Administrateur',
           login: 'admin',
-          password: hashedPassword,
+          motDePasse: hashedPassword,
           role: 'SUPER_ADMIN',
+          entiteId: entite.id,
           actif: true
         }
       });
@@ -31,8 +64,9 @@ async function main() {
       await prisma.utilisateur.update({
         where: { id: admin.id },
         data: {
-          password: hashedPassword,
+          motDePasse: hashedPassword,
           role: 'SUPER_ADMIN',
+          entiteId: entite.id,
           actif: true
         }
       });

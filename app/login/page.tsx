@@ -21,12 +21,9 @@ function LoginForm() {
   const [lockTime, setLockTime] = useState<number | null>(null)
   const [timeRemaining, setTimeRemaining] = useState<number>(0)
 
-  // Charger le HWID
+  // HWID non nécessaire en version déverrouillée
   useEffect(() => {
-    fetch('/api/license/check')
-      .then(res => res.json())
-      .then(data => setHwid(data.hwid))
-      .catch(() => setHwid(null))
+    setHwid(null)
   }, [])
 
   // Limiter les tentatives de connexion
@@ -148,7 +145,7 @@ function LoginForm() {
         setTimeRemaining(5 * 60) // 5 minutes
       }
       
-      setError('Erreur de connexion. Vérifiez votre connexion internet.')
+      setError('Erreur de connexion au serveur local.')
     } finally {
       setLoading(false)
     }
@@ -327,25 +324,7 @@ function LoginForm() {
           </p>
         </div>
 
-        {hwid && (
-          <div className="mt-4 pt-4 border-t border-gray-100">
-            <div className="flex flex-col items-center gap-1">
-              <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Identifiant Machine (HWID)</span>
-              <div className="flex items-center gap-2">
-                <code className="text-[11px] font-black text-orange-600 bg-orange-50 px-2 py-0.5 rounded border border-orange-100">{hwid}</code>
-                <button 
-                  onClick={() => {
-                    navigator.clipboard.writeText(hwid)
-                    alert('ID Copié !')
-                  }}
-                  className="text-[9px] font-bold text-gray-400 hover:text-orange-500 underline uppercase transition-colors"
-                >
-                  Copier
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+        {/* Affichage HWID retiré en version déverrouillée */}
       </div>
     </div>
   )

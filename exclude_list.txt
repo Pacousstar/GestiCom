@@ -1,4 +1,0 @@
-\install\
-\INSTALLATION_GESTICOM\
-.git\
-.next\
