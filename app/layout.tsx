@@ -26,9 +26,7 @@ export const viewport: Viewport = {
   themeColor: "#f97316",
 };
 
-import SecurityWrapper from "@/components/SecurityWrapper";
-import { ActivationProvider } from "@/contexts/ActivationContext";
-import ActivationModal from "@/components/ActivationModal";
+// Retrait des composants de licence
 
 export default function RootLayout({
   children,
@@ -38,12 +36,7 @@ export default function RootLayout({
   return (
     <html lang="fr">
       <body className="antialiased bg-gray-50">
-        <ActivationProvider>
-          <SecurityWrapper>
-            {children}
-            <ActivationModal />
-          </SecurityWrapper>
-        </ActivationProvider>
+        {children}
       </body>
     </html>
   );

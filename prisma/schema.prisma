@@ -564,12 +564,4 @@ model DashboardPreference {
   utilisateur   Utilisateur @relation(fields: [utilisateurId], references: [id], onDelete: Cascade)
 }
 
-model Licence {
-  id             Int      @id @default(autoincrement())
-  hwid           String   @unique
-  cle            String
-  dateActivation DateTime @default(now())
-  statut         String   @default("ACTIVE")
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-}
+

@@ -66,7 +66,7 @@ async function razPro() {
         await prisma.$executeRawUnsafe('PRAGMA foreign_keys = ON;');
         
         console.log('\n--- RÉINITIALISATION TERMINÉE AVEC SUCCÈS ---');
-        console.log('Note : Les comptes utilisateurs et la licence ont été conservés.');
+        console.log('Note : Les comptes utilisateurs ont été conservés.');
 
     } catch (error) {
         console.error('❌ ERREUR LORS DU NETTOYAGE :', error);

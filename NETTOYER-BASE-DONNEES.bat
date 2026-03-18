@@ -7,7 +7,7 @@ echo.
 echo Ce script va vider tous les produits, ventes, achats, 
 echo clients et mouvements de la base de donnees.
 echo.
-echo Les comptes utilisateurs et la licence seront GARDES.
+echo Les comptes utilisateurs seront GARDES.
 echo.
 set /p confirm="Etes-vous sur de vouloir tout effacer ? (O/N) : "
 
