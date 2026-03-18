@@ -4,19 +4,19 @@ import { useState, useEffect, useMemo } from 'react'
 import { Search, Loader2, Calendar, User, CreditCard, Hash, Coins, Download, Filter } from 'lucide-react'
 import { useToast } from '@/hooks/useToast'
 
-interface Paiement {
+interface PaiementFournisseur {
   id: number
   date: string
-  clientCode: string | null
-  clientNom: string
+  fournisseurCode: string | null
+  fournisseurNom: string
   modePaiement: string
-  venteNumero: string
+  achatNumero: string
   montant: number
   observation: string | null
 }
 
-export default function PaiementsClientsPage() {
-  const [data, setData] = useState<Paiement[]>([])
+export default function PaiementsFournisseursPage() {
+  const [data, setData] = useState<PaiementFournisseur[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [startDate, setStartDate] = useState('')
@@ -35,7 +35,7 @@ export default function PaiementsClientsPage() {
   const fetchData = async (start: string, end: string) => {
     setLoading(true)
     try {
-      const res = await fetch(`/api/clients/paiements?dateDebut=${start}&dateFin=${end}`)
+      const res = await fetch(`/api/fournisseurs/paiements?dateDebut=${start}&dateFin=${end}`)
       if (res.ok) {
         const d = await res.json()
         setData(d)
@@ -56,9 +56,9 @@ export default function PaiementsClientsPage() {
   }
 
   const filteredData = data.filter(p => 
-    p.clientNom.toLowerCase().includes(search.toLowerCase()) || 
-    p.venteNumero.toLowerCase().includes(search.toLowerCase()) ||
-    (p.clientCode && p.clientCode.toLowerCase().includes(search.toLowerCase()))
+    p.fournisseurNom.toLowerCase().includes(search.toLowerCase()) || 
+    p.achatNumero.toLowerCase().includes(search.toLowerCase()) ||
+    (p.fournisseurCode && p.fournisseurCode.toLowerCase().includes(search.toLowerCase()))
   )
 
   const total = filteredData.reduce((acc, p) => acc + p.montant, 0)
@@ -75,8 +75,8 @@ export default function PaiementsClientsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Récapitulatif des Paiements</h1>
-          <p className="text-sm text-gray-500">Historique chronologique des encaissements clients</p>
+          <h1 className="text-2xl font-bold text-gray-900">Décaissements Fournisseurs</h1>
+          <p className="text-sm text-gray-500">Historique des paiements effectués par période</p>
         </div>
         <button 
           onClick={() => window.print()}
@@ -94,7 +94,7 @@ export default function PaiementsClientsPage() {
               type="date"
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
-              className="border border-gray-300 rounded-md px-3 py-1.5 text-sm focus:ring-orange-500 focus:border-orange-500"
+              className="border border-gray-300 rounded-md px-3 py-1.5 text-sm focus:ring-purple-500 focus:border-purple-500"
             />
           </div>
           <div>
@@ -103,10 +103,10 @@ export default function PaiementsClientsPage() {
               type="date"
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
-              className="border border-gray-300 rounded-md px-3 py-1.5 text-sm focus:ring-orange-500 focus:border-orange-500"
+              className="border border-gray-300 rounded-md px-3 py-1.5 text-sm focus:ring-purple-500 focus:border-purple-500"
             />
           </div>
-          <button type="submit" className="bg-orange-600 text-white px-3 py-1.5 rounded-md text-sm font-medium hover:bg-orange-700 flex items-center gap-2 h-[34px]">
+          <button type="submit" className="bg-purple-600 text-white px-3 py-1.5 rounded-md text-sm font-medium hover:bg-purple-700 flex items-center gap-2 h-[34px]">
             <Filter className="h-4 w-4" /> Filtrer
           </button>
         </form>
@@ -115,19 +115,19 @@ export default function PaiementsClientsPage() {
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
           <input
             type="text"
-            placeholder="Rechercher (client, ref)..."
+            placeholder="Rechercher (fournisseur, réf)..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full rounded-md border border-gray-300 py-1.5 pl-9 pr-3 text-sm focus:border-orange-500 focus:outline-none shadow-sm"
+            className="w-full rounded-md border border-gray-300 py-1.5 pl-9 pr-3 text-sm focus:border-purple-500 focus:outline-none shadow-sm"
           />
         </div>
       </div>
 
       {/* Résumé par mode de paiement */}
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
-        <div className="rounded-lg bg-orange-100 px-4 py-3 border border-orange-200 md:col-span-2 shadow-sm">
-          <p className="text-sm text-orange-800 font-bold uppercase">Total Encaissé (Période)</p>
-          <p className="text-2xl font-black text-orange-900">{total.toLocaleString('fr-FR')} F</p>
+        <div className="rounded-lg bg-purple-100 px-4 py-3 border border-purple-200 md:col-span-2 shadow-sm">
+          <p className="text-sm text-purple-800 font-bold uppercase">Total Décaissé (Période)</p>
+          <p className="text-2xl font-black text-purple-900">{total.toLocaleString('fr-FR')} F</p>
         </div>
         {Object.entries(totalsByMode).map(([mode, sum]) => (
           <div key={mode} className="rounded-lg bg-white px-4 py-3 border border-gray-200 shadow-sm flex flex-col justify-between">
@@ -140,10 +140,10 @@ export default function PaiementsClientsPage() {
       <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
         {loading ? (
           <div className="flex items-center justify-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin text-orange-500" />
+            <Loader2 className="h-8 w-8 animate-spin text-purple-500" />
           </div>
         ) : filteredData.length === 0 ? (
-          <p className="py-12 text-center text-gray-500 italic">Aucun paiement enregistré.</p>
+          <p className="py-12 text-center text-gray-500 italic">Aucun paiement fournisseur sur la période.</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
@@ -153,13 +153,13 @@ export default function PaiementsClientsPage() {
                     <div className="flex items-center gap-2"><Calendar className="h-3 w-3" /> Date</div>
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-bold uppercase tracking-wider text-gray-500">
-                    <div className="flex items-center gap-2"><User className="h-3 w-3" /> Client</div>
+                    <div className="flex items-center gap-2"><User className="h-3 w-3" /> Fournisseur</div>
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-bold uppercase tracking-wider text-gray-500">
                     <div className="flex items-center gap-2"><CreditCard className="h-3 w-3" /> Mode</div>
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-bold uppercase tracking-wider text-gray-500">
-                    <div className="flex items-center gap-2"><Hash className="h-3 w-3" /> Référence</div>
+                    <div className="flex items-center gap-2"><Hash className="h-3 w-3" /> Réf. Achat</div>
                   </th>
                   <th className="px-6 py-3 text-right text-xs font-bold uppercase tracking-wider text-gray-500">
                     <div className="flex items-center gap-2 justify-end"><Coins className="h-3 w-3" /> Montant</div>
@@ -180,8 +180,8 @@ export default function PaiementsClientsPage() {
                     </td>
                     <td className="whitespace-nowrap px-6 py-4">
                       <div className="flex flex-col">
-                        <span className="font-semibold text-gray-900">{p.clientNom}</span>
-                        <span className="text-xs text-gray-400 uppercase">{p.clientCode || '—'}</span>
+                        <span className="font-semibold text-gray-900">{p.fournisseurNom}</span>
+                        <span className="text-xs text-gray-400 uppercase">{p.fournisseurCode || '—'}</span>
                       </div>
                     </td>
                     <td className="whitespace-nowrap px-6 py-4">
@@ -190,7 +190,7 @@ export default function PaiementsClientsPage() {
                       </span>
                     </td>
                     <td className="whitespace-nowrap px-6 py-4 text-sm font-mono text-gray-500">
-                      {p.venteNumero}
+                      {p.achatNumero}
                     </td>
                     <td className="whitespace-nowrap px-6 py-4 text-right text-sm font-bold text-gray-900">
                       {p.montant.toLocaleString('fr-FR')} F

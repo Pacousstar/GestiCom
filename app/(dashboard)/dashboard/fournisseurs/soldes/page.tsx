@@ -1,25 +1,23 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Search, Loader2, Download, Filter, Wallet, FileText, Landmark } from 'lucide-react'
+import { Search, Loader2, Download, Filter, Wallet, FileText, ShoppingBag } from 'lucide-react'
 import { useToast } from '@/hooks/useToast'
 
-interface SoldeClient {
+interface SoldeFournisseur {
   id: number
   code: string | null
   nom: string
   telephone: string | null
-  ncc: string | null
   localisation: string | null
-  factures: number
+  achats: number
   paiements: number
-  soldeInitial: number
   variationPeriode: number
-  soldeClient: number
+  soldeGlobal: number
 }
 
-export default function SoldesClientsPage() {
-  const [data, setData] = useState<SoldeClient[]>([])
+export default function SoldesFournisseursPage() {
+  const [data, setData] = useState<SoldeFournisseur[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [startDate, setStartDate] = useState('')
@@ -38,12 +36,12 @@ export default function SoldesClientsPage() {
   const fetchData = async (start: string, end: string) => {
     setLoading(true)
     try {
-      const res = await fetch(`/api/clients/soldes?dateDebut=${start}&dateFin=${end}`)
+      const res = await fetch(`/api/fournisseurs/soldes?dateDebut=${start}&dateFin=${end}`)
       if (res.ok) {
         const d = await res.json()
         setData(d)
       } else {
-        showError('Impossible de charger les soldes.')
+        showError('Impossible de charger les soldes fournisseurs.')
       }
     } catch (err) {
       console.error(err)
@@ -58,25 +56,25 @@ export default function SoldesClientsPage() {
     fetchData(startDate, endDate)
   }
 
-  const filteredData = data.filter(c => 
-    c.nom.toLowerCase().includes(search.toLowerCase()) || 
-    (c.code && c.code.toLowerCase().includes(search.toLowerCase())) ||
-    (c.localisation && c.localisation.toLowerCase().includes(search.toLowerCase()))
+  const filteredData = data.filter(f => 
+    f.nom.toLowerCase().includes(search.toLowerCase()) || 
+    (f.code && f.code.toLowerCase().includes(search.toLowerCase())) ||
+    (f.localisation && f.localisation.toLowerCase().includes(search.toLowerCase()))
   )
 
-  const totals = filteredData.reduce((acc, c) => ({
-    factures: acc.factures + c.factures,
-    paiements: acc.paiements + c.paiements,
-    variationPeriode: acc.variationPeriode + c.variationPeriode,
-    soldeClient: acc.soldeClient + c.soldeClient
-  }), { factures: 0, paiements: 0, variationPeriode: 0, soldeClient: 0 })
+  const totals = filteredData.reduce((acc, f) => ({
+    achats: acc.achats + f.achats,
+    paiements: acc.paiements + f.paiements,
+    variationPeriode: acc.variationPeriode + f.variationPeriode,
+    soldeGlobal: acc.soldeGlobal + f.soldeGlobal
+  }), { achats: 0, paiements: 0, variationPeriode: 0, soldeGlobal: 0 })
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Soldes Clients</h1>
-          <p className="text-sm text-gray-500">Synthèse financière globale par client</p>
+          <h1 className="text-2xl font-bold text-gray-900">Soldes Fournisseurs</h1>
+          <p className="text-sm text-gray-500">Synthèse de nos dettes et paiements par fournisseur</p>
         </div>
         <button 
           onClick={() => window.print()}
@@ -88,25 +86,25 @@ export default function SoldesClientsPage() {
 
       {/* Cartes de Totaux */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="rounded-xl border border-blue-100 bg-blue-50/50 p-4 shadow-sm">
+        <div className="rounded-xl border border-purple-100 bg-purple-50/50 p-4 shadow-sm">
           <div className="flex items-center gap-3">
-            <div className="rounded-lg bg-blue-500 p-2 text-white">
-              <FileText className="h-5 w-5" />
+            <div className="rounded-lg bg-purple-500 p-2 text-white">
+              <ShoppingBag className="h-5 w-5" />
             </div>
             <div>
-              <p className="text-xs font-medium text-blue-600 uppercase tracking-wider">Total Factures</p>
-              <p className="text-xl font-bold text-gray-900">{totals.factures.toLocaleString('fr-FR')} F</p>
+              <p className="text-xs font-medium text-purple-600 uppercase tracking-wider">Achats (Période)</p>
+              <p className="text-xl font-bold text-gray-900">{totals.achats.toLocaleString('fr-FR')} F</p>
             </div>
           </div>
         </div>
 
-        <div className="rounded-xl border border-green-100 bg-green-50/50 p-4 shadow-sm">
+        <div className="rounded-xl border border-emerald-100 bg-emerald-50/50 p-4 shadow-sm">
           <div className="flex items-center gap-3">
-            <div className="rounded-lg bg-green-500 p-2 text-white">
+            <div className="rounded-lg bg-emerald-500 p-2 text-white">
               <Wallet className="h-5 w-5" />
             </div>
             <div>
-              <p className="text-xs font-medium text-green-600 uppercase tracking-wider">Total Paiements</p>
+              <p className="text-xs font-medium text-emerald-600 uppercase tracking-wider">Payé (Période)</p>
               <p className="text-xl font-bold text-gray-900">{totals.paiements.toLocaleString('fr-FR')} F</p>
             </div>
           </div>
@@ -115,31 +113,31 @@ export default function SoldesClientsPage() {
         <div className="rounded-xl border border-amber-100 bg-amber-50/50 p-4 shadow-sm">
           <div className="flex items-center gap-3">
             <div className="rounded-lg bg-amber-500 p-2 text-white">
-              <Landmark className="h-5 w-5" />
+              <FileText className="h-5 w-5" />
             </div>
             <div>
-              <p className="text-xs font-medium text-amber-600 uppercase tracking-wider">Variation Période</p>
+              <p className="text-xs font-medium text-amber-600 uppercase tracking-wider">Variation Dette</p>
               <p className="text-xl font-bold text-gray-900">{totals.variationPeriode.toLocaleString('fr-FR')} F</p>
             </div>
           </div>
         </div>
 
-        <div className={`rounded-xl border p-4 shadow-sm ${totals.soldeClient > 0 ? 'border-red-100 bg-red-50/50' : 'border-emerald-100 bg-emerald-50/50'}`}>
+        <div className={`rounded-xl border p-4 shadow-sm ${totals.soldeGlobal > 0 ? 'border-red-100 bg-red-50/50' : 'border-blue-100 bg-blue-50/50'}`}>
           <div className="flex items-center gap-3">
-            <div className={`rounded-lg p-2 text-white ${totals.soldeClient > 0 ? 'bg-red-500' : 'bg-emerald-500'}`}>
+            <div className={`rounded-lg p-2 text-white ${totals.soldeGlobal > 0 ? 'bg-red-500' : 'bg-blue-500'}`}>
               <Filter className="h-5 w-5" />
             </div>
             <div>
-              <p className={`text-xs font-medium uppercase tracking-wider ${totals.soldeClient > 0 ? 'text-red-600' : 'text-emerald-600'}`}>
-                Solde Net Global
+              <p className={`text-xs font-medium uppercase tracking-wider ${totals.soldeGlobal > 0 ? 'text-red-600' : 'text-blue-600'}`}>
+                Dette Totale Net
               </p>
-              <p className="text-xl font-bold text-gray-900">{totals.soldeClient.toLocaleString('fr-FR')} F</p>
+              <p className="text-xl font-bold text-gray-900">{totals.soldeGlobal.toLocaleString('fr-FR')} F</p>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Barre de recherche */}
+      {/* Barre de recherche et filtres */}
       <div className="flex flex-col md:flex-row gap-3">
         <form onSubmit={handleFilter} className="flex flex-wrap gap-2 items-end bg-white p-3 rounded-lg border border-gray-200 shadow-sm w-full md:w-auto">
           <div>
@@ -148,7 +146,7 @@ export default function SoldesClientsPage() {
               type="date"
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
-              className="border border-gray-300 rounded-md px-3 py-1.5 text-sm focus:ring-orange-500 focus:border-orange-500"
+              className="border border-gray-300 rounded-md px-3 py-1.5 text-sm focus:ring-purple-500 focus:border-purple-500"
             />
           </div>
           <div>
@@ -157,10 +155,10 @@ export default function SoldesClientsPage() {
               type="date"
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
-              className="border border-gray-300 rounded-md px-3 py-1.5 text-sm focus:ring-orange-500 focus:border-orange-500"
+              className="border border-gray-300 rounded-md px-3 py-1.5 text-sm focus:ring-purple-500 focus:border-purple-500"
             />
           </div>
-          <button type="submit" className="bg-orange-600 text-white px-3 py-1.5 rounded-md text-sm font-medium hover:bg-orange-700 flex items-center gap-2 h-[34px]">
+          <button type="submit" className="bg-purple-600 text-white px-3 py-1.5 rounded-md text-sm font-medium hover:bg-purple-700 flex items-center gap-2 h-[34px]">
             <Filter className="h-4 w-4" /> Filtrer
           </button>
         </form>
@@ -172,7 +170,7 @@ export default function SoldesClientsPage() {
             placeholder="Rechercher par nom, code ou localisation..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full rounded-lg border border-gray-200 py-[9px] mt-auto h-[46px] md:h-auto pl-10 pr-4 focus:border-orange-500 focus:outline-none shadow-sm transition-all"
+            className="w-full rounded-lg border border-gray-200 py-[9px] mt-auto h-[46px] md:h-auto pl-10 pr-4 focus:border-purple-500 focus:outline-none shadow-sm transition-all text-sm"
           />
         </div>
       </div>
@@ -181,10 +179,10 @@ export default function SoldesClientsPage() {
       <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
         {loading ? (
           <div className="flex items-center justify-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin text-orange-500" />
+            <Loader2 className="h-8 w-8 animate-spin text-purple-500" />
           </div>
         ) : filteredData.length === 0 ? (
-          <p className="py-12 text-center text-gray-500 italic">Aucun client trouvé.</p>
+          <p className="py-12 text-center text-gray-500 italic">Aucun fournisseur trouvé.</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
@@ -192,40 +190,40 @@ export default function SoldesClientsPage() {
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-bold uppercase tracking-wider text-gray-500">Code / Nom</th>
                   <th className="px-6 py-3 text-left text-xs font-bold uppercase tracking-wider text-gray-500">Localisation</th>
-                  <th className="px-6 py-3 text-right text-xs font-bold uppercase tracking-wider text-gray-500">Total Factures (Période)</th>
-                  <th className="px-6 py-3 text-right text-xs font-bold uppercase tracking-wider text-gray-500">Paiements (Période)</th>
-                  <th className="px-6 py-3 text-right text-xs font-bold uppercase tracking-wider text-gray-500">Variation (Période)</th>
-                  <th className="px-6 py-3 text-right text-xs font-bold uppercase tracking-wider text-gray-500">Solde Global Client</th>
-                  <th className="px-6 py-3 text-center text-xs font-bold uppercase tracking-wider text-gray-500">Statut Global</th>
+                  <th className="px-6 py-3 text-right text-xs font-bold uppercase tracking-wider text-gray-500">Achats (Période)</th>
+                  <th className="px-6 py-3 text-right text-xs font-bold uppercase tracking-wider text-gray-500">Payé (Période)</th>
+                  <th className="px-6 py-3 text-right text-xs font-bold uppercase tracking-wider text-gray-500">Dette (Période)</th>
+                  <th className="px-6 py-3 text-right text-xs font-bold uppercase tracking-wider text-gray-500">Solde Global Dû</th>
+                  <th className="px-6 py-3 text-center text-xs font-bold uppercase tracking-wider text-gray-500">Statut</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 bg-white">
-                {filteredData.map((c) => (
-                  <tr key={c.id} className="hover:bg-gray-50 transition-colors">
+                {filteredData.map((f) => (
+                  <tr key={f.id} className="hover:bg-gray-50 transition-colors">
                     <td className="whitespace-nowrap px-6 py-4">
                       <div className="flex flex-col">
-                        <span className="text-xs font-mono font-bold text-gray-400 uppercase">{c.code || 'SANS CODE'}</span>
-                        <span className="font-semibold text-gray-900">{c.nom}</span>
+                        <span className="text-xs font-mono font-bold text-gray-400 uppercase">{f.code || 'SANS CODE'}</span>
+                        <span className="font-semibold text-gray-900">{f.nom}</span>
                       </div>
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-600 italic">
-                      {c.localisation || '—'}
+                      {f.localisation || '—'}
                     </td>
                     <td className="whitespace-nowrap px-6 py-4 text-right text-sm font-medium text-gray-600">
-                      {c.factures.toLocaleString('fr-FR')} F
+                      {f.achats.toLocaleString('fr-FR')} F
                     </td>
                     <td className="whitespace-nowrap px-6 py-4 text-right text-sm font-medium text-emerald-600">
-                      {c.paiements.toLocaleString('fr-FR')} F
+                      {f.paiements.toLocaleString('fr-FR')} F
                     </td>
                     <td className="whitespace-nowrap px-6 py-4 text-right text-sm font-medium text-amber-600">
-                      {c.variationPeriode.toLocaleString('fr-FR')} F
+                      {f.variationPeriode.toLocaleString('fr-FR')} F
                     </td>
-                    <td className={`whitespace-nowrap px-6 py-4 text-right text-sm font-bold ${c.soldeClient > 0 ? 'text-red-600' : 'text-emerald-700'}`}>
-                      {c.soldeClient.toLocaleString('fr-FR')} F
+                    <td className={`whitespace-nowrap px-6 py-4 text-right text-sm font-bold ${f.soldeGlobal > 0 ? 'text-red-600' : 'text-blue-700'}`}>
+                      {f.soldeGlobal.toLocaleString('fr-FR')} F
                     </td>
                     <td className="px-6 py-4 text-center">
-                      <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold leading-5 ${c.soldeClient > 0 ? 'bg-red-100 text-red-800' : 'bg-emerald-100 text-emerald-800'}`}>
-                        {c.soldeClient > 0 ? 'DOIT' : 'SOLDÉ'}
+                      <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold leading-5 ${f.soldeGlobal > 0 ? 'bg-red-100 text-red-800' : 'bg-blue-100 text-blue-800'}`}>
+                        {f.soldeGlobal > 0 ? 'À RÉGLER' : 'SOLDÉ'}
                       </span>
                     </td>
                   </tr>

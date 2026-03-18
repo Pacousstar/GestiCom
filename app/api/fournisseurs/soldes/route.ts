@@ -1,0 +1,104 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { prisma } from '@/lib/db'
+import { getSession } from '@/lib/auth'
+import { getEntiteId } from '@/lib/get-entite-id'
+
+export async function GET(request: NextRequest) {
+  const session = await getSession()
+  if (!session) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+
+  const entiteId = await getEntiteId(session)
+  const searchParams = request.nextUrl.searchParams
+  const dateDebut = searchParams.get('dateDebut')
+  const dateFin = searchParams.get('dateFin')
+
+  try {
+    const fournisseurs = await prisma.fournisseur.findMany({
+      where: { actif: true },
+      select: {
+        id: true,
+        code: true,
+        nom: true,
+        telephone: true,
+        localisation: true,
+      },
+      orderBy: { nom: 'asc' },
+    })
+
+    const whereAchat: any = {
+      entiteId,
+      clientId: { not: null }, // Oups, should be fournisseurId for Achat
+    }
+    
+    // Correction: Achat uses fournisseurId
+    delete whereAchat.clientId;
+    whereAchat.fournisseurId = { not: null };
+
+    const whereReglement: any = {
+      achat: { entiteId },
+    }
+
+    if (dateDebut && dateFin) {
+      const gte = new Date(dateDebut + 'T00:00:00')
+      const lte = new Date(dateFin + 'T23:59:59')
+      whereAchat.date = { gte, lte }
+      whereReglement.date = { gte, lte }
+    }
+
+    // Achats de la période
+    const achats = await prisma.achat.groupBy({
+      by: ['fournisseurId'],
+      where: whereAchat,
+      _sum: { montantTotal: true },
+    })
+
+    // Règlements de la période
+    const reglements = await prisma.reglementAchat.groupBy({
+      by: ['fournisseurId'],
+      where: whereReglement,
+      _sum: { montant: true },
+    })
+
+    // Totaux globaux pour le solde actuel réel
+    const achatsGlobaux = await prisma.achat.groupBy({
+      by: ['fournisseurId'],
+      where: { entiteId, fournisseurId: { not: null } },
+      _sum: { montantTotal: true },
+    })
+
+    const reglementsGlobaux = await prisma.reglementAchat.groupBy({
+      by: ['fournisseurId'],
+      where: { achat: { entiteId } },
+      _sum: { montant: true },
+    })
+
+    const achatMap = Object.fromEntries(achats.map((a) => [a.fournisseurId, a._sum.montantTotal || 0]))
+    const reglementMap = Object.fromEntries(reglements.map((r) => [r.fournisseurId, r._sum.montant || 0]))
+    const achatGlobalMap = Object.fromEntries(achatsGlobaux.map((a) => [a.fournisseurId, a._sum.montantTotal || 0]))
+    const reglementGlobalMap = Object.fromEntries(reglementsGlobaux.map((r) => [r.fournisseurId, r._sum.montant || 0]))
+
+    const data = fournisseurs.map((f) => {
+      const totalAchats = achatMap[f.id] || 0
+      const totalPaiements = reglementMap[f.id] || 0
+      
+      const totalAchatsGlobal = achatGlobalMap[f.id] || 0
+      const totalPaiementsGlobal = reglementGlobalMap[f.id] || 0
+      
+      // Solde Global = Ce qu'on doit au fournisseur (Achats - Déjà payé)
+      const soldeGlobal = totalAchatsGlobal - totalPaiementsGlobal
+
+      return {
+        ...f,
+        achats: totalAchats,
+        paiements: totalPaiements,
+        variationPeriode: totalAchats - totalPaiements,
+        soldeGlobal,
+      }
+    })
+
+    return NextResponse.json(data)
+  } catch (error) {
+    console.error('GET /api/fournisseurs/soldes:', error)
+    return NextResponse.json({ error: 'Erreur serveur.' }, { status: 500 })
+  }
+}

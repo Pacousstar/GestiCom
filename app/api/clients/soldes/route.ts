@@ -9,10 +9,10 @@ export async function GET(request: NextRequest) {
 
   const entiteId = await getEntiteId(session)
   const searchParams = request.nextUrl.searchParams
-  const q = searchParams.get('q')?.toLowerCase()
+  const dateDebut = searchParams.get('dateDebut')
+  const dateFin = searchParams.get('dateFin')
 
   try {
-    // 1. Récupérer les clients de l'entité
     const clients = await prisma.client.findMany({
       where: { actif: true },
       select: {
@@ -21,59 +21,81 @@ export async function GET(request: NextRequest) {
         nom: true,
         telephone: true,
         ncc: true,
-        localisation: true, // Champ ajouté
+        localisation: true,
         soldeInitial: true,
       },
       orderBy: { nom: 'asc' },
     })
 
-    // 2. Récupérer le cumul des factures (ventes validées)
+    const whereVente: any = {
+      entiteId,
+      statut: 'VALIDEE',
+      clientId: { not: null },
+    }
+    
+    // Pour les règlements, la relation Vente donne l'entité
+    const whereReglement: any = {
+      vente: { entiteId },
+    }
+
+    if (dateDebut && dateFin) {
+      const gte = new Date(dateDebut + 'T00:00:00')
+      const lte = new Date(dateFin + 'T23:59:59')
+      whereVente.date = { gte, lte }
+      whereReglement.date = { gte, lte }
+    }
+
     const ventes = await prisma.vente.groupBy({
       by: ['clientId'],
-      where: {
-        entiteId,
-        statut: 'VALIDEE',
-        clientId: { not: null },
-      },
-      _sum: {
-        montantTotal: true,
-      },
+      where: whereVente,
+      _sum: { montantTotal: true },
     })
 
-    // 3. Récupérer le cumul des règlements (somme des montants payés sur les factures)
-    const reglements = await prisma.vente.groupBy({
+    const reglements = await prisma.reglementVente.groupBy({
       by: ['clientId'],
-      where: {
-        entiteId,
-        statut: 'VALIDEE',
-        clientId: { not: null },
-      },
-      _sum: {
-        montantPaye: true,
-      },
+      where: whereReglement,
+      _sum: { montant: true },
     })
 
-    // 4. Fusionner les données
+    // Requêtes globales pour le solde final absolu
+    const ventesGlobales = await prisma.vente.groupBy({
+      by: ['clientId'],
+      where: { entiteId, statut: 'VALIDEE', clientId: { not: null } },
+      _sum: { montantTotal: true },
+    })
+
+    const reglementsGlobaux = await prisma.reglementVente.groupBy({
+      by: ['clientId'],
+      where: { vente: { entiteId } },
+      _sum: { montant: true },
+    })
+
     const venteMap = Object.fromEntries(ventes.map((v) => [v.clientId, v._sum.montantTotal || 0]))
-    const reglementMap = Object.fromEntries(reglements.map((r) => [r.clientId, r._sum.montantPaye || 0]))
+    const reglementMap = Object.fromEntries(reglements.map((r) => [r.clientId, r._sum.montant || 0]))
+    const venteGlobaleMap = Object.fromEntries(ventesGlobales.map((v) => [v.clientId, v._sum.montantTotal || 0]))
+    const reglementGlobaleMap = Object.fromEntries(reglementsGlobaux.map((r) => [r.clientId, r._sum.montant || 0]))
 
     let data = clients.map((c) => {
       const factures = venteMap[c.id] || 0
       const paiements = reglementMap[c.id] || 0
+      
+      const facturesGlobal = venteGlobaleMap[c.id] || 0
+      const paiementsGlobal = reglementGlobaleMap[c.id] || 0
       const soldeInitial = c.soldeInitial || 0
-      // Solde Client = Factures (ce qu'on lui a vendu) - Paiements (ce qu'il a déjà réglé) - Solde Déposé (son crédit d'entrée)
-      // Si positif : il doit. Si négatif : on lui doit.
-      const soldeClient = factures - paiements - soldeInitial
+      
+      const variationPeriode = factures - paiements
+      const soldeClient = facturesGlobal - paiementsGlobal - soldeInitial
 
       return {
         ...c,
         factures,
         paiements,
-        soldeClient,
+        variationPeriode,
+        soldeClient, // Dette réelle actuelle calculée
       }
     })
 
-    // Filtrage simple si recherche
+    const q = searchParams.get('q')?.toLowerCase()
     if (q) {
       data = data.filter(
         (c) =>
