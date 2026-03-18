@@ -4,6 +4,13 @@ const path = require('path');
 const nextConfig = {
   output: 'standalone',
   outputFileTracingRoot: path.join(__dirname),
+  outputFileTracingExcludes: {
+    '*': [
+      'C:/gesticom/**',
+      'C:/GestiCom/**',
+      '**/gesticom.db*'
+    ],
+  },
 };
 
 module.exports = nextConfig;
