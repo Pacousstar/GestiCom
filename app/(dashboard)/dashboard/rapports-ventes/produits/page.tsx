@@ -5,11 +5,11 @@ import RapportsNav from '../RapportsNav'
 import { Filter, Package, Loader2 } from 'lucide-react'
 
 interface ProduitData {
-    produit: string
-    categorie: string
-    quantiteVendue: number
-    chiffreAffaires: number
-    marge: number
+    produitId: number
+    designation: string
+    quantiteTotale: number
+    caTotal: number
+    nombreTransactions: number
 }
 
 const formatCurrency = (val: number) => {
@@ -34,7 +34,7 @@ export default function ParProduitPage() {
     const fetchData = async (start: string, end: string) => {
         setLoading(true)
         try {
-            const res = await fetch(`/api/rapports/ventes/produits?start=${start}&end=${end}`)
+            const res = await fetch(`/api/rapports/ventes/produits?dateDebut=${start}&dateFin=${end}`)
             if (res.ok) {
                 const json = await res.json()
                 setData(json)
@@ -108,14 +108,12 @@ export default function ParProduitPage() {
                         <tbody className="divide-y divide-gray-100">
                             {data.map((row, idx) => (
                                 <tr key={idx} className="hover:bg-purple-50/50 transition-colors">
-                                    <td className="px-6 py-4 font-medium text-gray-900">{row.produit}</td>
-                                    <td className="px-6 py-4 text-gray-900 text-sm">{row.categorie}</td>
-                                    <td className="px-6 py-4 text-right font-bold text-gray-900">{row.quantiteVendue}</td>
-                                    <td className="px-6 py-4 text-right text-purple-700 font-medium">{formatCurrency(row.chiffreAffaires)}</td>
+                                    <td className="px-6 py-4 font-medium text-gray-900">{row.designation}</td>
+                                    <td className="px-6 py-4 text-gray-900 text-sm">Produit</td>
+                                    <td className="px-6 py-4 text-right font-bold text-gray-900">{row.quantiteTotale}</td>
+                                    <td className="px-6 py-4 text-right text-purple-700 font-medium">{formatCurrency(row.caTotal)}</td>
                                     <td className="px-6 py-4 text-right text-gray-900 font-medium">
-                                        <span className={row.marge > 0 ? "text-green-600" : row.marge < 0 ? "text-red-500" : ""}>
-                                            {formatCurrency(row.marge)}
-                                        </span>
+                                        -
                                     </td>
                                 </tr>
                             ))}

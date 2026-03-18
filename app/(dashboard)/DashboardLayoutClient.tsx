@@ -63,6 +63,7 @@ const navigation: Array<{
     { name: 'Charges', href: '/dashboard/charges', icon: TrendingUp, permission: 'charges:view' },
     { name: 'Rapports', href: '/dashboard/rapports', icon: FileBarChart, permission: 'rapports:view' },
     { name: 'Rapports Vente', href: '/dashboard/rapports-ventes', icon: TrendingUp, permission: 'rapports:view' },
+    { name: 'État des Paiements', href: '/dashboard/rapports-finances', icon: DollarSign, permission: 'rapports:view' },
     { name: 'Suivi Fournisseurs', href: '/dashboard/rapports-fournisseurs', icon: Truck, permission: 'rapports:view' },
     { name: 'Inventaire Global', href: '/dashboard/rapports-inventaire', icon: FileText, permission: 'rapports:view' },
     { name: 'Rentabilité Produits', href: '/dashboard/rapports/rentabilite', icon: TrendingUp, permission: 'rapports:view' },

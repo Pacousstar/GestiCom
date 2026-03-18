@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { Truck, Search, Plus, Loader2, Pencil, Trash2, FileSpreadsheet, Download, Clock, X, FileText, Calendar, ChevronRight } from 'lucide-react'
+import { Truck, Search, Plus, Loader2, Pencil, Trash2, FileSpreadsheet, Download, Clock, X, FileText, Calendar, ChevronRight, DollarSign } from 'lucide-react'
+import PaymentModal from '@/components/dashboard/PaymentModal'
 import { useToast } from '@/hooks/useToast'
 import { fournisseurSchema } from '@/lib/validations'
 import { validateForm, formatApiError } from '@/lib/validation-helpers'
@@ -38,6 +39,7 @@ export default function FournisseursPage() {
   const [selectedHistory, setSelectedHistory] = useState<{ id: number; nom: string } | null>(null)
   const [historyData, setHistoryData] = useState<any[]>([])
   const [loadingHistory, setLoadingHistory] = useState(false)
+  const [paymentModal, setPaymentModal] = useState<{ fournisseur: Fournisseur; invoices: any[] } | null>(null)
 
   useEffect(() => {
     fetch('/api/auth/check').then((r) => r.ok && r.json()).then((d) => d && setUserRole(d.role)).catch(() => { })
@@ -208,6 +210,23 @@ export default function FournisseursPage() {
       showError('Erreur chargement historique.')
     } finally {
       setLoadingHistory(false)
+    }
+  }
+
+  const openPaymentModal = async (f: Fournisseur) => {
+    try {
+      const res = await fetch(`/api/rapports/finances/etat-paiements?type=ACHAT&filter=NON_SOLDER&dateDebut=2000-01-01&dateFin=2100-12-31`)
+      if (res.ok) {
+        const allInvoices = await res.json()
+        const providerInvoices = allInvoices.filter((inv: any) => inv.tier === f.nom)
+        if (providerInvoices.length === 0) {
+            showError("Aucun achat impayé trouvé pour ce fournisseur.")
+            return
+        }
+        setPaymentModal({ fournisseur: f, invoices: providerInvoices })
+      }
+    } catch (e) {
+      showError("Erreur lors de la récupération des factures.")
     }
   }
 
@@ -389,6 +408,15 @@ export default function FournisseursPage() {
                           >
                             <Clock className="h-4 w-4" />
                           </button>
+                          {Number(f.dette ?? 0) > 0 && (
+                            <button
+                              onClick={() => openPaymentModal(f)}
+                              className="rounded p-1.5 text-blue-600 hover:bg-blue-50"
+                              title="Régler / Payer fournisseur"
+                            >
+                              <DollarSign className="h-4 w-4" />
+                            </button>
+                          )}
                           <button
                             onClick={() => openForm(f)}
                             className="rounded p-1.5 text-gray-500 hover:bg-gray-100 hover:text-orange-600"
@@ -492,6 +520,19 @@ export default function FournisseursPage() {
             )}
           </div>
         </div>
+      )}
+
+      {paymentModal && (
+        <PaymentModal
+          isOpen={!!paymentModal}
+          onClose={() => setPaymentModal(null)}
+          onSuccess={() => fetchList()}
+          type="ACHAT"
+          tierId={paymentModal.fournisseur.id}
+          tierNom={paymentModal.fournisseur.nom}
+          totalDu={paymentModal.fournisseur.dette || 0}
+          invoices={paymentModal.invoices}
+        />
       )}
     </div>
   )

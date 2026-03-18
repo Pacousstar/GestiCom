@@ -6,9 +6,11 @@ import { Filter, UserCheck, Loader2, X, Calendar, FileText, ChevronRight, PieCha
 import { useToast } from '@/hooks/useToast'
 
 interface ClientData {
+    clientId: number
     client: string
-    chiffreAffaires: number
-    frequenceAchat: number
+    caTotal: number
+    nombreVentes: number
+    soldeDu: number
 }
 
 const formatCurrency = (val: number) => {
@@ -37,7 +39,7 @@ export default function ParClientPage() {
     const fetchData = async (start: string, end: string) => {
         setLoading(true)
         try {
-            const res = await fetch(`/api/rapports/ventes/clients?start=${start}&end=${end}`)
+            const res = await fetch(`/api/rapports/ventes/clients?dateDebut=${start}&dateFin=${end}`)
             if (res.ok) {
                 const json = await res.json()
                 setData(json)
@@ -120,7 +122,8 @@ export default function ParClientPage() {
                                 <th className="px-6 py-3 text-sm font-bold text-gray-900 uppercase">Client</th>
                                 <th className="px-6 py-3 text-sm font-bold text-gray-900 uppercase text-right">CA Généré</th>
                                 <th className="px-6 py-3 text-sm font-bold text-gray-900 uppercase text-right">Nb Achats</th>
-                                <th className="px-6 py-3 text-sm font-bold text-gray-900 uppercase text-right">Moyenne par Achat</th>
+                                <th className="px-6 py-3 text-sm font-bold text-gray-900 uppercase text-right">Solde Dû</th>
+                                <th className="px-6 py-3 text-sm font-bold text-gray-900 uppercase text-right">Moyenne</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100">
@@ -134,14 +137,15 @@ export default function ParClientPage() {
                                         {row.client}
                                         <ChevronRight className="h-4 w-4 text-gray-300 group-hover:text-green-500 transition-all opacity-0 group-hover:opacity-100 mr-2" />
                                     </td>
-                                    <td className="px-6 py-4 text-right text-green-700 font-bold">{formatCurrency(row.chiffreAffaires)}</td>
+                                    <td className="px-6 py-4 text-right text-green-700 font-bold">{formatCurrency(row.caTotal)}</td>
                                     <td className="px-6 py-4 text-right text-gray-900">
                                         <span className="inline-flex items-center justify-center bg-gray-100 px-2 py-1 rounded text-xs font-semibold">
-                                            {row.frequenceAchat}
+                                            {row.nombreVentes}
                                         </span>
                                     </td>
+                                    <td className="px-6 py-4 text-right text-red-600 font-bold">{formatCurrency(row.soldeDu)}</td>
                                     <td className="px-6 py-4 text-right text-gray-900">
-                                        {formatCurrency(row.frequenceAchat > 0 ? row.chiffreAffaires / row.frequenceAchat : 0)}
+                                        {formatCurrency(row.nombreVentes > 0 ? row.caTotal / row.nombreVentes : 0)}
                                     </td>
                                 </tr>
                             ))}

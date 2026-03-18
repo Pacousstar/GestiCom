@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { Users, Search, Plus, Loader2, Pencil, Trash2, X, FileSpreadsheet, Download, Clock, Calendar, FileText, ChevronRight } from 'lucide-react'
+import { Users, Search, Plus, Loader2, Pencil, Trash2, X, FileSpreadsheet, Download, Clock, Calendar, FileText, ChevronRight, DollarSign } from 'lucide-react'
+import PaymentModal from '@/components/dashboard/PaymentModal'
 import { useToast } from '@/hooks/useToast'
 import { clientSchema } from '@/lib/validations'
 import { validateForm, formatApiError } from '@/lib/validation-helpers'
@@ -49,6 +50,7 @@ export default function ClientsPage() {
   const [selectedHistory, setSelectedHistory] = useState<{ id: number; nom: string } | null>(null)
   const [historyData, setHistoryData] = useState<any[]>([])
   const [loadingHistory, setLoadingHistory] = useState(false)
+  const [paymentModal, setPaymentModal] = useState<{ client: Client; invoices: any[] } | null>(null)
 
   useEffect(() => {
     fetch('/api/auth/check').then((r) => r.ok && r.json()).then((d) => d && setUserRole(d.role)).catch(() => { })
@@ -227,6 +229,23 @@ export default function ClientsPage() {
       showError('Erreur chargement historique client.')
     } finally {
       setLoadingHistory(false)
+    }
+  }
+
+  const openPaymentModal = async (c: Client) => {
+    try {
+      const res = await fetch(`/api/rapports/finances/etat-paiements?type=VENTE&filter=NON_SOLDER&dateDebut=2000-01-01&dateFin=2100-12-31`)
+      if (res.ok) {
+        const allInvoices = await res.json()
+        const clientInvoices = allInvoices.filter((inv: any) => inv.tier === c.nom || (inv.client?.nom === c.nom))
+        if (clientInvoices.length === 0) {
+            showError("Aucune facture impayée trouvée pour ce client.")
+            return
+        }
+        setPaymentModal({ client: c, invoices: clientInvoices })
+      }
+    } catch (e) {
+      showError("Erreur lors de la récupération des factures.")
     }
   }
 
@@ -431,7 +450,7 @@ export default function ClientsPage() {
                         : '—'}
                     </td>
                     <td className="px-4 py-3 text-right text-sm font-medium text-gray-700">
-                      {c.type === 'CREDIT' ? `${Number(c.dette ?? 0).toLocaleString('fr-FR')} F` : '—'}
+                      {Number(c.dette ?? 0).toLocaleString('fr-FR')} F
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-1">
@@ -442,6 +461,15 @@ export default function ClientsPage() {
                           >
                             <Clock className="h-4 w-4" />
                           </button>
+                          {Number(c.dette ?? 0) > 0 && (
+                            <button
+                              onClick={() => openPaymentModal(c)}
+                              className="rounded p-1.5 text-green-600 hover:bg-green-50"
+                              title="Solder / Encaisser règlement"
+                            >
+                              <DollarSign className="h-4 w-4" />
+                            </button>
+                          )}
                           <button
                             onClick={() => openForm(c)}
                             className="rounded p-1.5 text-gray-500 hover:bg-gray-100 hover:text-orange-600"
@@ -545,6 +573,19 @@ export default function ClientsPage() {
             )}
           </div>
         </div>
+      )}
+
+      {paymentModal && (
+        <PaymentModal
+          isOpen={!!paymentModal}
+          onClose={() => setPaymentModal(null)}
+          onSuccess={() => fetchList()}
+          type="VENTE"
+          tierId={paymentModal.client.id}
+          tierNom={paymentModal.client.nom}
+          totalDu={paymentModal.client.dette || 0}
+          invoices={paymentModal.invoices}
+        />
       )}
     </div>
   )
