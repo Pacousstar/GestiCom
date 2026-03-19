@@ -16,6 +16,7 @@ interface SoldeClient {
   soldeInitial: number
   variationPeriode: number
   soldeClient: number
+  statut: 'DOIT' | 'SOLDE' | 'CREDIT'
 }
 
 export default function SoldesClientsPage() {
@@ -220,12 +221,16 @@ export default function SoldesClientsPage() {
                     <td className="whitespace-nowrap px-6 py-4 text-right text-sm font-medium text-amber-600">
                       {c.variationPeriode.toLocaleString('fr-FR')} F
                     </td>
-                    <td className={`whitespace-nowrap px-6 py-4 text-right text-sm font-bold ${c.soldeClient > 0 ? 'text-red-600' : 'text-emerald-700'}`}>
+                    <td className={`whitespace-nowrap px-6 py-4 text-right text-sm font-bold ${c.statut === 'DOIT' ? 'text-red-600' : c.statut === 'CREDIT' ? 'text-blue-600' : 'text-emerald-700'}`}>
                       {c.soldeClient.toLocaleString('fr-FR')} F
                     </td>
                     <td className="px-6 py-4 text-center">
-                      <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold leading-5 ${c.soldeClient > 0 ? 'bg-red-100 text-red-800' : 'bg-emerald-100 text-emerald-800'}`}>
-                        {c.soldeClient > 0 ? 'DOIT' : 'SOLDÉ'}
+                      <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold leading-5 ${
+                        c.statut === 'DOIT' ? 'bg-red-100 text-red-800' :
+                        c.statut === 'CREDIT' ? 'bg-blue-100 text-blue-800' :
+                        'bg-emerald-100 text-emerald-800'
+                      }`}>
+                        {c.statut === 'DOIT' ? 'DOIT' : c.statut === 'CREDIT' ? 'EN CRÉDIT' : 'SOLDÉ'}
                       </span>
                     </td>
                   </tr>

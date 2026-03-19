@@ -224,6 +224,22 @@ export async function POST(request: NextRequest) {
       })
     }
 
+    // ✅ AUTO-RÈGLEMENT : Si paiement immédiat (non CREDIT), créer un ReglementVente
+    // Sans ça, les soldes clients ne comptabilisent pas les paiements ESPECES/CARTE.
+    if (modePaiement !== 'CREDIT' && montantPaye > 0 && clientId) {
+      await prisma.reglementVente.create({
+        data: {
+          venteId: vente.id,
+          clientId,
+          montant: montantPaye,
+          modePaiement,
+          utilisateurId: session.userId,
+          observation: `Règlement automatique - Vente ${num}`,
+          date: dateVente,
+        }
+      })
+    }
+
     try {
       await comptabiliserVente({
         venteId: vente.id,

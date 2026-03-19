@@ -81,17 +81,22 @@ export async function GET(request: NextRequest) {
       
       const facturesGlobal = venteGlobaleMap[c.id] || 0
       const paiementsGlobal = reglementGlobaleMap[c.id] || 0
+      // soldeInitial = dette initiale existante avant usage de GestiCom (doit être AJOUTÉE)
       const soldeInitial = c.soldeInitial || 0
       
       const variationPeriode = factures - paiements
-      const soldeClient = facturesGlobal - paiementsGlobal - soldeInitial
+      // ✅ FORMULE CORRIGÉE : SoldeGlobal = Dettes(factures-paiements) + DetteDépart
+      const soldeClient = facturesGlobal - paiementsGlobal + soldeInitial
+
+      const statut = soldeClient > 0.01 ? 'DOIT' : soldeClient < -0.01 ? 'CREDIT' : 'SOLDE'
 
       return {
         ...c,
         factures,
         paiements,
         variationPeriode,
-        soldeClient, // Dette réelle actuelle calculée
+        soldeClient,
+        statut,
       }
     })
 
