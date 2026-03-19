@@ -82,7 +82,7 @@ export async function POST(request: NextRequest) {
     const magasinId = Number(body?.magasinId)
     const fournisseurId = body?.fournisseurId != null ? Number(body.fournisseurId) : null
     const fournisseurLibre = body?.fournisseurLibre != null ? String(body.fournisseurLibre).trim() || null : null
-    const modePaiement = ['ESPECES', 'MOBILE_MONEY', 'CREDIT', 'VIREMENT'].includes(String(body?.modePaiement || ''))
+    const modePaiement = ['ESPECES', 'MOBILE_MONEY', 'CHEQUE', 'CREDIT', 'VIREMENT'].includes(String(body?.modePaiement || ''))
       ? String(body.modePaiement)
       : 'ESPECES'
     const montantPayeRaw = body?.montantPaye != null ? Math.max(0, Number(body.montantPaye) || 0) : null

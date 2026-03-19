@@ -163,7 +163,7 @@ export default function DepensesPage() {
       libelle: formData.libelle.trim(),
       montant: Number(formData.montant),
       montantPaye: formData.montantPaye !== '' ? Number(formData.montantPaye) : undefined,
-      modePaiement: formData.modePaiement as 'ESPECES' | 'MOBILE_MONEY' | 'CREDIT' | 'VIREMENT',
+      modePaiement: formData.modePaiement as 'ESPECES' | 'MOBILE_MONEY' | 'CREDIT' | 'VIREMENT' | 'CHEQUE',
       beneficiaire: formData.beneficiaire.trim() || null,
     }
 

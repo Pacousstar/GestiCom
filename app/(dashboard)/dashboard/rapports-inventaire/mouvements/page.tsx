@@ -44,11 +44,18 @@ export default function MouvementsStockPage() {
   const loadFilters = async () => {
     try {
       const [prodRes, magRes] = await Promise.all([
-        fetch('/api/produits'),
+        fetch('/api/produits?limit=1000'),
         fetch('/api/magasins')
       ])
-      if (prodRes.ok) setProducts(await prodRes.json())
-      if (magRes.ok) setMagasins(await magRes.json())
+      if (prodRes.ok) {
+        const prodData = await prodRes.json()
+        // L'API produits retourne { data: [...], pagination: {...} } (paginé)
+        setProducts(Array.isArray(prodData) ? prodData : (prodData.data || []))
+      }
+      if (magRes.ok) {
+        const magData = await magRes.json()
+        setMagasins(Array.isArray(magData) ? magData : (magData.data || []))
+      }
     } catch (e) {
       console.error(e)
     }
@@ -218,37 +225,37 @@ export default function MouvementsStockPage() {
                 {filteredData.map((m) => (
                   <tr key={m.id} className="hover:bg-gray-50 transition-colors">
                     <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-600">
-                      {new Date(m.date).toLocaleString('fr-FR', {
+                      {m.date ? new Date(m.date).toLocaleString('fr-FR', {
                         day: '2-digit',
                         month: '2-digit',
                         year: 'numeric',
                         hour: '2-digit',
                         minute: '2-digit'
-                      })}
+                      }) : 'Date inconnue'}
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex flex-col">
-                        <span className="font-bold text-gray-900">{m.produit}</span>
+                        <span className="font-bold text-gray-900">{m.produit || 'Produit inconnu'}</span>
                         <span className="text-xs font-mono text-gray-400 uppercase">{m.code || 'SANS CODE'}</span>
                       </div>
                     </td>
                     <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-600">
                       <div className="flex items-center gap-2">
-                        <Warehouse className="h-3 w-3 text-gray-400" /> {m.magasin}
+                        <Warehouse className="h-3 w-3 text-gray-400" /> {m.magasin || 'Magasin inconnu'}
                       </div>
                     </td>
                     <td className="px-6 py-4 text-center">
-                      <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold border ${getTypeStyle(m.type)}`}>
-                        {getTypeIcon(m.type)}
-                        {m.type}
+                      <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold border ${getTypeStyle(m.type || '')}`}>
+                        {getTypeIcon(m.type || '')}
+                        {m.type || 'INCONNU'}
                       </span>
                     </td>
                     <td className={`whitespace-nowrap px-6 py-4 text-right text-sm font-black ${m.type === 'SORTIE' ? 'text-red-600' : 'text-emerald-600'}`}>
-                      {m.type === 'SORTIE' ? '-' : '+'}{m.quantite.toLocaleString()} {m.unite || 'u'}
+                      {m.type === 'SORTIE' ? '-' : '+'}{(m.quantite || 0).toLocaleString()} {m.unite || 'u'}
                     </td>
                     <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
                       <div className="flex items-center gap-2">
-                        <User className="h-3 w-3" /> {m.utilisateur}
+                        <User className="h-3 w-3" /> {m.utilisateur || 'Système'}
                       </div>
                     </td>
                   </tr>

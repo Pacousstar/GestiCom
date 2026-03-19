@@ -32,6 +32,7 @@ import {
   Loader2,
   CreditCard,
   FileBarChart,
+  Archive,
 } from 'lucide-react'
 import type { Session } from '@/lib/auth'
 import { ToastContainer } from '@/components/ui/Toast'
@@ -52,6 +53,7 @@ const navigation: Array<{
     { name: 'Stock', href: '/dashboard/stock', icon: Warehouse, permission: 'stocks:view' },
     { name: 'Ventes', href: '/dashboard/ventes', icon: ShoppingCart, permission: 'ventes:view' },
     { name: 'Vente Rapide (PRO)', href: '/dashboard/ventes/rapide', icon: CreditCard, permission: 'ventes:view' },
+    { name: 'Anciennes Ventes', href: '/dashboard/ventes/historiques', icon: Archive, permission: 'ventes:view' },
     { name: 'Clients', href: '/dashboard/clients', icon: Users, permission: 'clients:view' },
     { name: 'Soldes Clients', href: '/dashboard/clients/soldes', icon: FileText, permission: 'clients:view' },
     { name: 'Paiements Clients', href: '/dashboard/clients/paiements', icon: Wallet, permission: 'clients:view' },

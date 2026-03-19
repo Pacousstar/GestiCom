@@ -312,6 +312,7 @@ model Vente {
   pointsGagnes   Int              @default(0)
   statut         String           @default("VALIDEE")
   observation    String?
+  estHistorique  Boolean          @default(false)
   createdAt      DateTime         @default(now())
   reglements     ReglementVente[]
   utilisateur    Utilisateur      @relation(fields: [utilisateurId], references: [id])

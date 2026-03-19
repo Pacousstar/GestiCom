@@ -561,6 +561,7 @@ export default function AchatsPage() {
                   <option value="ESPECES">Espèces</option>
                   <option value="MOBILE_MONEY">Mobile money</option>
                   <option value="VIREMENT">Virement</option>
+                  <option value="CHEQUE">Chèque</option>
                   <option value="CREDIT">Crédit</option>
                 </select>
               </div>
@@ -984,6 +985,7 @@ export default function AchatsPage() {
                   <option value="ESPECES">Espèces</option>
                   <option value="MOBILE_MONEY">Mobile money</option>
                   <option value="VIREMENT">Virement</option>
+                  <option value="CHEQUE">Chèque</option>
                 </select>
               </div>
               <div className="flex gap-2 pt-2">

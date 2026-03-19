@@ -79,6 +79,8 @@ export default function VentesPage() {
   const [ajoutProduit, setAjoutProduit] = useState({ produitId: '', quantite: '1', prixUnitaire: '', tva: '', remise: '', recherche: '' })
   const [dateDebut, setDateDebut] = useState('')
   const [dateFin, setDateFin] = useState('')
+  const [filterClientId, setFilterClientId] = useState('')
+  const [filterClientSearch, setFilterClientSearch] = useState('')
   const [addLignesPopupOpen, setAddLignesPopupOpen] = useState(false)
   const [popupLignes, setPopupLignes] = useState<Ligne[]>([])
   const [popupAjoutProduit, setPopupAjoutProduit] = useState({ produitId: '', quantite: '1', prixUnitaire: '', tva: '', remise: '', recherche: '' })
@@ -141,10 +143,15 @@ export default function VentesPage() {
     const date = new Date(d.date)
     // Toutes les lignes (articles) de la vente sont affichées sur une même facture
     const lignes = Array.isArray(d.lignes) ? d.lignes : []
+    const totalHT = lignes.reduce((acc, l) => acc + (l.quantite * l.prixUnitaire), 0)
+    const totalTVA = lignes.reduce((acc, l) => acc + (l.quantite * l.prixUnitaire * (l.tva / 100)), 0)
+    const totalLinesRemise = lignes.reduce((acc, l) => acc + (Number(l.remise) || 0), 0)
+    
     const lignesHtml = generateLignesHTML(lignes.map((l) => ({
       designation: l.designation,
       quantite: l.quantite,
       prixUnitaire: l.prixUnitaire,
+      remise: l.remise,
       montant: l.montant,
     })))
 
@@ -159,6 +166,10 @@ export default function VentesPage() {
       CLIENT_LOCALISATION: d.client?.adresse || undefined,
       CLIENT_NCC: d.client?.ncc || undefined,
       LIGNES: lignesHtml,
+      TOTAL_HT: `${totalHT.toLocaleString('fr-FR')} FCFA`,
+      TOTAL_TVA: totalTVA > 0 ? `${totalTVA.toLocaleString('fr-FR')} FCFA` : undefined,
+      TOTAL_REMISE: totalLinesRemise > 0 ? `${totalLinesRemise.toLocaleString('fr-FR')} FCFA` : undefined,
+      REMISE_GLOBALE: d.remiseGlobale > 0 ? `${Number(d.remiseGlobale).toLocaleString('fr-FR')} FCFA` : undefined,
       TOTAL: `${Number(d.montantTotal).toLocaleString('fr-FR')} FCFA`,
       MONTANT_PAYE: d.montantPaye ? `${Number(d.montantPaye).toLocaleString('fr-FR')} FCFA` : undefined,
       RESTE: d.statutPaiement !== 'PAYE' ? `${(Number(d.montantTotal) - (Number(d.montantPaye) || 0)).toLocaleString('fr-FR')} FCFA` : undefined,
@@ -232,6 +243,7 @@ export default function VentesPage() {
     const fin = overrideFin ?? dateFin
     if (deb) params.set('dateDebut', deb)
     if (fin) params.set('dateFin', fin)
+    if (filterClientId) params.set('clientId', filterClientId)
     fetch('/api/ventes?' + params.toString())
       .then((r) => (r.ok ? r.json() : { data: [], pagination: null, totals: null }))
       .then((response) => {
@@ -693,6 +705,54 @@ export default function VentesPage() {
             className="mt-1 rounded-lg border border-gray-200 px-2 py-1.5 text-sm"
           />
         </div>
+        <div className="relative">
+          <label className="block text-xs font-medium text-gray-800">Client (Filtrer)</label>
+          <div className="relative mt-1">
+            <input
+              type="text"
+              placeholder="Rechercher client..."
+              value={filterClientSearch}
+              onChange={(e) => {
+                setFilterClientSearch(e.target.value)
+                if (!e.target.value) setFilterClientId('')
+              }}
+              className="w-full min-w-[150px] rounded-lg border border-gray-200 py-1.5 pl-3 pr-8 text-sm focus:border-orange-500 focus:outline-none"
+            />
+            {filterClientSearch && !filterClientId && (
+              <div className="absolute left-0 right-0 z-50 mt-1 max-h-48 overflow-auto rounded-lg border border-gray-200 bg-white shadow-lg">
+                <div 
+                  className="cursor-pointer px-3 py-2 text-sm hover:bg-orange-50 font-medium text-gray-500 border-b"
+                  onClick={() => { setFilterClientId(''); setFilterClientSearch('') }}
+                >
+                  Tous les clients
+                </div>
+                {clients
+                  .filter(c => c.nom.toLowerCase().includes(filterClientSearch.toLowerCase()))
+                  .map(c => (
+                    <div
+                      key={c.id}
+                      onClick={() => {
+                        setFilterClientId(String(c.id))
+                        setFilterClientSearch(c.nom)
+                      }}
+                      className="cursor-pointer px-3 py-2 text-sm hover:bg-orange-50"
+                    >
+                      {c.nom}
+                    </div>
+                  ))
+                }
+              </div>
+            )}
+            {filterClientId && (
+               <button 
+                 onClick={() => { setFilterClientId(''); setFilterClientSearch('') }}
+                 className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+               >
+                 <X className="h-3 w-3" />
+               </button>
+            )}
+          </div>
+        </div>
         <button
           type="button"
           onClick={() => { setCurrentPage(1); fetchVentes(undefined, undefined, 1); }}
@@ -702,7 +762,7 @@ export default function VentesPage() {
         </button>
         <button
           type="button"
-          onClick={() => { setDateDebut(''); setDateFin(''); setCurrentPage(1); fetchVentes('', '', 1); }}
+          onClick={() => { setDateDebut(''); setDateFin(''); setFilterClientId(''); setCurrentPage(1); fetchVentes('', '', 1); }}
           className="rounded-lg border-2 border-orange-400 bg-orange-100 px-3 py-1.5 text-sm font-medium text-orange-900 hover:bg-orange-200"
         >
           Réinitialiser
@@ -798,6 +858,7 @@ export default function VentesPage() {
                 >
                   <option value="ESPECES">Espèces</option>
                   <option value="MOBILE_MONEY">Mobile money</option>
+                  <option value="CHEQUE">Chèque</option>
                   <option value="VIREMENT">Virement</option>
                   <option value="CREDIT">Crédit</option>
                 </select>
@@ -1176,6 +1237,7 @@ export default function VentesPage() {
                 <tr className="bg-gray-50">
                   <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-gray-600">N°</th>
                   <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-gray-600">Date</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-gray-600">Client</th>
                   <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-gray-600">Magasin</th>
                   <th className="px-4 py-3 text-right text-xs font-semibold uppercase text-gray-600">Montant</th>
                   <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-gray-600">Paiement</th>
@@ -1193,6 +1255,9 @@ export default function VentesPage() {
                       <td className="px-4 py-3 font-mono text-sm text-gray-900">{v.numero}</td>
                       <td className="px-4 py-3 text-sm text-gray-600">
                         {formatDate(v.date)}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-700 font-medium">
+                        {(v as any).client?.nom || (v as any).clientLibre || <span className="text-gray-400 italic">—</span>}
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-600">{v.magasin.code}</td>
                       <td className="px-4 py-3 text-right font-medium text-gray-900">
@@ -1597,6 +1662,7 @@ export default function VentesPage() {
                   <option value="ESPECES">Espèces</option>
                   <option value="MOBILE_MONEY">Mobile money</option>
                   <option value="VIREMENT">Virement</option>
+                  <option value="CHEQUE">Chèque</option>
                 </select>
               </div>
               <div className="flex gap-2 pt-2">

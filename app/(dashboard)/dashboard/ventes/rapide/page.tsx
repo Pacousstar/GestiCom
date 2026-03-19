@@ -273,7 +273,7 @@ export default function VenteRapidePage() {
                   </div>
 
                   <div className="grid grid-cols-2 gap-4 mb-8">
-                      {['ESPECES', 'MOBILE_MONEY', 'VIREMENT', 'CREDIT'].map(m => (
+                      {['ESPECES', 'MOBILE_MONEY', 'CHEQUE', 'VIREMENT', 'CREDIT'].map(m => (
                           <button 
                             key={m}
                             onClick={() => setModePaiement(m)}

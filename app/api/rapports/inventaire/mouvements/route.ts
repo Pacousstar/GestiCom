@@ -45,12 +45,12 @@ export async function GET(request: NextRequest) {
       id: m.id,
       date: m.date,
       type: m.type,
-      produit: m.produit.designation,
-      code: m.produit.code,
-      unite: m.produit.unite,
-      magasin: m.magasin.nom,
+      produit: m.produit?.designation || 'Produit inconnu',
+      code: m.produit?.code || 'SANS CODE',
+      unite: m.produit?.unite || 'u',
+      magasin: m.magasin?.nom || 'Magasin inconnu',
       quantite: m.quantite,
-      utilisateur: m.utilisateur.nom,
+      utilisateur: m.utilisateur?.nom || 'Système',
       observation: m.observation
     }))
 
