@@ -221,7 +221,7 @@ export async function POST(request: NextRequest) {
       })
     } catch (e) { console.error('Erreur compta historique:', e) }
 
-    await logAction(session, 'VENTE_HISTORIQUE', vente.id, `Enregistrement vente historique ${num}`, body)
+    await logAction(session, 'CREATION', 'VENTE', `Enregistrement vente historique ${num}`, vente.id, body)
 
     revalidatePath('/dashboard/ventes/historiques')
     revalidatePath('/dashboard/stock')

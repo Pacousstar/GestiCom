@@ -21,19 +21,16 @@ export async function GET(request: NextRequest) {
         nom: true,
         telephone: true,
         localisation: true,
+        soldeInitial: true,
       },
       orderBy: { nom: 'asc' },
     })
 
     const whereAchat: any = {
       entiteId,
-      clientId: { not: null }, // Oups, should be fournisseurId for Achat
+      fournisseurId: { not: null },
     }
     
-    // Correction: Achat uses fournisseurId
-    delete whereAchat.clientId;
-    whereAchat.fournisseurId = { not: null };
-
     const whereReglement: any = {
       achat: { entiteId },
     }
@@ -83,9 +80,10 @@ export async function GET(request: NextRequest) {
       
       const totalAchatsGlobal = achatGlobalMap[f.id] || 0
       const totalPaiementsGlobal = reglementGlobalMap[f.id] || 0
+      const soldeInitial = f.soldeInitial || 0
       
-      // Solde Global = Ce qu'on doit au fournisseur (Achats - Déjà payé)
-      const soldeGlobal = totalAchatsGlobal - totalPaiementsGlobal
+      // Solde Global = Dette de départ + Achats totaux - Paiements totaux
+      const soldeGlobal = totalAchatsGlobal - totalPaiementsGlobal + soldeInitial
 
       return {
         ...f,

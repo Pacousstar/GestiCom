@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
   const list = await prisma.fournisseur.findMany({
     where: { actif: true },
     orderBy: { nom: 'asc' },
-    select: { id: true, code: true, nom: true, telephone: true, email: true, ncc: true, localisation: true },
+    select: { id: true, code: true, nom: true, telephone: true, email: true, ncc: true, localisation: true, soldeInitial: true },
   })
   const filtered = q
     ? list.filter(
@@ -54,7 +54,7 @@ export async function GET(request: NextRequest) {
 
   const result = paginated.map((f) => ({
     ...f,
-    dette: detteByFournisseur[f.id] ?? 0
+    dette: (detteByFournisseur[f.id] ?? 0) + (f.soldeInitial || 0)
   }))
 
   const res = NextResponse.json({
@@ -83,6 +83,7 @@ export async function POST(request: NextRequest) {
     const email = body?.email != null ? String(body.email).trim() || null : null
     const ncc = body?.ncc != null ? String(body.ncc).trim() || null : null
     const localisation = body?.localisation != null ? String(body.localisation).trim() || null : null
+    const soldeInitial = body?.soldeInitial != null ? Number(body.soldeInitial) : 0
 
     if (!nom) {
       return NextResponse.json({ error: 'Nom du fournisseur requis.' }, { status: 400 })
@@ -96,7 +97,7 @@ export async function POST(request: NextRequest) {
     }
 
     const f = await prisma.fournisseur.create({
-      data: { code, nom, telephone, email, ncc, localisation, actif: true },
+      data: { code, nom, telephone, email, ncc, localisation, soldeInitial, actif: true },
     })
     // Invalider le cache pour affichage immédiat
     revalidatePath('/dashboard/fournisseurs')

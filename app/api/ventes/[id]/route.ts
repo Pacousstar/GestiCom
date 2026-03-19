@@ -135,19 +135,7 @@ export async function PATCH(
       }
     })
 
-    // 2. Enregistrer le mouvement de caisse
-    await prisma.caisse.create({
-      data: {
-        date: new Date(),
-        magasinId: vente.magasinId,
-        type: 'ENTREE',
-        motif: `Règlement Vente ${vente.numero}`,
-        montant: montantReglement,
-        utilisateurId: session.userId,
-      }
-    })
-
-    // 3. Comptabilisation
+    // 2. Comptabilisation
     const { comptabiliserReglementVente } = await import('@/lib/comptabilisation')
     await comptabiliserReglementVente({
       venteId: vente.id,

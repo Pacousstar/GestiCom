@@ -214,7 +214,8 @@ export default function MouvementsStockPage() {
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-gray-500">Date</th>
-                  <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-gray-500">Produit</th>
+                  <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-gray-500">Code</th>
+                  <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-gray-500">Désignation</th>
                   <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-gray-500">Magasin</th>
                   <th className="px-6 py-4 text-center text-xs font-bold uppercase tracking-wider text-gray-500">Type</th>
                   <th className="px-6 py-4 text-right text-xs font-bold uppercase tracking-wider text-gray-500">Quantité</th>
@@ -233,12 +234,8 @@ export default function MouvementsStockPage() {
                         minute: '2-digit'
                       }) : 'Date inconnue'}
                     </td>
-                    <td className="px-6 py-4">
-                      <div className="flex flex-col">
-                        <span className="font-bold text-gray-900">{m.produit || 'Produit inconnu'}</span>
-                        <span className="text-xs font-mono text-gray-400 uppercase">{m.code || 'SANS CODE'}</span>
-                      </div>
-                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-400 uppercase">{m.code || 'SANS CODE'}</td>
+                    <td className="px-6 py-4 text-sm font-bold text-gray-900">{m.produit || 'Produit inconnu'}</td>
                     <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-600">
                       <div className="flex items-center gap-2">
                         <Warehouse className="h-3 w-3 text-gray-400" /> {m.magasin || 'Magasin inconnu'}

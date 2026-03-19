@@ -864,7 +864,8 @@ export default function StockPage() {
               <table className="min-w-full text-sm">
                 <thead>
                   <tr className="border-b bg-gray-50 text-left text-gray-600">
-                    <th className="px-4 py-2">Produit</th>
+                    <th className="px-4 py-2">Code</th>
+                    <th className="px-4 py-2">Désignation</th>
                     <th className="px-4 py-2">Magasin</th>
                     <th className="px-4 py-2 text-right">Stock actuel</th>
                     <th className="px-4 py-2">Quantité réelle</th>
@@ -885,6 +886,7 @@ export default function StockPage() {
                     return (
                       <tr key={key} className="bg-white text-gray-900 hover:bg-gray-50">
                         <td className="px-4 py-2 font-mono text-gray-900">{s.produit.code}</td>
+                        <td className="px-4 py-2 text-gray-900">{s.produit.designation}</td>
                         <td className="px-4 py-2 text-gray-900">{s.magasin.code}</td>
                         <td className="px-4 py-2 text-right text-gray-900">{s.quantite}</td>
                         <td className="px-4 py-2">
@@ -1026,7 +1028,7 @@ export default function StockPage() {
               </thead>
               <tbody className="divide-y divide-gray-200">
                 {paginatedList.map((s, idx) => {
-                  const faible = s.quantite < s.produit.seuilMin
+                  const faible = s.quantite <= s.produit.seuilMin
                   const key = s.id ?? `v-${s.produit.id}-${s.magasin.id}`
                   const numeroLigne = startIndex + idx + 1
                   return (

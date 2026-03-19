@@ -26,39 +26,39 @@ export async function GET(request: NextRequest) {
     }
     : { actif: true }
 
-  // Mode complet : retourner tous les produits sans pagination
+  // Mode complet : retourner tous les produits sans pagination (utilisé dans les sélecteurs)
   if (complet) {
     const produits = await prisma.produit.findMany({
       where,
       orderBy: [{ categorie: 'asc' }, { code: 'asc' }],
-      select: {
-        id: true,
-        code: true,
-        designation: true,
-        categorie: true,
-        prixAchat: true,
-        prixVente: true,
-        seuilMin: true,
-        createdAt: true,
-      },
+      include: {
+        stocks: {
+          select: { quantite: true }
+        }
+      }
     })
 
-    // Filtre insensible à la casse si sqlite like est sensible
+    const data = produits.map(p => ({
+      ...p,
+      stockConsolide: p.stocks.reduce((sum, s) => sum + s.quantite, 0)
+    }))
+
+    // Filtre insensible à la casse manuel si la requête Prisma est complexe
     const filtered = q
-      ? produits.filter(
+      ? data.filter(
         (p) =>
           p.code.toLowerCase().includes(q) ||
           p.designation.toLowerCase().includes(q) ||
           p.categorie.toLowerCase().includes(q)
       )
-      : produits
+      : data
 
     const res = NextResponse.json(filtered)
     res.headers.set('Cache-Control', 'no-store, max-age=0')
     return res
   }
 
-  // Mode paginé
+  // Mode paginé (utilisé dans la liste des produits)
   const page = Math.max(1, Number(request.nextUrl.searchParams.get('page')) || 1)
   const limit = Math.min(100, Math.max(1, Number(request.nextUrl.searchParams.get('limit')) || 20))
   const skip = (page - 1) * limit
@@ -69,26 +69,26 @@ export async function GET(request: NextRequest) {
       skip,
       take: limit,
       orderBy: [{ categorie: 'asc' }, { code: 'asc' }],
-      select: {
-        id: true,
-        code: true,
-        designation: true,
-        categorie: true,
-        prixAchat: true,
-        prixVente: true,
-        seuilMin: true,
-        createdAt: true,
-      },
+      include: {
+        stocks: {
+          select: { quantite: true }
+        }
+      }
     }),
     prisma.produit.count({ where }),
   ])
 
+  const data = produits.map(p => ({
+    ...p,
+    stockConsolide: p.stocks.reduce((sum, s) => sum + s.quantite, 0)
+  }))
+
   const res = NextResponse.json({
-    data: produits,
+    data,
     pagination: {
       page,
       limit,
-      total: total,
+      total,
       totalPages: Math.ceil(total / limit),
     },
   })
@@ -120,7 +120,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Un produit avec ce code existe déjà.' }, { status: 400 })
     }
 
-    // POINT DE VENTE OBLIGATOIRE
     const magasinIdRaw = body?.magasinId != null ? Number(body.magasinId) : null
     if (magasinIdRaw == null || !Number.isInteger(magasinIdRaw) || magasinIdRaw <= 0) {
       return NextResponse.json({ error: 'Le point de vente est obligatoire pour créer un produit.' }, { status: 400 })
@@ -128,13 +127,11 @@ export async function POST(request: NextRequest) {
 
     const quantiteInitiale = Math.max(0, Number(body?.quantiteInitiale) || 0)
 
-    // Vérifier que le magasin existe et appartient à l'entité
     const magasin = await prisma.magasin.findUnique({ where: { id: magasinIdRaw } })
     if (!magasin) {
       return NextResponse.json({ error: 'Point de vente introuvable.' }, { status: 404 })
     }
 
-    // Vérifier que le magasin appartient à l'entité sélectionnée (sauf SUPER_ADMIN)
     const entiteId = await getEntiteId(session)
     if (session.role !== 'SUPER_ADMIN' && magasin.entiteId !== entiteId) {
       return NextResponse.json({ error: 'Ce magasin n\'appartient pas à votre entité.' }, { status: 403 })
@@ -144,12 +141,10 @@ export async function POST(request: NextRequest) {
       data: { code, designation, categorie, prixAchat, prixVente, seuilMin, actif: true },
     })
 
-    // Créer le stock obligatoirement (point de vente obligatoire)
     await prisma.stock.create({
       data: { produitId: p.id, magasinId: magasinIdRaw, quantite: quantiteInitiale, quantiteInitiale },
     })
 
-    // Logger la création
     const ipAddress = getIpAddress(request)
     await logCreation(
       session,
@@ -165,7 +160,7 @@ export async function POST(request: NextRequest) {
       },
       ipAddress
     )
-    // Invalider le cache pour affichage immédiat
+
     revalidatePath('/dashboard/produits')
     revalidatePath('/dashboard/stock')
     revalidatePath('/api/produits')

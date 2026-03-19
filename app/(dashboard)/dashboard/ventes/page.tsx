@@ -37,7 +37,7 @@ export default function VentesPage() {
     modePaiement: string
     statut: string
     magasin: { code: string; nom: string }
-    lignes: Array<{ quantite: number; prixUnitaire: number; designation: string }>
+    lignes: Array<{ quantite: number; prixUnitaire: number; designation: string; tva?: number }>
   }>>([])
   const [annulant, setAnnulant] = useState<number | null>(null)
   const [supprimant, setSupprimant] = useState<number | null>(null)
@@ -47,6 +47,7 @@ export default function VentesPage() {
     numero: string
     date: string
     montantTotal: number
+    remiseGlobale: number
     montantPaye?: number
     statutPaiement?: string
     modePaiement: string
@@ -55,7 +56,7 @@ export default function VentesPage() {
     observation: string | null
     magasin: { code: string; nom: string }
     client: { nom: string; telephone?: string | null; adresse?: string | null; ncc?: string | null } | null
-    lignes: Array<{ designation: string; quantite: number; prixUnitaire: number; montant: number }>
+    lignes: Array<{ designation: string; quantite: number; prixUnitaire: number; tva?: number; remise?: number | string; montant: number }>
   } | null>(null)
   const [loadingDetail, setLoadingDetail] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
@@ -144,7 +145,7 @@ export default function VentesPage() {
     // Toutes les lignes (articles) de la vente sont affichées sur une même facture
     const lignes = Array.isArray(d.lignes) ? d.lignes : []
     const totalHT = lignes.reduce((acc, l) => acc + (l.quantite * l.prixUnitaire), 0)
-    const totalTVA = lignes.reduce((acc, l) => acc + (l.quantite * l.prixUnitaire * (l.tva / 100)), 0)
+    const totalTVA = lignes.reduce((acc, l: any) => acc + (l.quantite * l.prixUnitaire * ((l.tva || 0) / 100)), 0)
     const totalLinesRemise = lignes.reduce((acc, l) => acc + (Number(l.remise) || 0), 0)
     
     const lignesHtml = generateLignesHTML(lignes.map((l) => ({

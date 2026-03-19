@@ -142,20 +142,7 @@ export async function PATCH(
       }
     })
 
-    // 2. Enregistrer le mouvement de caisse/banque si ce n'est pas déjà fait via un autre mécanisme
-    // On crée une entrée en "Caisse" pour la traçabilité immédiate
-    await prisma.caisse.create({
-      data: {
-        date: new Date(),
-        magasinId: achat.magasinId,
-        type: 'SORTIE',
-        motif: `Règlement Achat ${achat.numero}`,
-        montant: montantReglement,
-        utilisateurId: session.userId,
-      }
-    })
-
-    // 3. Comptabilisation
+    // 2. Comptabilisation
     const { comptabiliserReglementAchat } = await import('@/lib/comptabilisation')
     await comptabiliserReglementAchat({
       achatId: achat.id,

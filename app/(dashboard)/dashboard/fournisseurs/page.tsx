@@ -19,6 +19,7 @@ type Fournisseur = {
   email: string | null
   ncc: string | null
   localisation: string | null
+  soldeInitial: number
   dette?: number
 }
 
@@ -34,7 +35,7 @@ export default function FournisseursPage() {
   const { success: showSuccess, error: showError } = useToast()
   const [currentPage, setCurrentPage] = useState(1)
   const [pagination, setPagination] = useState<{ page: number; limit: number; total: number; totalPages: number } | null>(null)
-  const [formData, setFormData] = useState({ code: '', nom: '', telephone: '', email: '', ncc: '', localisation: '' })
+  const [formData, setFormData] = useState({ code: '', nom: '', telephone: '', email: '', ncc: '', localisation: '', soldeInitial: '0' })
   const [userRole, setUserRole] = useState<string>('')
   const [selectedHistory, setSelectedHistory] = useState<{ id: number; nom: string } | null>(null)
   const [historyData, setHistoryData] = useState<any[]>([])
@@ -121,10 +122,11 @@ export default function FournisseursPage() {
         email: f.email || '',
         ncc: f.ncc || '',
         localisation: f.localisation || '',
+        soldeInitial: String(f.soldeInitial || 0),
       })
     } else {
       setEditing(null)
-      setFormData({ code: '', nom: '', telephone: '', email: '', ncc: '', localisation: '' })
+      setFormData({ code: '', nom: '', telephone: '', email: '', ncc: '', localisation: '', soldeInitial: '0' })
     }
     setForm(true)
     setErr('')
@@ -141,6 +143,7 @@ export default function FournisseursPage() {
       email: formData.email.trim() || null,
       ncc: formData.ncc.trim() || null,
       localisation: formData.localisation.trim() || null,
+      soldeInitial: Number(formData.soldeInitial) || 0,
     }
 
     const validation = validateForm(fournisseurSchema, validationData)
@@ -348,6 +351,17 @@ export default function FournisseursPage() {
                 className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 focus:border-orange-500 focus:outline-none"
               />
             </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Dette Initiale (F)</label>
+              <input
+                type="number"
+                min="0"
+                value={formData.soldeInitial}
+                onChange={(e) => setFormData((f) => ({ ...f, soldeInitial: e.target.value }))}
+                placeholder="0"
+                className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 focus:border-orange-500 focus:outline-none bg-orange-100"
+              />
+            </div>
             <div className="flex gap-2 sm:col-span-2">
               <button type="submit" className="rounded-lg bg-orange-500 px-4 py-2 text-white hover:bg-orange-600">
                 {editing ? 'Enregistrer' : 'Créer'}
@@ -383,7 +397,8 @@ export default function FournisseursPage() {
                   <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-gray-600">Email</th>
                   <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-gray-600">NCC</th>
                   <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-gray-600">Localisation</th>
-                  <th className="px-4 py-3 text-right text-xs font-semibold uppercase text-gray-600">Crédit Fournisseur</th>
+                  <th className="px-4 py-3 text-right text-xs font-semibold uppercase text-gray-600">Dette Initiale</th>
+                  <th className="px-4 py-3 text-right text-xs font-semibold uppercase text-gray-600">Dette Totale</th>
                   <th className="px-4 py-3"></th>
                 </tr>
               </thead>
@@ -395,7 +410,7 @@ export default function FournisseursPage() {
                     <td className="px-4 py-3 text-sm text-gray-600">{f.telephone || '—'}</td>
                     <td className="px-4 py-3 text-sm text-gray-600">{f.email || '—'}</td>
                     <td className="px-4 py-3 text-sm text-gray-600">{f.ncc || '—'}</td>
-                    <td className="px-4 py-3 text-sm text-gray-600">{f.localisation || '—'}</td>
+                    <td className="px-4 py-3 text-sm text-gray-600 font-medium text-right">{Number(f.soldeInitial || 0).toLocaleString('fr-FR')} F</td>
                     <td className={`px-4 py-3 text-right text-sm font-bold ${f.dette && f.dette > 0 ? 'text-red-600' : 'text-green-600'}`}>
                       {Number(f.dette ?? 0).toLocaleString('fr-FR')} F
                     </td>

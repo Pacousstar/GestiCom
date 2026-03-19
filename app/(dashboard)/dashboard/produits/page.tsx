@@ -20,6 +20,7 @@ type Produit = {
   prixAchat: number | null
   prixVente: number | null
   seuilMin: number
+  stockConsolide?: number
   createdAt: string
 }
 
@@ -619,6 +620,7 @@ export default function ProduitsPage() {
                   <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-gray-600">Catégorie</th>
                   <th className="px-4 py-3 text-right text-xs font-semibold uppercase text-gray-600">Prix achat</th>
                   <th className="px-4 py-3 text-right text-xs font-semibold uppercase text-gray-600">Prix vente</th>
+                  <th className="px-4 py-3 text-right text-xs font-semibold uppercase text-gray-600">Stock Actuel</th>
                   <th className="px-4 py-3 text-right text-xs font-semibold uppercase text-gray-600">Seuil</th>
                   <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-gray-600">Date création</th>
                   <th className="px-4 py-3"></th>
@@ -637,7 +639,17 @@ export default function ProduitsPage() {
                     <td className="px-4 py-3 text-right text-sm text-gray-600">
                       {p.prixVente != null ? `${Number(p.prixVente).toLocaleString('fr-FR')} F` : '—'}
                     </td>
-                    <td className="px-4 py-3 text-right text-sm text-gray-600">{p.seuilMin}</td>
+                    <td className="px-4 py-3 text-right text-sm">
+                      <div className="flex items-center justify-end gap-1.5">
+                        <span className={`font-bold ${(p.stockConsolide ?? 0) <= p.seuilMin ? 'text-red-600' : 'text-emerald-600'}`}>
+                          {(p.stockConsolide ?? 0).toLocaleString()}
+                        </span>
+                        {(p.stockConsolide ?? 0) <= p.seuilMin && (
+                          <AlertTriangle className="h-4 w-4 text-red-500" />
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 text-right text-sm text-gray-600 font-medium">{p.seuilMin}</td>
                     <td className="px-4 py-3 text-sm text-gray-600">
                       {formatDate(p.createdAt, { includeTime: true })}
                     </td>
