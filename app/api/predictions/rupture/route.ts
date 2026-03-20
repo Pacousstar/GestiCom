@@ -6,6 +6,8 @@ export async function GET(req: NextRequest) {
     const session = await getSession()
     if (!session) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
 
+    const startTime = Date.now();
+    console.log('[API] GET /api/predictions/rupture - Début');
     try {
         const thirtyDaysAgo = new Date()
         thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
@@ -70,7 +72,9 @@ export async function GET(req: NextRequest) {
 
         return NextResponse.json(predictions)
     } catch (error: any) {
-        console.error('Erreur API predictions rupture:', error)
+        console.error('❌ Erreur API predictions rupture:', error.message, error.stack)
         return NextResponse.json({ error: 'Erreur serveur.' }, { status: 500 })
+    } finally {
+        console.log(`[API] GET /api/predictions/rupture - Fin (${Date.now() - startTime}ms)`);
     }
 }

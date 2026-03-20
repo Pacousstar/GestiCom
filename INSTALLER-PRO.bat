@@ -100,9 +100,19 @@ echo.
 echo GestiCom Pro est desormais installe dans C:\GestiCom\app
 echo Le service tourne en arriere-plan et demarrera avec Windows.
 echo.
-echo [LANCEMENT DE L'APPLICATION DANS 3 SECONDES...]
+:: Détection du port dans le .env pour l'URL finale
+set "APP_PORT=3000"
+if exist ".env" (
+    for /f "tokens=2 delims==" %%a in ('findstr "PORT=" .env') do (
+        set "VAL=%%a"
+        set "VAL=!VAL:"=!"
+        set "APP_PORT=!VAL: =!"
+    )
+)
+
+echo [LANCEMENT DE L'APPLICATION SUR LE PORT !APP_PORT! DANS 3 SECONDES...]
 timeout /t 3 >nul
-start "" "http://localhost:3000"
+start "" "http://localhost:!APP_PORT!"
 
 echo.
 echo Vous pouvez fermer cette fenetre.

@@ -71,7 +71,8 @@ export default function MouvementsStockPage() {
       
       const res = await fetch(url)
       if (res.ok) {
-        setData(await res.json())
+        const d = await res.json()
+        setData(Array.isArray(d) ? d : [])
       } else {
         showError('Impossible de charger les mouvements.')
       }
@@ -88,10 +89,10 @@ export default function MouvementsStockPage() {
     fetchData(startDate, endDate, selectedProduct, selectedMagasin, selectedType)
   }
 
-  const filteredData = data.filter(m => 
+  const filteredData = Array.isArray(data) ? data.filter(m => 
     m.produit.toLowerCase().includes(search.toLowerCase()) || 
     (m.code && m.code.toLowerCase().includes(search.toLowerCase()))
-  )
+  ) : []
 
   const getTypeIcon = (type: string) => {
     switch (type) {

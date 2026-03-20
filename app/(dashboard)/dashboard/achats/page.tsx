@@ -187,6 +187,17 @@ export default function AchatsPage() {
     setAjoutProduit({ produitId: '', quantite: '1', prixUnitaire: '', recherche: '' })
   }
 
+  const editLigne = (i: number) => {
+    const l = formData.lignes[i]
+    setAjoutProduit({
+      produitId: String(l.produitId),
+      quantite: String(l.quantite),
+      prixUnitaire: String(l.prixUnitaire),
+      recherche: l.designation
+    })
+    setFormData((f) => ({ ...f, lignes: f.lignes.filter((_, j) => j !== i) }))
+  }
+
   const removeLigne = (i: number) => {
     setFormData((f) => ({ ...f, lignes: f.lignes.filter((_, j) => j !== i) }))
   }
@@ -601,26 +612,28 @@ export default function AchatsPage() {
             <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
               <h3 className="mb-3 text-sm font-semibold text-gray-700">Lignes</h3>
               <div className="mb-3 space-y-2">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                <div className="relative group">
+                  <div className="absolute left-3 top-3.5 h-4 w-4 text-gray-400 group-focus-within:text-orange-500 transition-colors">
+                    <Search className="h-4 w-4" />
+                  </div>
                   <input
                     type="text"
-                    placeholder="Rechercher un produit (code, désignation, catégorie)..."
+                    placeholder="Chercher un produit (code, nom)..."
                     value={ajoutProduit.recherche || ''}
                     onChange={(e) => {
                       setAjoutProduit((a) => ({ ...a, recherche: e.target.value }))
                     }}
                     onFocus={refetchProduits}
-                    className="w-full rounded-lg border border-gray-200 py-2 pl-10 pr-4 text-sm focus:border-orange-500 focus:outline-none"
+                    className="w-full rounded-lg border border-gray-200 py-3 pl-10 pr-4 text-sm focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500/20 transition-all"
                   />
                 </div>
                 <select
                   value={ajoutProduit.produitId}
                   onChange={(e) => onSelectProduit(e.target.value)}
-                  className="w-full rounded border border-gray-200 px-3 py-2 text-sm focus:border-orange-500 focus:outline-none"
-                  title="Liste de tous les produits enregistrés"
+                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-orange-500 focus:outline-none bg-white shadow-sm"
+                  title="Sélectionner le produit filtré"
                 >
-                  <option value="">Choisir un produit</option>
+                  <option value="">— Sélectionner le produit —</option>
                   {produits
                     .filter(p => {
                       if (!ajoutProduit.recherche) return true
@@ -635,6 +648,7 @@ export default function AchatsPage() {
                       <option key={p.id} value={p.id}>{p.code} – {p.designation}</option>
                     ))}
                 </select>
+
               </div>
               <div className="mb-3 flex flex-wrap gap-2">
                 <input
@@ -651,9 +665,19 @@ export default function AchatsPage() {
                   step="1"
                   value={ajoutProduit.prixUnitaire}
                   onChange={(e) => setAjoutProduit((a) => ({ ...a, prixUnitaire: e.target.value }))}
-                  placeholder="Prix unit. (achat)"
+                  placeholder="P.U. (achat)"
                   className="w-32 rounded border border-gray-200 px-2 py-2 text-sm focus:border-orange-500 focus:outline-none"
                 />
+                <div className="flex flex-col">
+                  <label className="text-[10px] text-gray-400 ml-1">Total</label>
+                  <input
+                    type="text"
+                    readOnly
+                    value={(Number(ajoutProduit.quantite) * Number(ajoutProduit.prixUnitaire)).toLocaleString('fr-FR') + ' F'}
+                    className="w-28 rounded border border-gray-100 bg-gray-50 px-2 py-2 text-sm font-semibold text-gray-600 focus:outline-none cursor-default"
+                  />
+                </div>
+
                 <button type="button" onClick={addLigne} className="rounded-lg border-2 border-orange-400 bg-orange-100 px-3 py-2 text-sm font-medium text-orange-900 hover:bg-orange-200">
                   Ajouter
                 </button>
@@ -676,15 +700,25 @@ export default function AchatsPage() {
                         <td className="text-right">{l.quantite}</td>
                         <td className="text-right">{l.prixUnitaire.toLocaleString('fr-FR')} F</td>
                         <td className="text-right">{(l.quantite * l.prixUnitaire).toLocaleString('fr-FR')} F</td>
-                        <td className="w-10">
-                          <button
-                            type="button"
-                            onClick={() => removeLigne(i)}
-                            title="Supprimer la ligne"
-                            className="rounded p-1.5 text-red-600 hover:bg-red-100 transition-colors"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
+                        <td className="w-16">
+                          <div className="flex items-center gap-1">
+                            <button
+                              type="button"
+                              onClick={() => editLigne(i)}
+                              title="Modifier cette ligne"
+                              className="rounded p-1 text-blue-600 hover:bg-blue-100 transition-colors"
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => removeLigne(i)}
+                              title="Supprimer la ligne"
+                              className="rounded p-1.5 text-red-600 hover:bg-red-100 transition-colors"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}

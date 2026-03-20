@@ -20,8 +20,8 @@ export async function GET() {
     const session = await getSession()
     if (!session) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
 
-    revalidatePath('/dashboard')
-    revalidatePath('/api/dashboard')
+    const startTime = Date.now();
+    console.log('[API] GET /api/dashboard - Début');
 
     const now = new Date()
     const debAuj = new Date(now.getFullYear(), now.getMonth(), now.getDate())
@@ -230,10 +230,9 @@ export async function GET() {
         'Cache-Control': 'no-store, max-age=0',
       },
     })
-  } catch (e) {
+  } catch (e: any) {
     console.error('Dashboard API error:', e)
     const msg = e instanceof Error ? e.message : String(e)
-    // Retourner des valeurs par défaut plutôt qu'une erreur pour que le Dashboard s'affiche
     return NextResponse.json({
       transactionsJour: 0,
       transactionsHier: 0,
@@ -252,5 +251,10 @@ export async function GET() {
       _error: msg,
       _timeout: false,
     })
+  } finally {
+    // @ts-ignore
+    if (typeof startTime !== 'undefined') {
+      console.log(`[API] GET /api/dashboard - Fin (${Date.now() - startTime}ms)`);
+    }
   }
 }

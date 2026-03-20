@@ -43,19 +43,37 @@ if (!serverPath) {
 const serverDir = path.dirname(serverPath)
 console.log('[Launcher] Moteur detecte dans : ' + serverDir)
 
-// Configuration DATABASE_URL
+// Configuration des variables d'environnement depuis le .env (racine du projet)
+const envPath = path.join(projectRoot, '.env')
+if (fs.existsSync(envPath)) {
+    const envContent = fs.readFileSync(envPath, 'utf8')
+    envContent.split('\n').forEach(line => {
+        const [key, ...valueParts] = line.split('=')
+        if (key && valueParts.length > 0) {
+            const value = valueParts.join('=').trim().replace(/^["']|["']$/g, '')
+            process.env[key.trim()] = value
+        }
+    })
+}
+
 const databaseUrl = process.env.DATABASE_URL || "file:C:/gesticom/gesticom.db";
+const port = process.env.PORT || "3000";
+
 process.env.DATABASE_URL = databaseUrl;
+process.env.PORT = port;
 process.env.NODE_ENV = 'production';
 
-// Fichier de configuration pour le bootstrap
+// Fichiers de configuration pour le bootstrap
 fs.writeFileSync(path.join(serverDir, '.database_url'), databaseUrl, 'utf8')
+fs.writeFileSync(path.join(serverDir, '.port'), port, 'utf8')
 
 const runStandalone = `'use strict';
 const p = require('path'), fs = require('fs');
-const f = p.join(__dirname, '.database_url');
-if (fs.existsSync(f)) { process.env.DATABASE_URL = fs.readFileSync(f, 'utf8').trim(); }
-console.log('[Server] Lancement avec DATABASE_URL=' + process.env.DATABASE_URL);
+const fDB = p.join(__dirname, '.database_url');
+const fPort = p.join(__dirname, '.port');
+if (fs.existsSync(fDB)) { process.env.DATABASE_URL = fs.readFileSync(fDB, 'utf8').trim(); }
+if (fs.existsSync(fPort)) { process.env.PORT = fs.readFileSync(fPort, 'utf8').trim(); }
+console.log('[Server] Lancement sur PORT=' + (process.env.PORT || 3000) + ' avec DATABASE_URL=' + process.env.DATABASE_URL);
 require('./server.js');
 `
 fs.writeFileSync(path.join(serverDir, 'run-standalone.js'), runStandalone, 'utf8')

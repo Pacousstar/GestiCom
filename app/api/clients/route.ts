@@ -59,14 +59,23 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  const result = paginated.map((c) => {
-    const base = { ...c }
+  const result = await Promise.all(paginated.map(async (c) => {
+    const base = { ...c } as any
     if (c.type === 'CREDIT') {
       const totalVentes = detteByClient[c.id] ?? 0
-      ;(base as any).dette = Math.max(0, totalVentes - (c.soldeInitial || 0))
+      base.dette = Math.max(0, totalVentes - (c.soldeInitial || 0))
     }
+    
+    // Récupérer le numéro de la dernière facture
+    const derniereVente = await prisma.vente.findFirst({
+      where: { clientId: c.id, statut: 'VALIDEE' },
+      orderBy: { date: 'desc' },
+      select: { numero: true }
+    })
+    base.derniereFacture = derniereVente?.numero || null
+    
     return base
-  })
+  }))
 
   const res = NextResponse.json({
     data: result,

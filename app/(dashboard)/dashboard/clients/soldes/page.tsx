@@ -42,7 +42,12 @@ export default function SoldesClientsPage() {
       const res = await fetch(`/api/clients/soldes?dateDebut=${start}&dateFin=${end}`)
       if (res.ok) {
         const d = await res.json()
-        setData(d)
+        if (Array.isArray(d)) {
+          setData(d)
+        } else {
+          setData([])
+          showError('Format de données invalide reçu du serveur.')
+        }
       } else {
         showError('Impossible de charger les soldes.')
       }
@@ -59,11 +64,11 @@ export default function SoldesClientsPage() {
     fetchData(startDate, endDate)
   }
 
-  const filteredData = data.filter(c => 
+  const filteredData = Array.isArray(data) ? data.filter(c => 
     c.nom.toLowerCase().includes(search.toLowerCase()) || 
     (c.code && c.code.toLowerCase().includes(search.toLowerCase())) ||
     (c.localisation && c.localisation.toLowerCase().includes(search.toLowerCase()))
-  )
+  ) : []
 
   const totals = filteredData.reduce((acc, c) => ({
     factures: acc.factures + c.factures,

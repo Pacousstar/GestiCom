@@ -10,73 +10,75 @@ async function syncToProd() {
     console.log(`📂 Déploiement vers ${target}...`);
     console.log(`🏠 Racine projet : ${projectRoot}`);
     try {
-      if (fs.existsSync(target)) {
-        fs.emptyDirSync(target);
-      } else {
-        fs.ensureDirSync(target);
-      }
+      // SÉCURITÉ : Ne jamais vider le dossier pour préserver data/ et .env
+      fs.ensureDirSync(target);
 
       const standalonePath = path.join(projectRoot, '.next', 'standalone');
       let appSourcePath = standalonePath;
 
-      // Next.js met souvent l'app dans standalone/nom-du-projet ou standalone/Projets/nom-du-projet
       const internalPath = path.join(standalonePath, 'Projets', 'gesticom2');
       if (fs.existsSync(internalPath)) {
         appSourcePath = internalPath;
         console.log(`📍 Source de l'application trouvée dans : ${appSourcePath}`);
       }
 
-      // Dans standalone, Next met les modules à la racine et le code de l'app dans le dossier projet
+      // 1. node_modules (uniquement les critiques si on veut aller vite, ou tout le dossier)
       if (fs.existsSync(path.join(standalonePath, 'node_modules'))) {
-        fs.copySync(path.join(standalonePath, 'node_modules'), path.join(target, 'node_modules'), { dereference: true });
+        fs.copySync(path.join(standalonePath, 'node_modules'), path.join(target, 'node_modules'), { dereference: true, overwrite: true });
       }
       
+      // 2. Code de l'application
       if (fs.existsSync(appSourcePath)) {
-        fs.copySync(appSourcePath, target, { overwrite: true, dereference: true });
+        // On copie fichier par fichier ou on utilise filter pour exclure .env et data
+        fs.copySync(appSourcePath, target, { 
+            overwrite: true, 
+            dereference: true,
+            filter: (src) => {
+                const name = path.basename(src);
+                return name !== '.env' && name !== 'data';
+            }
+        });
       }
 
-      // Copier .next/static et public
+      // 3. .next/static et public
       fs.ensureDirSync(path.join(target, '.next/static'));
-      fs.copySync(path.join(projectRoot, '.next/static'), path.join(target, '.next/static'), { dereference: true });
-      fs.copySync(path.join(projectRoot, 'public'), path.join(target, 'public'), { dereference: true });
+      fs.copySync(path.join(projectRoot, '.next/static'), path.join(target, '.next/static'), { dereference: true, overwrite: true });
+      fs.copySync(path.join(projectRoot, 'public'), path.join(target, 'public'), { dereference: true, overwrite: true });
 
-      // Config et Prisma
+      // 4. Config et Prisma (Schema uniquement)
       fs.ensureDirSync(path.join(target, 'prisma'));
-      fs.copySync(path.join(projectRoot, 'prisma/schema.prisma'), path.join(target, 'prisma/schema.prisma'), { dereference: true });
-      fs.copySync(path.join(projectRoot, '.env'), path.join(target, '.env'), { dereference: true });
-      if (fs.existsSync(path.join(projectRoot, '.database_url'))) {
-        fs.copySync(path.join(projectRoot, '.database_url'), path.join(target, '.database_url'), { dereference: true });
+      fs.copySync(path.join(projectRoot, 'prisma/schema.prisma'), path.join(target, 'prisma/schema.prisma'), { dereference: true, overwrite: true });
+      
+      // SÉCURITÉ : Ne copier .env que s'il n'existe pas déjà sur la cible
+      if (!fs.existsSync(path.join(target, '.env'))) {
+          console.log(`📝 Création du .env par défaut (n'existait pas)...`);
+          fs.copySync(path.join(projectRoot, '.env'), path.join(target, '.env'), { dereference: true });
       }
 
-      // Dépendances critiques
-      const critical = ['prisma', '@prisma', 'xlsx-prototype-pollution-fixed', 'bcryptjs', 'fs-extra'];
-      critical.forEach(m => {
-        const src = path.join(projectRoot, 'node_modules', m);
-        const dest = path.join(target, 'node_modules', m);
-        if (fs.existsSync(src)) {
-          fs.copySync(src, dest, { overwrite: true, dereference: true });
-        }
-      });
-
-      // Scripts pour l'installateur et maintenance
+      // 5. Scripts critiques et maintenance
       fs.ensureDirSync(path.join(target, 'scripts'));
       const scriptsToCopy = [
         'import-quincaillerie-pro.js', 
-        'reinitialiser-et-importer-produits-xls.js',
-        'reparer-admin.js'
+        'reparer-admin.js',
+        'standalone-launcher.js',
+        'install-service.js',
+        'check-etb-final.js'
       ];
       scriptsToCopy.forEach(s => {
         const src = path.join(projectRoot, 'scripts', s);
         if (fs.existsSync(src)) {
-          fs.copySync(src, path.join(target, 'scripts', s), { dereference: true });
+          fs.copySync(src, path.join(target, 'scripts', s), { dereference: true, overwrite: true });
         }
       });
 
-      // Copier MISE-A-JOUR.bat à la racine
-      const updateBat = path.join(projectRoot, 'MISE-A-JOUR.bat');
-      if (fs.existsSync(updateBat)) {
-        fs.copySync(updateBat, path.join(target, 'MISE-A-JOUR.bat'), { dereference: true });
-      }
+      // 6. Lanceurs et utilitaires racine
+      const rootFiles = ['MISE-A-JOUR.bat', 'INSTALLER-PRO.bat', 'REPARER-ADMIN.bat', 'LANCER-SILENCIEUX.vbs'];
+      rootFiles.forEach(f => {
+        const src = path.join(projectRoot, f);
+        if (fs.existsSync(src)) {
+          fs.copySync(src, path.join(target, f), { dereference: true, overwrite: true });
+        }
+      });
 
     } catch (err) {
       console.error(`❌ Erreur lors de la copie vers ${target}:`, err.message);

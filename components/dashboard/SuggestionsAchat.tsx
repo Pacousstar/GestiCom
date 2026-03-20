@@ -39,7 +39,7 @@ export default function SuggestionsAchat() {
         )
     }
 
-    const p = (predictions || []) as Prediction[]
+    const p = Array.isArray(predictions) ? (predictions as Prediction[]) : []
 
     return (
         <div className="flex h-full flex-col rounded-xl bg-white p-6 shadow-lg border border-indigo-100">

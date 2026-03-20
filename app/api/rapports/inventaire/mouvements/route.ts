@@ -29,6 +29,8 @@ export async function GET(request: NextRequest) {
   if (produitId) where.produitId = parseInt(produitId)
   if (magasinId) where.magasinId = parseInt(magasinId)
   if (type && type !== 'TOUT') where.type = type
+  
+  console.log('[API] GET /api/rapports/inventaire/mouvements - Where:', JSON.stringify(where));
 
   try {
     const mouvements = await prisma.mouvement.findMany({
@@ -55,8 +57,8 @@ export async function GET(request: NextRequest) {
     }))
 
     return NextResponse.json(formatted)
-  } catch (error) {
-    console.error('GET /api/rapports/inventaire/mouvements:', error)
+  } catch (error: any) {
+    console.error('❌ ERREUR GET /api/rapports/inventaire/mouvements:', error.message, error.stack)
     return NextResponse.json({ error: 'Erreur serveur.' }, { status: 500 })
   }
 }

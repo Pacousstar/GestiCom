@@ -22,6 +22,7 @@ type Client = {
   localisation: string | null
   soldeInitial: number
   dette?: number
+  derniereFacture?: string | null
 }
 
 export default function ClientsPage() {
@@ -423,6 +424,7 @@ export default function ClientsPage() {
                   <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-gray-600">Code</th>
                   <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-gray-600">Nom</th>
                   <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-gray-600">Tél.</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-gray-600 font-bold text-blue-600">Dernière Facture</th>
                   <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-gray-600">Type</th>
                   <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-gray-600">NCC</th>
                   <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-gray-600">Localisation</th>
@@ -437,11 +439,13 @@ export default function ClientsPage() {
                     <td className="px-4 py-3 font-mono text-xs font-bold text-gray-600">{c.code || '—'}</td>
                     <td className="px-4 py-3 font-medium text-gray-900">{c.nom}</td>
                     <td className="px-4 py-3 text-sm text-gray-600">{c.telephone || '—'}</td>
+                    <td className="px-4 py-3 text-sm font-mono text-blue-600 font-bold">{c.derniereFacture || '—'}</td>
                     <td className="px-4 py-3">
                       <span className={`rounded-full px-2 py-1 text-xs font-medium ${c.type === 'CREDIT' ? 'bg-amber-100 text-amber-800' : 'bg-gray-100 text-gray-700'}`}>
                         {c.type}
                       </span>
                     </td>
+
                     <td className="px-4 py-3 text-sm text-gray-600">{c.ncc || '—'}</td>
                     <td className="px-4 py-3 text-sm text-gray-600">{c.localisation || '—'}</td>
                     <td className="px-4 py-3 text-right text-sm text-gray-600">

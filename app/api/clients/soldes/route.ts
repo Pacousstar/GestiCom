@@ -13,6 +13,7 @@ export async function GET(request: NextRequest) {
   const dateFin = searchParams.get('dateFin')
 
   try {
+    console.log('[API] GET /api/clients/soldes - Start');
     const clients = await prisma.client.findMany({
       where: { actif: true },
       select: {
@@ -111,8 +112,8 @@ export async function GET(request: NextRequest) {
     }
 
     return NextResponse.json(data)
-  } catch (error) {
-    console.error('GET /api/clients/soldes:', error)
+  } catch (error: any) {
+    console.error('❌ ERREUR GET /api/clients/soldes:', error.message, error.stack)
     return NextResponse.json({ error: 'Erreur serveur.' }, { status: 500 })
   }
 }

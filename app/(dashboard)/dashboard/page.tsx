@@ -58,7 +58,7 @@ export default function DashboardPage() {
   // Fetcher personnalisé pour gérer le timeout et les erreurs spécifiques
   const fetcher = async (url: string) => {
     const controller = new AbortController()
-    const timeout = setTimeout(() => controller.abort(), 20000)
+    const timeout = setTimeout(() => controller.abort(), 60000)
     try {
       const r = await fetch(url, { signal: controller.signal })
       clearTimeout(timeout)
@@ -119,8 +119,10 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6 pb-10">
       {err && (
-        <div className="rounded-lg bg-red-50 border border-red-200 text-red-700 px-4 py-3">
-          {err}
+        <div className="rounded-lg bg-red-50 border border-red-200 text-red-700 px-4 py-3 flex flex-col gap-1">
+          <p className="font-bold flex items-center gap-2 underline"><AlertTriangle className="h-4 w-4" /> Problème de chargement</p>
+          <p className="text-sm">{err}</p>
+          <p className="text-[10px] mt-1 opacity-70 italic">Conseil : Si vous voyez ce message en mode développement, c'est souvent dû à la compilation lente. Patientez ou actualisez.</p>
         </div>
       )}
 

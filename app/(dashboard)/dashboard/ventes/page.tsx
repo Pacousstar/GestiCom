@@ -18,8 +18,15 @@ const BarcodeScanner = dynamic(() => import('@/components/scanner/BarcodeScanner
 
 type Magasin = { id: number; code: string; nom: string }
 type Client = { id: number; nom: string; type: string }
-type Produit = { id: number; code: string; designation: string; categorie?: string; prixVente: number | null; prixAchat?: number | null }
-type Ligne = { produitId: number; designation: string; quantite: number; prixUnitaire: number; tva?: number; remise?: number }
+type Produit = { 
+  id: number; 
+  code: string; 
+  designation: string; 
+  categorie?: string; 
+  prixVente: number | null;
+  stocks: Array<{ magasinId: number; quantite: number }>; prixAchat?: number | null 
+}
+type Ligne = { produitId: number; designation: string; quantite: number; prixUnitaire: number; tvaPerc?: number; remise?: number }
 
 export default function VentesPage() {
   const searchParams = useSearchParams()
@@ -37,7 +44,7 @@ export default function VentesPage() {
     modePaiement: string
     statut: string
     magasin: { code: string; nom: string }
-    lignes: Array<{ quantite: number; prixUnitaire: number; designation: string; tva?: number }>
+    lignes: Array<{ quantite: number; prixUnitaire: number; designation: string; tvaPerc?: number }>
   }>>([])
   const [annulant, setAnnulant] = useState<number | null>(null)
   const [supprimant, setSupprimant] = useState<number | null>(null)
@@ -56,7 +63,7 @@ export default function VentesPage() {
     observation: string | null
     magasin: { code: string; nom: string }
     client: { nom: string; telephone?: string | null; adresse?: string | null; ncc?: string | null } | null
-    lignes: Array<{ designation: string; quantite: number; prixUnitaire: number; tva?: number; remise?: number | string; montant: number }>
+    lignes: Array<{ designation: string; quantite: number; prixUnitaire: number; tvaPerc?: number; remise?: number | string; montant: number }>
   } | null>(null)
   const [loadingDetail, setLoadingDetail] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
@@ -77,14 +84,14 @@ export default function VentesPage() {
     lignes: [] as Ligne[],
     pointsGagnes: 0,
   })
-  const [ajoutProduit, setAjoutProduit] = useState({ produitId: '', quantite: '1', prixUnitaire: '', tva: '', remise: '', recherche: '' })
+  const [ajoutProduit, setAjoutProduit] = useState({ produitId: '', quantite: '1', prixUnitaire: '', tvaPerc: '0', remise: '0', recherche: '' })
   const [dateDebut, setDateDebut] = useState('')
   const [dateFin, setDateFin] = useState('')
   const [filterClientId, setFilterClientId] = useState('')
   const [filterClientSearch, setFilterClientSearch] = useState('')
   const [addLignesPopupOpen, setAddLignesPopupOpen] = useState(false)
   const [popupLignes, setPopupLignes] = useState<Ligne[]>([])
-  const [popupAjoutProduit, setPopupAjoutProduit] = useState({ produitId: '', quantite: '1', prixUnitaire: '', tva: '', remise: '', recherche: '' })
+  const [popupAjoutProduit, setPopupAjoutProduit] = useState({ produitId: '', quantite: '1', prixUnitaire: '', tvaPerc: '0', remise: '0', recherche: '' })
   const [submitting, setSubmitting] = useState(false)
   const [showCreateClient, setShowCreateClient] = useState(false)
   // État du scanner code-barres
@@ -145,7 +152,7 @@ export default function VentesPage() {
     // Toutes les lignes (articles) de la vente sont affichées sur une même facture
     const lignes = Array.isArray(d.lignes) ? d.lignes : []
     const totalHT = lignes.reduce((acc, l) => acc + (l.quantite * l.prixUnitaire), 0)
-    const totalTVA = lignes.reduce((acc, l: any) => acc + (l.quantite * l.prixUnitaire * ((l.tva || 0) / 100)), 0)
+    const totalTVA = lignes.reduce((acc, l: any) => acc + (l.quantite * l.prixUnitaire * ((l.tvaPerc || 0) / 100)), 0)
     const totalLinesRemise = lignes.reduce((acc, l) => acc + (Number(l.remise) || 0), 0)
     
     const lignesHtml = generateLignesHTML(lignes.map((l) => ({
@@ -311,15 +318,28 @@ export default function VentesPage() {
     const pid = Number(ajoutProduit.produitId)
     const q = Math.max(1, Math.floor(Number(ajoutProduit.quantite) || 0))
     const pu = Math.max(0, Number(ajoutProduit.prixUnitaire) || 0)
-    const tvaLigne = ajoutProduit.tva !== '' ? Math.max(0, Number(ajoutProduit.tva)) : tvaParDefaut
+    const tvaLigne = ajoutProduit.tvaPerc !== '' ? Math.max(0, Number(ajoutProduit.tvaPerc)) : tvaParDefaut
     const remLigne = ajoutProduit.remise !== '' ? Math.max(0, Number(ajoutProduit.remise)) : 0
-    const p = Array.isArray(produits) ? produits.find((x) => x.id === pid) : undefined
+    const p = produits.find((x) => x.id === pid)
     if (!p || !q) return
     setFormData((f) => ({
       ...f,
-      lignes: [...f.lignes, { produitId: pid, designation: p.designation, quantite: q, prixUnitaire: pu, tva: tvaLigne, remise: remLigne }],
+      lignes: [...f.lignes, { produitId: pid, designation: p.designation, quantite: q, prixUnitaire: pu, tvaPerc: Number(ajoutProduit.tvaPerc), remise: Number(ajoutProduit.remise) }],
     }))
-    setAjoutProduit({ produitId: '', quantite: '1', prixUnitaire: '', tva: '', remise: '', recherche: '' })
+    setAjoutProduit({ produitId: '', quantite: '1', prixUnitaire: '', tvaPerc: '0', remise: '0', recherche: '' })
+  }
+
+  const editLigne = (i: number) => {
+    const l = formData.lignes[i]
+    setAjoutProduit({
+      produitId: String(l.produitId),
+      quantite: String(l.quantite),
+      prixUnitaire: String(l.prixUnitaire),
+      tvaPerc: String(l.tvaPerc || '0'),
+      remise: String(l.remise || '0'),
+      recherche: l.designation
+    })
+    setFormData((f) => ({ ...f, lignes: f.lignes.filter((_, j) => j !== i) }))
   }
 
   const removeLigne = (i: number) => {
@@ -330,7 +350,7 @@ export default function VentesPage() {
     (acc, val) => {
       const q = val.quantite
       const pu = val.prixUnitaire
-      const t = val.tva || 0
+      const t = val.tvaPerc || 0
       const r = val.remise || 0
       const ht = q * pu
       const tvaMontant = ht * (t / 100)
@@ -347,7 +367,7 @@ export default function VentesPage() {
   const total = Math.max(0, totalAvantRemiseGlobale - (Number(formData.remiseGlobale) || 0))
   const pointsGagnes = Math.floor(total)
 
-  const popupTotal = popupLignes.reduce((s, l) => s + (l.quantite * l.prixUnitaire) * (1 + (l.tva || 0) / 100), 0)
+  const popupTotal = popupLignes.reduce((s, l) => s + (l.quantite * l.prixUnitaire) * (1 + (l.tvaPerc || 0) / 100), 0)
 
   const doEnregistrerVente = async (lignes: Ligne[]) => {
     const magasinId = Number(formData.magasinId)
@@ -367,7 +387,7 @@ export default function VentesPage() {
         produitId: l.produitId,
         quantite: l.quantite,
         prixUnitaire: l.prixUnitaire,
-        tva: l.tva || 0,
+        tvaPerc: l.tvaPerc || 0,
         remise: l.remise || 0,
       })),
     }
@@ -386,7 +406,7 @@ export default function VentesPage() {
         setForm(false)
         setAddLignesPopupOpen(false)
         setPopupLignes([])
-        setPopupAjoutProduit({ produitId: '', quantite: '1', prixUnitaire: '', tva: '', remise: '', recherche: '' })
+        setPopupAjoutProduit({ produitId: '', quantite: '1', prixUnitaire: '', tvaPerc: '0', remise: '0', recherche: '' })
         setFormData({
           date: new Date().toISOString().split('T')[0],
           magasinId: '',
@@ -453,7 +473,7 @@ export default function VentesPage() {
     if (!formData.lignes.length) {
       setAddLignesPopupOpen(true)
       setPopupLignes([])
-      setPopupAjoutProduit({ produitId: '', quantite: '1', prixUnitaire: '', tva: '', remise: '', recherche: '' })
+      setPopupAjoutProduit({ produitId: '', quantite: '1', prixUnitaire: '', tvaPerc: '0', remise: '0', recherche: '' })
       return
     }
     await doEnregistrerVente(formData.lignes)
@@ -468,11 +488,11 @@ export default function VentesPage() {
     const pid = Number(popupAjoutProduit.produitId)
     const q = Math.max(1, Math.floor(Number(popupAjoutProduit.quantite) || 0))
     const pu = Math.max(0, Number(popupAjoutProduit.prixUnitaire) || 0)
-    const tvaLigne = popupAjoutProduit.tva !== '' ? Math.max(0, Number(popupAjoutProduit.tva)) : tvaParDefaut
+    const tvaLigne = popupAjoutProduit.tvaPerc !== '' ? Math.max(0, Number(popupAjoutProduit.tvaPerc)) : tvaParDefaut
     const p = Array.isArray(produits) ? produits.find((x) => x.id === pid) : undefined
     if (!p || !q) return
-    setPopupLignes((prev) => [...prev, { produitId: pid, designation: p.designation, quantite: q, prixUnitaire: pu, tva: tvaLigne }])
-    setPopupAjoutProduit({ produitId: '', quantite: '1', prixUnitaire: '', tva: '', remise: '', recherche: '' })
+    setPopupLignes((prev) => [...prev, { produitId: pid, designation: p.designation, quantite: q, prixUnitaire: pu, tvaPerc: tvaLigne }])
+    setPopupAjoutProduit({ produitId: '', quantite: '1', prixUnitaire: '', tvaPerc: '0', remise: '0', recherche: '' })
   }
 
   const removePopupLigne = (i: number) => {
@@ -870,52 +890,61 @@ export default function VentesPage() {
               <h3 className="mb-3 text-sm font-semibold text-gray-700">Lignes</h3>
               <div className="mb-3 space-y-2">
                 {/* Barre de recherche + bouton scanner */}
-                <div className="flex gap-2">
-                  <div className="relative flex-1">
-                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-                    <input
-                      type="text"
-                      placeholder="Rechercher un produit (code, désignation, catégorie)..."
-                      value={ajoutProduit.recherche || ''}
-                      onChange={(e) => {
-                        setAjoutProduit((a) => ({ ...a, recherche: e.target.value }))
-                      }}
-                      onFocus={refetchProduits}
-                      className="w-full rounded-lg border border-gray-200 py-2 pl-10 pr-4 text-sm focus:border-orange-500 focus:outline-none"
-                    />
+                <div className="relative group">
+                  <div className="absolute left-3 top-3.5 h-4 w-4 text-gray-400 group-focus-within:text-orange-500 transition-colors">
+                    <Search className="h-4 w-4" />
                   </div>
-                  {/* Bouton scanner code-barres */}
-                  <button
-                    type="button"
-                    onClick={() => { setScannerContext('main'); setScannerOpen(true) }}
-                    className="flex items-center gap-1.5 rounded-lg border-2 border-orange-400 bg-orange-50 px-3 py-2 text-sm font-medium text-orange-700 hover:bg-orange-100 transition-colors"
-                    title="Scanner un code-barres avec la caméra"
-                  >
-                    <Camera className="h-4 w-4" />
-                    <span className="hidden sm:inline">Scanner</span>
-                  </button>
+                  <input
+                    type="text"
+                    placeholder="Chercher un produit (code, nom)..."
+                    value={ajoutProduit.recherche || ''}
+                    onChange={(e) => {
+                      setAjoutProduit((a) => ({ ...a, recherche: e.target.value }))
+                    }}
+                    onFocus={refetchProduits}
+                    className="w-full rounded-lg border border-gray-200 py-3 pl-10 pr-4 text-sm focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500/20 transition-all"
+                  />
                 </div>
-                <select
-                  value={ajoutProduit.produitId}
-                  onChange={(e) => onSelectProduit(e.target.value)}
-                  className="w-full rounded border border-gray-200 px-3 py-2 text-sm focus:border-orange-500 focus:outline-none"
-                  title="Liste de tous les produits enregistrés"
-                >
-                  <option value="">Choisir un produit</option>
-                  {Array.isArray(produits) && produits
-                    .filter(p => {
-                      if (!ajoutProduit.recherche) return true
-                      const search = ajoutProduit.recherche.toLowerCase()
-                      return (
-                        p.code.toLowerCase().includes(search) ||
-                        p.designation.toLowerCase().includes(search) ||
-                        (p.categorie && p.categorie.toLowerCase().includes(search))
-                      )
-                    })
-                    .map((p) => (
-                      <option key={p.id} value={p.id}>{p.code} – {p.designation}</option>
-                    ))}
-                </select>
+                <div className="flex flex-col gap-2">
+                  <select
+                    value={ajoutProduit.produitId}
+                    onChange={(e) => onSelectProduit(e.target.value)}
+                    className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-orange-500 focus:outline-none bg-white shadow-sm"
+                    title="Sélectionner le produit filtré"
+                  >
+                    <option value="">— Sélectionner le produit —</option>
+                    {produits
+                      .filter(p => {
+                        if (!ajoutProduit.recherche) return true
+                        const search = ajoutProduit.recherche.toLowerCase()
+                        return (
+                          p.code.toLowerCase().includes(search) ||
+                          p.designation.toLowerCase().includes(search) ||
+                          (p.categorie && p.categorie.toLowerCase().includes(search))
+                        )
+                      })
+                      .map((p) => {
+                        const s = p.stocks?.find(s => s.magasinId === Number(formData.magasinId))?.quantite || 0
+                        return (
+                          <option key={p.id} value={p.id}>
+                            {p.code} – {p.designation} (Stock: {s})
+                          </option>
+                        )
+                      })}
+                  </select>
+                  {ajoutProduit.produitId && (
+                    <div className="flex items-center gap-2 px-1 text-xs font-medium">
+                      <span className="text-gray-500">Stock disponible :</span>
+                      <span className={`px-2 py-0.5 rounded-full ${
+                        (produits.find(p => p.id === Number(ajoutProduit.produitId))?.stocks?.find(s => s.magasinId === Number(formData.magasinId))?.quantite || 0) > 0 
+                        ? 'bg-green-100 text-green-700' 
+                        : 'bg-red-100 text-red-700'
+                      }`}>
+                        {produits.find(p => p.id === Number(ajoutProduit.produitId))?.stocks?.find(s => s.magasinId === Number(formData.magasinId))?.quantite || 0}
+                      </span>
+                    </div>
+                  )}
+                </div>
               </div>
               <div className="mb-3 flex flex-wrap gap-2">
                 <input
@@ -939,8 +968,8 @@ export default function VentesPage() {
                   type="number"
                   min="0"
                   step="0.01"
-                  value={ajoutProduit.tva}
-                  onChange={(e) => setAjoutProduit((a) => ({ ...a, tva: e.target.value }))}
+                  value={ajoutProduit.tvaPerc}
+                  onChange={(e) => setAjoutProduit((a) => ({ ...a, tvaPerc: e.target.value }))}
                   placeholder={`TVA (${tvaParDefaut}%)`}
                   className="w-20 rounded border border-gray-200 px-2 py-2 text-sm focus:border-orange-500 focus:outline-none bg-gray-50 text-gray-700"
                   title="TVA par défaut"
@@ -966,39 +995,43 @@ export default function VentesPage() {
                         <th className="pb-2">Désignation</th>
                         <th className="pb-2 text-right">Qté</th>
                         <th className="pb-2 text-right">P.U. (HT)</th>
+                        <th className="pb-2 text-right">Total (HT)</th>
                         <th className="pb-2 text-right">TVA</th>
-                        <th className="pb-2 text-right text-red-500">Remise</th>
-                        <th className="pb-2 text-right">Total TTC</th>
+                        <th className="pb-2 text-right">Remise</th>
                         <th></th>
                       </tr>
                     </thead>
                     <tbody>
-                      {formData.lignes.map((l, i) => {
-                        const lTva = l.tva || 0
-                        const lRemise = l.remise || 0
-                        const lHT = l.quantite * l.prixUnitaire
-                        const lTTC = (lHT * (1 + lTva / 100)) - lRemise
-                        return (
-                          <tr key={i} className="border-b border-gray-100">
-                            <td className="py-2">{l.designation}</td>
-                            <td className="text-right">{l.quantite}</td>
-                            <td className="text-right">{l.prixUnitaire.toLocaleString('fr-FR')} F</td>
-                            <td className="text-right">{lTva}%</td>
-                            <td className="text-right text-red-500">{lRemise > 0 ? `-${lRemise} F` : '-'}</td>
-                            <td className="text-right font-medium">{lTTC.toLocaleString('fr-FR', { maximumFractionDigits: 0 })} F</td>
-                            <td className="w-10">
+                      {formData.lignes.map((l, i) => (
+                        <tr key={i} className="border-b border-gray-100">
+                          <td className="py-2">{l.designation}</td>
+                          <td className="text-right">{l.quantite}</td>
+                          <td className="text-right">{l.prixUnitaire.toLocaleString('fr-FR')} F</td>
+                          <td className="text-right">{(l.quantite * l.prixUnitaire).toLocaleString('fr-FR')} F</td>
+                          <td className="text-right">{l.tvaPerc}%</td>
+                          <td className="text-right">{l.remise.toLocaleString('fr-FR')} F</td>
+                          <td className="w-16">
+                            <div className="flex items-center gap-1">
+                              <button
+                                type="button"
+                                onClick={() => editLigne(i)}
+                                title="Modifier cette ligne"
+                                className="rounded p-1 text-blue-600 hover:bg-blue-100 transition-colors"
+                              >
+                                <Pencil className="h-3.5 w-3.5" />
+                              </button>
                               <button
                                 type="button"
                                 onClick={() => removeLigne(i)}
                                 title="Supprimer la ligne"
-                                className="rounded p-1.5 text-red-600 hover:bg-red-100 transition-colors"
+                                className="rounded p-1 text-red-600 hover:bg-red-100 transition-colors"
                               >
-                                <Trash2 className="h-4 w-4" />
+                                <Trash2 className="h-3.5 w-3.5" />
                               </button>
-                            </td>
-                          </tr>
-                        )
-                      })}
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
                     </tbody>
                   </table>
                 </div>
