@@ -75,8 +75,8 @@ export default function PaiementsFournisseursPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Décaissements Fournisseurs</h1>
-          <p className="text-sm text-gray-500">Historique des paiements effectués par période</p>
+          <h1 className="text-2xl font-bold text-white uppercase tracking-tight">Décaissements Fournisseurs</h1>
+          <p className="text-sm text-white/90 font-medium">Historique des paiements effectués par période</p>
         </div>
         <button 
           onClick={() => window.print()}

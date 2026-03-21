@@ -69,8 +69,8 @@ export default function ListeAchatsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Journal des Achats</h1>
-          <p className="text-sm text-gray-500">Récapitulatif de tous les approvisionnements et règlements fournisseurs</p>
+          <h1 className="text-2xl font-bold text-white uppercase tracking-tight">Journal des Achats</h1>
+          <p className="text-sm text-white/90 font-medium">Récapitulatif de tous les approvisionnements et règlements fournisseurs</p>
         </div>
         <button 
           onClick={() => window.print()}

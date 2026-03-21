@@ -76,7 +76,7 @@ export async function GET(request: NextRequest) {
     const venteGlobaleMap = Object.fromEntries(ventesGlobales.map((v) => [v.clientId, v._sum.montantTotal || 0]))
     const reglementGlobaleMap = Object.fromEntries(reglementsGlobaux.map((r) => [r.clientId, r._sum.montant || 0]))
 
-    let data = clients.map((c) => {
+    let data = await Promise.all(clients.map(async (c) => {
       const factures = venteMap[c.id] || 0
       const paiements = reglementMap[c.id] || 0
       
@@ -91,6 +91,13 @@ export async function GET(request: NextRequest) {
 
       const statut = soldeClient > 0.01 ? 'DOIT' : soldeClient < -0.01 ? 'CREDIT' : 'SOLDE'
 
+      // Récupérer le numéro de la dernière facture
+      const derV = await prisma.vente.findFirst({
+        where: { clientId: c.id, statut: 'VALIDEE' },
+        orderBy: { date: 'desc' },
+        select: { numero: true }
+      })
+
       return {
         ...c,
         factures,
@@ -98,8 +105,9 @@ export async function GET(request: NextRequest) {
         variationPeriode,
         soldeClient,
         statut,
+        derniereFacture: derV?.numero || null
       }
-    })
+    }))
 
     const q = searchParams.get('q')?.toLowerCase()
     if (q) {

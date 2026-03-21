@@ -118,8 +118,8 @@ export default function MouvementsStockPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Mouvements de Stock</h1>
-          <p className="text-sm text-gray-500">Historique détaillé des flux de produits</p>
+          <h1 className="text-2xl font-bold text-white uppercase tracking-tight">Mouvements de Stock</h1>
+          <p className="text-sm text-white/90 font-medium">Historique détaillé des flux de produits</p>
         </div>
         <button 
           onClick={() => window.print()}

@@ -69,8 +69,8 @@ export default function ListeVentesPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Journal des Ventes</h1>
-          <p className="text-sm text-gray-500">Liste exhaustive et consolidée de toutes les transactions</p>
+          <h1 className="text-2xl font-bold text-white uppercase tracking-tight">Journal des Ventes</h1>
+          <p className="text-sm text-white/90 font-medium">Liste exhaustive et consolidée de toutes les transactions</p>
         </div>
         <button 
           onClick={() => window.print()}

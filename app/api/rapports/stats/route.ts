@@ -133,14 +133,15 @@ export async function GET(request: NextRequest) {
 
       ventes.forEach((v) => {
         const key = `${v.date.getFullYear()}-${String(v.date.getMonth() + 1).padStart(2, '0')}`
-        const existing = caMap.get(key) || { ca: 0, achats: 0 }
+        const existing = caMap.get(key) || { ca: 0, achats: 0, count: 0 }
         existing.ca += Number(v.montantTotal)
+        existing.count += 1
         caMap.set(key, existing)
       })
 
       achats.forEach((a) => {
         const key = `${a.date.getFullYear()}-${String(a.date.getMonth() + 1).padStart(2, '0')}`
-        const existing = caMap.get(key) || { ca: 0, achats: 0 }
+        const existing = caMap.get(key) || { ca: 0, achats: 0, count: 0 }
         existing.achats += Number(a.montantTotal)
         caMap.set(key, existing)
       })
@@ -164,6 +165,7 @@ export async function GET(request: NextRequest) {
             date: key,
             ca: value.ca,
             achats: value.achats,
+            count: value.count || 0,
           })
         })
 
@@ -178,19 +180,20 @@ export async function GET(request: NextRequest) {
         })
     } else {
       // Grouper par jour
-      const caMap = new Map<string, { ca: number; achats: number }>()
+      const caMap = new Map<string, { ca: number; achats: number; count: number }>()
       const stockMap = new Map<string, { entrees: number; sorties: number }>()
 
       ventes.forEach((v) => {
         const key = v.date.toISOString().split('T')[0]
-        const existing = caMap.get(key) || { ca: 0, achats: 0 }
+        const existing = caMap.get(key) || { ca: 0, achats: 0, count: 0 }
         existing.ca += Number(v.montantTotal)
+        existing.count += 1
         caMap.set(key, existing)
       })
 
       achats.forEach((a) => {
         const key = a.date.toISOString().split('T')[0]
-        const existing = caMap.get(key) || { ca: 0, achats: 0 }
+        const existing = caMap.get(key) || { ca: 0, achats: 0, count: 0 }
         existing.achats += Number(a.montantTotal)
         caMap.set(key, existing)
       })
@@ -214,6 +217,7 @@ export async function GET(request: NextRequest) {
             date: key,
             ca: value.ca,
             achats: value.achats,
+            count: value.count || 0,
           })
         })
 

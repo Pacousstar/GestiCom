@@ -77,8 +77,8 @@ export default function ValeurStockPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Valeur de Stock</h1>
-          <p className="text-sm text-gray-500">Estimation financière du stock disponible à une date donnée</p>
+          <h1 className="text-2xl font-bold text-white uppercase tracking-tight">Valeur de Stock</h1>
+          <p className="text-sm text-white/90 font-medium">Estimation financière du stock disponible à une date donnée</p>
         </div>
         <button 
           onClick={() => window.print()}

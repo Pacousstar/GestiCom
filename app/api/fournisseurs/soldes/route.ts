@@ -74,7 +74,7 @@ export async function GET(request: NextRequest) {
     const achatGlobalMap = Object.fromEntries(achatsGlobaux.map((a) => [a.fournisseurId, a._sum.montantTotal || 0]))
     const reglementGlobalMap = Object.fromEntries(reglementsGlobaux.map((r) => [r.fournisseurId, r._sum.montant || 0]))
 
-    const data = fournisseurs.map((f) => {
+    const data = await Promise.all(fournisseurs.map(async (f) => {
       const totalAchats = achatMap[f.id] || 0
       const totalPaiements = reglementMap[f.id] || 0
       
@@ -82,8 +82,14 @@ export async function GET(request: NextRequest) {
       const totalPaiementsGlobal = reglementGlobalMap[f.id] || 0
       const soldeInitial = f.soldeInitial || 0
       
-      // Solde Global = Dette de départ + Achats totaux - Paiements totaux
       const soldeGlobal = totalAchatsGlobal - totalPaiementsGlobal + soldeInitial
+
+      // Récupérer le numéro de la dernière facture d'achat
+      const derA = await prisma.achat.findFirst({
+        where: { fournisseurId: f.id },
+        orderBy: { date: 'desc' },
+        select: { numero: true }
+      })
 
       return {
         ...f,
@@ -91,8 +97,9 @@ export async function GET(request: NextRequest) {
         paiements: totalPaiements,
         variationPeriode: totalAchats - totalPaiements,
         soldeGlobal,
+        derniereFacture: derA?.numero || null
       }
-    })
+    }))
 
     return NextResponse.json(data)
   } catch (error) {

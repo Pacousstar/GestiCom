@@ -29,6 +29,7 @@ import {
   ShoppingBag as ShoppingBagIcon,
   Building2,
   ChevronDown,
+  ChevronRight,
   Loader2,
   CreditCard,
   FileBarChart,
@@ -41,45 +42,75 @@ import { useToast } from '@/hooks/useToast'
 // Diagnostic DB banner
 type DbInfo = { nodeEnv?: string; databaseUrl?: string }
 
-const navigation: Array<{
-  name: string
-  href: string
-  icon: typeof LayoutDashboard
-  roles?: string[]
-  permission?: string // si défini : visible si l'utilisateur a cette permission (ex. parametres:view)
-}> = [
-    { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, permission: 'dashboard:view' },
-    { name: 'Produits', href: '/dashboard/produits', icon: Package, permission: 'produits:view' },
-    { name: 'Stock', href: '/dashboard/stock', icon: Warehouse, permission: 'stocks:view' },
-    { name: 'Ventes', href: '/dashboard/ventes', icon: ShoppingCart, permission: 'ventes:view' },
-    { name: 'Vente Rapide (PRO)', href: '/dashboard/ventes/rapide', icon: CreditCard, permission: 'ventes:view' },
-    { name: 'Anciennes Ventes', href: '/dashboard/ventes/historiques', icon: Archive, permission: 'ventes:view' },
-    { name: 'Clients', href: '/dashboard/clients', icon: Users, permission: 'clients:view' },
-    { name: 'Soldes Clients', href: '/dashboard/clients/soldes', icon: FileText, permission: 'clients:view' },
-    { name: 'Paiements Clients', href: '/dashboard/clients/paiements', icon: Wallet, permission: 'clients:view' },
-    { name: 'Fournisseurs', href: '/dashboard/fournisseurs', icon: Truck, permission: 'fournisseurs:view' },
-    { name: 'Soldes Fournisseurs', href: '/dashboard/fournisseurs/soldes', icon: FileText, permission: 'fournisseurs:view' },
-    { name: 'Paiements Fournisseurs', href: '/dashboard/fournisseurs/paiements', icon: Wallet, permission: 'fournisseurs:view' },
-    { name: 'Achats', href: '/dashboard/achats', icon: ShoppingBag, permission: 'achats:view' },
-    { name: 'Tous les Achats', href: '/dashboard/rapports-fournisseurs/liste-achats', icon: FileText, permission: 'rapports:view' },
-    { name: 'Caisse', href: '/dashboard/caisse', icon: Wallet, permission: 'caisse:view' },
-    { name: 'Banque', href: '/dashboard/banque', icon: CreditCard, permission: 'banque:view' },
-    { name: 'Dépenses', href: '/dashboard/depenses', icon: DollarSign, permission: 'depenses:view' },
-    { name: 'Charges', href: '/dashboard/charges', icon: TrendingUp, permission: 'charges:view' },
-    { name: 'Rapports', href: '/dashboard/rapports', icon: FileBarChart, permission: 'rapports:view' },
-    { name: 'Rapports Vente', href: '/dashboard/rapports-ventes', icon: TrendingUp, permission: 'rapports:view' },
-    { name: 'Toutes les Ventes', href: '/dashboard/rapports-ventes/liste', icon: FileText, permission: 'rapports:view' },
-    { name: 'État des Paiements', href: '/dashboard/rapports-finances', icon: DollarSign, permission: 'rapports:view' },
-    { name: 'Suivi Fournisseurs', href: '/dashboard/rapports-fournisseurs', icon: Truck, permission: 'rapports:view' },
-    { name: 'Inventaire Global', href: '/dashboard/rapports-inventaire', icon: FileText, permission: 'rapports:view' },
-    { name: 'Mouvements de Stock', href: '/dashboard/rapports-inventaire/mouvements', icon: Activity, permission: 'rapports:view' },
-    { name: 'Valeur de Stock', href: '/dashboard/rapports-inventaire/valeur', icon: DollarSign, permission: 'rapports:view' },
-    { name: 'Rentabilité Produits', href: '/dashboard/rapports/rentabilite', icon: TrendingUp, permission: 'rapports:view' },
-    { name: 'Comptabilité', href: '/dashboard/comptabilite', icon: Calculator, permission: 'comptabilite:view' },
-    { name: 'Utilisateurs', href: '/dashboard/utilisateurs', icon: UserPlus, permission: 'users:view' },
-    { name: 'Journal d\'audit', href: '/dashboard/audit', icon: Activity, permission: 'audit:view' },
-    { name: 'Paramètres', href: '/dashboard/parametres', icon: Settings, roles: ['SUPER_ADMIN', 'ADMIN'], permission: 'parametres:view' },
-  ]
+const navigation = [
+  {
+    section: '🛒 COMMERCE',
+    items: [
+      { name: 'Ventes', href: '/dashboard/ventes', icon: ShoppingCart, permission: 'ventes:view' },
+      { name: 'Vente Rapide (PRO)', href: '/dashboard/ventes/rapide', icon: CreditCard, permission: 'ventes:view' },
+      { name: 'Anciennes Ventes', href: '/dashboard/ventes/historiques', icon: Archive, permission: 'ventes:view' },
+      { name: 'Achats', href: '/dashboard/achats', icon: ShoppingBag, permission: 'achats:view' },
+      { name: 'Tous les Achats', href: '/dashboard/rapports-fournisseurs/liste-achats', icon: FileText, permission: 'rapports:view' },
+    ]
+  },
+  {
+    section: '📦 LOGISTIQUE',
+    items: [
+      { name: 'Produits', href: '/dashboard/produits', icon: Package, permission: 'produits:view' },
+      { name: 'Stock', href: '/dashboard/stock', icon: Warehouse, permission: 'stocks:view' },
+      { name: 'Mouvements de Stock', href: '/dashboard/rapports-inventaire/mouvements', icon: Activity, permission: 'rapports:view' },
+      { name: 'Valeur de Stock', href: '/dashboard/rapports-inventaire/valeur', icon: DollarSign, permission: 'rapports:view' },
+    ]
+  },
+  {
+    section: '👥 TIERS',
+    items: [
+      { name: 'Clients', href: '/dashboard/clients', icon: Users, permission: 'clients:view' },
+      { name: 'Soldes Clients', href: '/dashboard/clients/soldes', icon: FileText, permission: 'clients:view' },
+      { name: 'Paiements Clients', href: '/dashboard/clients/paiements', icon: Wallet, permission: 'clients:view' },
+      { name: 'Fournisseurs', href: '/dashboard/fournisseurs', icon: Truck, permission: 'fournisseurs:view' },
+      { name: 'Soldes Fournisseurs', href: '/dashboard/fournisseurs/soldes', icon: FileText, permission: 'fournisseurs:view' },
+      { name: 'Paiements Fournisseurs', href: '/dashboard/fournisseurs/paiements', icon: Wallet, permission: 'fournisseurs:view' },
+    ]
+  },
+  {
+    section: '💰 FINANCES',
+    items: [
+      { name: 'Caisse', href: '/dashboard/caisse', icon: Wallet, permission: 'caisse:view' },
+      { name: 'Banque', href: '/dashboard/banque', icon: CreditCard, permission: 'banque:view' },
+      { name: 'Dépenses', href: '/dashboard/depenses', icon: DollarSign, permission: 'depenses:view' },
+      { name: 'Charges', href: '/dashboard/charges', icon: TrendingUp, permission: 'charges:view' },
+      { name: 'Comptabilité', href: '/dashboard/comptabilite', icon: Calculator, permission: 'comptabilite:view' },
+    ]
+  },
+  {
+    section: '📊 ANALYTIQUE',
+    items: [
+      { name: 'Rapports Généraux', href: '/dashboard/rapports', icon: FileBarChart, permission: 'rapports:view' },
+      { name: 'Rapports Vente', href: '/dashboard/rapports-ventes', icon: TrendingUp, permission: 'rapports:view' },
+      { name: 'Toutes les Ventes', href: '/dashboard/rapports-ventes/liste', icon: FileText, permission: 'rapports:view' },
+      { name: 'État des Paiements', href: '/dashboard/rapports-finances', icon: DollarSign, permission: 'rapports:view' },
+      { name: 'Suivi Fournisseurs', href: '/dashboard/rapports-fournisseurs', icon: Truck, permission: 'rapports:view' },
+      { name: 'Inventaire Global', href: '/dashboard/rapports-inventaire', icon: FileText, permission: 'rapports:view' },
+      { name: 'Rentabilité Produits', href: '/dashboard/rapports/rentabilite', icon: TrendingUp, permission: 'rapports:view' },
+    ]
+  },
+  {
+    section: '📂 ARCHIVES',
+    items: [
+      { name: 'Anciennes Ventes', href: '/dashboard/archives/ventes', icon: History, permission: 'archives:view' },
+      { name: 'Soldes Clients', href: '/dashboard/archives/clients', icon: Wallet, permission: 'archives:view' },
+    ]
+  },
+  {
+    section: '⚙️ SYSTÈME',
+    items: [
+      { name: 'Utilisateurs', href: '/dashboard/utilisateurs', icon: UserPlus, permission: 'users:view' },
+      { name: 'Journal d\'audit', href: '/dashboard/audit', icon: Activity, permission: 'audit:view' },
+      { name: 'Paramètres', href: '/dashboard/parametres', icon: Settings, roles: ['SUPER_ADMIN', 'ADMIN'], permission: 'parametres:view' },
+    ]
+  }
+]
 
 function initials(nom: string): string {
   const parts = nom.trim().split(/\s+/)
@@ -124,15 +155,48 @@ export default function DashboardLayoutClient({
   const [syncQueueLength, setSyncQueueLength] = useState(0)
   const [syncing, setSyncing] = useState(false)
   const [toutesLues, setToutesLues] = useState(false)
+  const [expandedSections, setExpandedSections] = useState<string[]>(['🛒 COMMERCE']) // Commerce ouvert par défaut
+  const [dailyPerformance, setDailyPerformance] = useState({ ca: 0, count: 0 })
+
+  const fetchDailyPerformance = async () => {
+    try {
+      const res = await fetch('/api/rapports/stats?periode=0')
+      if (res.ok) {
+        const data = await res.json()
+        const todayData = data.caParPeriode && data.caParPeriode.length > 0 
+          ? data.caParPeriode[data.caParPeriode.length - 1] 
+          : { ca: 0 }
+        
+        // On suppose ici que caParPeriode[0] est aujourd'hui si periode=0
+        // Pour le count, on pourrait avoir besoin d'une autre API ou l'extraire si dispo
+        setDailyPerformance({ 
+          ca: todayData.ca || 0, 
+          count: todayData.count || 0
+        })
+      }
+    } catch (e) {
+      console.error('Erreur fetch performance:', e)
+    }
+  }
+
+  const toggleSection = (sectionName: string) => {
+    setExpandedSections(prev => 
+      prev.includes(sectionName) 
+        ? prev.filter(s => s !== sectionName) 
+        : [...prev, sectionName]
+    )
+  }
 
   // Charger les notifications et entités
   useEffect(() => {
     loadNotifications()
     loadEntites()
+    fetchDailyPerformance()
     // Rafraîchir toutes les 5 minutes unqiuement si l'onglet est actif
     const interval = setInterval(() => {
       if (!document.hidden) {
         loadNotifications()
+        fetchDailyPerformance()
       }
     }, 5 * 60 * 1000)
     return () => clearInterval(interval)
@@ -233,7 +297,8 @@ export default function DashboardLayoutClient({
   useEffect(() => {
     if (!pathname || pathname === '/dashboard') return
 
-    const targetRoute = navigation.find(item =>
+    const flatNavigation = navigation.flatMap(s => s.items)
+    const targetRoute = flatNavigation.find(item =>
       item.href !== '/dashboard' && pathname.startsWith(item.href)
     )
 
@@ -382,73 +447,170 @@ export default function DashboardLayoutClient({
           onClick={() => setSidebarOpen(false)}
         />
       )}
-
       <aside
-        className={`fixed top-0 left-0 z-[100] h-full w-64 transform bg-white/95 backdrop-blur-xl shadow-xl transition-transform duration-300 ease-in-out lg:translate-x-0 pointer-events-auto no-print ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-          }`}
+        className={`fixed top-0 left-0 z-[100] h-full w-72 transform bg-[#006B44] border-r border-emerald-700/30 shadow-[25px_0_60px_rgba(0,0,0,0.2)] transition-transform duration-300 ease-in-out lg:translate-x-0 pointer-events-auto no-print ${
+          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+        }`}
       >
         <div className="flex h-full flex-col">
-          <div className="flex h-20 items-center justify-between border-b px-4">
+          <div className="flex h-20 items-center justify-between border-b border-emerald-100 bg-[#FCF6E8] px-5 shadow-sm relative z-50">
             <Link href="/dashboard" className="flex items-center gap-3 min-w-0">
-              <Image src="/logo.png" alt="GestiCom" width={140} height={36} className="h-9 w-auto object-contain" style={{ width: 'auto' }} priority />
+              <Image src="/logo.png" alt="Gesticom" width={140} height={36} className="h-10 w-auto object-contain drop-shadow-sm brightness-95" style={{ width: 'auto' }} priority />
             </Link>
-            <button className="lg:hidden" onClick={() => setSidebarOpen(false)}>
-              <X className="h-6 w-6 text-gray-600" />
+            <button className="lg:hidden p-2 rounded-lg hover:bg-emerald-100/50 transition-colors" onClick={() => setSidebarOpen(false)}>
+              <X className="h-6 w-6 text-emerald-950" />
             </button>
           </div>
 
-          <nav className="flex-1 space-y-1 overflow-y-auto p-4">
-            {navigation
-              .filter((item) => {
-                if (!item.roles && !item.permission) return true
-                if (item.roles && item.roles.includes(user.role)) return true
-                if (item.permission && user.permissions?.includes(item.permission)) return true
-                return false
-              })
-              .map((item) => {
-                const isActive = pathname === item.href
-                const Icon = item.icon
-                return (
-                  <Link
-                    key={item.name}
-                    href={item.href}
-                    className={`w-full flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium transition-all text-left ${isActive
-                      ? 'bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-md'
-                      : 'text-gray-700 hover:bg-gray-100'
-                      }`}
-                    onClick={() => setSidebarOpen(false)}
-                  >
-                    <Icon className="h-5 w-5 shrink-0" />
-                    {item.name}
-                  </Link>
-                )
-              })}
-          </nav>
+          <div className="flex-1 overflow-y-auto px-2 py-4 custom-scrollbar">
+              <nav className="space-y-1">
+                {/* Dashboard / Accueil Button */}
+                <Link
+                  href="/dashboard"
+                  title="Dashboard - Vue d'ensemble"
+                  onClick={() => setSidebarOpen(false)}
+                  className={`flex items-center gap-4 px-5 py-4 mx-2 mb-8 rounded-2xl transition-all duration-300 group ${
+                    pathname === '/dashboard'
+                      ? 'bg-gradient-to-br from-orange-500 to-orange-700 border-2 border-white/30 shadow-[0_10px_40px_rgba(249,115,22,0.4)] scale-[1.02]'
+                      : 'bg-white/5 border border-white/5 hover:bg-white/10'
+                  }`}
+                >
+                  <div className={`p-2 rounded-xl transition-all ${pathname === '/dashboard' ? 'bg-white/20' : 'bg-orange-500/20 group-hover:bg-orange-500/30'}`}>
+                    <LayoutDashboard className={`h-6 w-6 ${pathname === '/dashboard' ? 'text-white' : 'text-orange-100 group-hover:text-white'}`} />
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-[15px] font-black uppercase tracking-widest text-white leading-none brightness-125 drop-shadow-sm">
+                      Dashboard
+                    </span>
+                    <span className="text-[9px] font-bold text-white/50 uppercase tracking-tighter mt-1">
+                      Vue d'ensemble
+                    </span>
+                  </div>
+                </Link>
 
-          <div className="border-t p-4">
-            <div className="flex items-center gap-3 rounded-lg bg-gray-50 p-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-purple-500 to-blue-500 text-sm font-semibold text-white">
+                {navigation.map((section) => {
+                  const visibleItems = section.items.filter((item) => {
+                    if (!item.roles && !item.permission) return true
+                    if (item.roles?.includes(user?.role)) return true
+                    if (item.permission && user?.permissions?.includes(item.permission)) return true
+                    return false
+                  })
+
+                  if (visibleItems.length === 0) return null
+                  const isExpanded = expandedSections.includes(section.section)
+
+                  return (
+                    <div key={section.section} className="mb-2">
+                      <button
+                        onClick={() => toggleSection(section.section)}
+                        title={`Ouvrir ${section.section}`}
+                        className={`flex w-full items-center justify-between px-4 py-3.5 mx-2 mb-1 rounded-xl transition-all duration-300 border ${
+                          isExpanded 
+                            ? 'bg-white/10 border-white/20 shadow-lg' 
+                            : 'bg-white/5 border-white/5 hover:bg-white/10'
+                        }`}
+                      >
+                        <span className="text-[13.5px] font-black uppercase tracking-[0.18em] text-white brightness-150 drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]">
+                          {section.section}
+                        </span>
+                        {isExpanded ? (
+                          <ChevronDown className="h-4 w-4 text-orange-500 brightness-110" />
+                        ) : (
+                          <ChevronRight className="h-4 w-4 text-orange-500 brightness-110" />
+                        )}
+                      </button>
+                      
+                      {isExpanded && (
+                        <div className="mx-2 mb-5 space-y-1 bg-black/20 rounded-2xl p-2 border border-orange-500/40 shadow-[0_10px_30px_rgba(0,0,0,0.3)] animate-in fade-in zoom-in-95 duration-200">
+                          {visibleItems.map((item) => {
+                            const isActive = pathname === item.href
+                            const Icon = item.icon
+                            return (
+                              <Link
+                                key={item.name}
+                                href={item.href}
+                                title={item.name}
+                                className={`group flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-bold transition-all duration-300 ${
+                                  isActive
+                                    ? 'bg-orange-600 text-white shadow-[0_4px_20px_rgba(249,115,22,0.4)] scale-[1.02]'
+                                    : 'text-white hover:bg-white/10 hover:pl-5'
+                                }`}
+                                onClick={() => setSidebarOpen(false)}
+                              >
+                                <Icon className={`h-5 w-5 transition-colors ${isActive ? 'text-white' : 'text-white/70 group-hover:text-white'}`} />
+                                <span className="truncate group-hover:whitespace-normal uppercase tracking-tight">{item.name}</span>
+                                {isActive && (
+                                  <div className="ml-auto h-2 w-2 rounded-full bg-white shadow-[0_0_12px_white] animate-pulse" />
+                                )}
+                              </Link>
+                            )
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+
+                {/* Performance & Status Pod */}
+                <div className="mt-14 mx-2 mb-10 p-5 rounded-2xl bg-white/5 border-2 border-orange-500 shadow-2xl relative overflow-hidden group hover:bg-white/10 transition-all duration-500">
+                  <div className="absolute top-0 right-0 p-2 opacity-30">
+                    <TrendingUp className="h-12 w-12 text-orange-500" />
+                  </div>
+                  
+                  <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-white/50 mb-3">
+                    Bilan du Jour
+                  </h4>
+                  
+                  <div className="space-y-1 mb-4">
+                    <div className="text-xl font-black text-white brightness-125 tabular-nums">
+                      {dailyPerformance.ca.toLocaleString('fr-FR')} <span className="text-[10px] font-bold text-emerald-300">FCFA</span>
+                    </div>
+                    <div className="text-[11px] font-bold text-orange-500 flex items-center gap-1.5">
+                      <ShoppingCart className="h-3 w-3" />
+                      <span>{dailyPerformance.count} Ventes enregistrées</span>
+                    </div>
+                  </div>
+
+                  <div className="pt-4 border-t border-white/5 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="relative">
+                        <div className="h-2.5 w-2.5 rounded-full bg-orange-500" />
+                        <div className="absolute inset-0 h-2.5 w-2.5 rounded-full bg-orange-500 animate-ping opacity-75" />
+                      </div>
+                      <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-tighter">Serveur Local OK</span>
+                    </div>
+                    <div className="text-[9px] font-black text-white/20 uppercase tracking-widest">
+                      v4.2 PRO
+                    </div>
+                  </div>
+                </div>
+              </nav>
+            </div>
+
+          <div className="border-t border-emerald-100 bg-[#FCF6E8] p-5 shadow-[0_-4px_15px_rgba(0,0,0,0.02)] relative z-50">
+            <div className="flex items-center gap-3 rounded-2xl bg-gradient-to-br from-emerald-600 to-emerald-800 p-3.5 shadow-xl ring-2 ring-white/20">
+              <div className="flex h-11 w-11 items-center justify-center rounded-full bg-white text-base font-black text-orange-600 shadow-inner ring-2 ring-emerald-500/10">
                 {initials(user.nom)}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-800 truncate">{user.nom}</p>
-                <p className="text-xs text-gray-500 truncate">{user.login}</p>
+                <p className="text-[15px] font-black text-white truncate uppercase tracking-tight drop-shadow-sm">{user.nom}</p>
+                <p className="text-[10px] text-emerald-50/90 truncate font-black uppercase tracking-[0.15em]">{user.role === 'ADMIN' ? 'Administrateur admin' : user.login}</p>
               </div>
             </div>
-            <form action="/api/auth/logout" method="POST" className="mt-2">
+            <form action="/api/auth/logout" method="POST" className="mt-4">
               <button
                 type="submit"
-                className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                className="flex w-full items-center justify-center gap-3 rounded-xl bg-orange-500 hover:bg-orange-600 px-4 py-3 text-[11px] font-black text-white transition-all duration-300 shadow-lg hover:shadow-orange-500/30 uppercase tracking-[0.2em]"
               >
-                <LogOut className="h-4 w-4" />
-                Déconnexion
+                <LogOut className="h-4 w-4 text-[#006B44]" />
+                DÉCONNEXION
               </button>
             </form>
           </div>
         </div>
       </aside>
 
-      <div className="relative z-10 lg:pl-64 print:pl-0">
+      <div className="relative z-10 lg:pl-72 print:pl-0">
         <header className="sticky top-0 z-30 border-b bg-white/90 backdrop-blur-xl shadow-sm no-print">
           <div className="flex h-20 items-center justify-between px-4 sm:px-6 lg:px-8">
             <div className="flex items-center gap-4">

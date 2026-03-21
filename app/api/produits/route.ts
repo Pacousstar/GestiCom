@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
       orderBy: [{ categorie: 'asc' }, { code: 'asc' }],
       include: {
         stocks: {
-          select: { quantite: true }
+          select: { magasinId: true, quantite: true }
         }
       }
     })
@@ -71,7 +71,7 @@ export async function GET(request: NextRequest) {
       orderBy: [{ categorie: 'asc' }, { code: 'asc' }],
       include: {
         stocks: {
-          select: { quantite: true }
+          select: { magasinId: true, quantite: true }
         }
       }
     }),
@@ -147,29 +147,29 @@ export async function POST(request: NextRequest) {
 
     const ipAddress = getIpAddress(request)
     await logCreation(
-      session,
-      'PRODUIT',
-      p.id,
-      `Produit ${p.code} - ${p.designation}`,
-      {
-        code: p.code,
-        designation: p.designation,
-        categorie: p.categorie,
-        magasinId: magasinIdRaw,
-        quantiteInitiale,
-      },
-      ipAddress
-    )
+        session,
+        'PRODUIT',
+        p.id,
+        `Produit ${p.code} - ${p.designation}`,
+        {
+          code: p.code,
+          designation: p.designation,
+          categorie: p.categorie,
+          magasinId: magasinIdRaw,
+          quantiteInitiale,
+        },
+        ipAddress
+      )
 
-    revalidatePath('/dashboard/produits')
-    revalidatePath('/dashboard/stock')
-    revalidatePath('/api/produits')
-    revalidatePath('/api/produits/stats')
-    revalidatePath('/api/produits/categories')
+      revalidatePath('/dashboard/produits')
+      revalidatePath('/dashboard/stock')
+      revalidatePath('/api/produits')
+      revalidatePath('/api/produits/stats')
+      revalidatePath('/api/produits/categories')
 
-    return NextResponse.json(p)
-  } catch (e) {
-    console.error('POST /api/produits:', e)
-    return NextResponse.json({ error: 'Erreur serveur.' }, { status: 500 })
+      return NextResponse.json(p)
+    } catch (e) {
+      console.error('POST /api/produits:', e)
+      return NextResponse.json({ error: 'Erreur serveur.' }, { status: 500 })
+    }
   }
-}

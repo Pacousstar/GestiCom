@@ -32,7 +32,7 @@ type Mouvement = {
 }
 
 type Magasin = { id: number; code: string; nom: string }
-type Produit = { id: number; code: string; designation: string }
+type Produit = { id: number; code: string; designation: string; categorie?: string }
 
 type Comparaison = {
   periodeActuelle: { ca: number; achats: number; ventes: number }
@@ -174,6 +174,8 @@ export default function RapportsPage() {
   const [topPage, setTopPage] = useState(1)
   const [facturesPage, setFacturesPage] = useState(1)
   const [paginationFactures, setPaginationFactures] = useState<{ totalPages: number; total: number } | null>(null)
+  const [selectedCatFilter, setSelectedCatFilter] = useState('')
+  const [selectedProdFilter, setSelectedProdFilter] = useState('')
 
   useEffect(() => {
     fetch('/api/auth/check').then(r => r.json()).then(data => setUserRole(data.role || ''))
@@ -293,8 +295,8 @@ export default function RapportsPage() {
     <div className="space-y-6 pb-20">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-black text-white drop-shadow-md font-mono tracking-tighter">PILOTAGE & RAPPORTS v2</h1>
-          <p className="mt-1 text-white/80 font-medium">Analyses approfondies des stocks, flux financiers et tiers</p>
+          <h1 className="text-3xl font-black text-white drop-shadow-md font-mono tracking-tighter uppercase">PILOTAGE & RAPPORTS</h1>
+          <p className="mt-1 text-white/90 font-bold">Analyses approfondies des stocks, flux financiers et tiers</p>
         </div>
         <div className="flex items-center gap-2">
           <button
@@ -559,70 +561,165 @@ export default function RapportsPage() {
 
         {activeTab === 'categories' && (
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            {/* Filtres spécifiques Catégories/Produits */}
+            <div className="flex flex-wrap gap-4 bg-white/10 p-4 rounded-3xl border border-white/20 backdrop-blur-md">
+                <div className="flex flex-col gap-1 flex-1 min-w-[200px]">
+                    <label className="text-[10px] font-black text-white uppercase ml-1">Filtrer par Catégorie</label>
+                    <select 
+                        value={selectedCatFilter} 
+                        onChange={e => { setSelectedCatFilter(e.target.value); setSelectedProdFilter(''); }}
+                        className="rounded-xl border border-white/20 bg-white/90 px-4 py-2 text-sm font-bold shadow-sm focus:ring-2 focus:ring-indigo-500/20 outline-none"
+                    >
+                        <option value="">Toutes les catégories</option>
+                        {Array.from(new Set(categoriesData.map(c => c.nom))).sort().map(cat => (
+                            <option key={cat} value={cat}>{cat}</option>
+                        ))}
+                    </select>
+                </div>
+                <div className="flex flex-col gap-1 flex-1 min-w-[200px]">
+                    <label className="text-[10px] font-black text-white uppercase ml-1">Filtrer par Produit</label>
+                    <select 
+                        value={selectedProdFilter} 
+                        onChange={e => setSelectedProdFilter(e.target.value)}
+                        className="rounded-xl border border-white/20 bg-white/90 px-4 py-2 text-sm font-bold shadow-sm focus:ring-2 focus:ring-indigo-500/20 outline-none"
+                    >
+                        <option value="">Tous les produits</option>
+                        {produits
+                            .filter(p => !selectedCatFilter || p.categorie === selectedCatFilter)
+                            .map(p => (
+                                <option key={p.id} value={p.designation}>{p.designation}</option>
+                            ))
+                        }
+                    </select>
+                </div>
+                <button 
+                  onClick={() => { setSelectedCatFilter(''); setSelectedProdFilter(''); }}
+                  className="mt-auto px-4 py-2 rounded-xl bg-orange-500 text-white font-black text-xs uppercase hover:bg-orange-600 transition-all"
+                >
+                  RAZ
+                </button>
+            </div>
+
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-               <div className="bg-white p-5 rounded-3xl border border-gray-100 shadow-xl">
-                  <p className="text-gray-400 text-[9px] font-black uppercase tracking-widest whitespace-nowrap">Totaux Catégories</p>
-                  <div className="mt-1 text-2xl font-black text-indigo-600">{categoriesData.length}</div>
+               {/* 1. Totaux Catégories - EMERALD */}
+               <div className="bg-emerald-600 p-5 rounded-3xl border border-emerald-500 shadow-2xl text-white">
+                  <p className="text-emerald-100 text-[9px] font-black uppercase tracking-widest whitespace-nowrap opacity-80">Totaux Catégories</p>
+                  <div className="mt-1 text-4xl font-black tracking-tighter">
+                    {selectedCatFilter ? '1' : categoriesData.length}
+                  </div>
                </div>
-               <div className="bg-white p-5 rounded-3xl border border-gray-100 shadow-xl">
-                  <p className="text-gray-400 text-[9px] font-black uppercase tracking-widest">Nombre Articles</p>
-                  <div className="mt-1 text-2xl font-black text-blue-600">{categoriesData.reduce((acc, c) => acc + c.nbProduits, 0)}</div>
+               {/* 2. Nombre Articles - INDIGO */}
+               <div className="bg-indigo-600 p-5 rounded-3xl border border-indigo-500 shadow-2xl text-white">
+                  <p className="text-indigo-100 text-[9px] font-black uppercase tracking-widest opacity-80">Nombre Articles</p>
+                  <div className="mt-1 text-4xl font-black tracking-tighter">
+                    {categoriesData
+                        .filter(c => !selectedCatFilter || c.nom === selectedCatFilter)
+                        .reduce((acc, c) => acc + (selectedProdFilter ? 1 : c.nbProduits), 0)}
+                  </div>
                </div>
-               <div className="bg-white p-5 rounded-3xl border border-gray-100 shadow-xl">
-                  <p className="text-gray-400 text-[9px] font-black uppercase tracking-widest">Quantité Totale</p>
-                  <div className="mt-1 text-2xl font-black text-amber-600">{categoriesData.reduce((acc, c) => acc + c.quantiteTotale, 0).toLocaleString()}</div>
+               {/* 3. Quantité Totale - AMBER */}
+               <div className="bg-amber-500 p-5 rounded-3xl border border-amber-400 shadow-2xl text-white">
+                  <p className="text-amber-50 text-[9px] font-black uppercase tracking-widest opacity-80">Quantité Totale</p>
+                  <div className="mt-1 text-4xl font-black tracking-tighter">
+                    {categoriesData
+                        .filter(c => !selectedCatFilter || c.nom === selectedCatFilter)
+                        .reduce((acc, c) => acc + c.quantiteTotale, 0).toLocaleString()}
+                  </div>
                </div>
-               <div className="bg-white p-5 rounded-3xl border border-gray-100 shadow-xl">
-                  <p className="text-gray-400 text-[9px] font-black uppercase tracking-widest">Valeur Achat</p>
-                  <div className="mt-1 text-xl font-black text-rose-600 truncate">{categoriesData.reduce((acc, c) => acc + c.valeurAchatStock, 0).toLocaleString()} F</div>
+               {/* 4. Valeur Achat - ROSE */}
+               <div className="bg-rose-600 p-5 rounded-3xl border border-rose-500 shadow-2xl text-white">
+                  <p className="text-rose-100 text-[9px] font-black uppercase tracking-widest opacity-80">Valeur Achat</p>
+                  <div className="mt-1 text-2xl font-black tracking-tight truncate">
+                    {categoriesData
+                        .filter(c => !selectedCatFilter || c.nom === selectedCatFilter)
+                        .reduce((acc, c) => acc + c.valeurAchatStock, 0).toLocaleString()} F
+                  </div>
                </div>
-               <div className="bg-white p-5 rounded-3xl border border-gray-100 shadow-xl">
-                  <p className="text-gray-400 text-[9px] font-black uppercase tracking-widest">Valeur Vente</p>
-                  <div className="mt-1 text-xl font-black text-emerald-600 truncate">{categoriesData.reduce((acc, c) => acc + c.valeurVenteStock, 0).toLocaleString()} F</div>
+               {/* 5. Valeur Vente - CYAN */}
+               <div className="bg-cyan-600 p-5 rounded-3xl border border-cyan-500 shadow-2xl text-white">
+                  <p className="text-cyan-100 text-[9px] font-black uppercase tracking-widest opacity-80">Valeur Vente</p>
+                  <div className="mt-1 text-2xl font-black tracking-tight truncate">
+                    {categoriesData
+                        .filter(c => !selectedCatFilter || c.nom === selectedCatFilter)
+                        .reduce((acc, c) => acc + c.valeurVenteStock, 0).toLocaleString()} F
+                  </div>
                </div>
             </div>
 
-            <div className="bg-white rounded-3xl border border-gray-200 shadow-xl overflow-hidden">
-                <div className="p-6 border-b border-gray-100 bg-gray-50/30 flex items-center justify-between">
-                    <h3 className="text-lg font-black text-gray-900 flex items-center gap-3 uppercase tracking-tight">
-                        <PieChart className="h-5 w-5 text-indigo-500" />
-                        Répartition par Catégories de Produits
-                    </h3>
-                </div>
-                <div className="overflow-x-auto">
-                    <table className="min-w-full">
-                        <thead className="bg-gray-50/50">
-                            <tr className="text-left text-[10px] font-black text-gray-400 uppercase tracking-widest border-b">
-                                <th className="px-6 py-4">Catégorie</th>
-                                <th className="px-6 py-4 text-center">Nombre Articles</th>
-                                <th className="px-6 py-4 text-center">Quantité Totale</th>
-                                <th className="px-6 py-4 text-right">Valeur Achat (Investi)</th>
-                                <th className="px-6 py-4 text-right">Valeur Vente (Potentiel)</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-100">
-                            {categoriesData.filter(c => c.nom.toLowerCase().includes(searchTerm.toLowerCase())).map((c, i) => (
-                                <tr key={i} className="hover:bg-gray-50/70 transition-colors">
-                                    <td className="px-6 py-4">
-                                        <div className="text-sm font-black text-gray-900 uppercase tracking-tighter">{c.nom}</div>
-                                    </td>
-                                    <td className="px-6 py-4 text-center">
-                                        <span className="text-xs font-bold text-gray-500 bg-gray-100 px-3 py-1 rounded-full">{c.nbProduits}</span>
-                                    </td>
-                                    <td className="px-6 py-4 text-center">
-                                        <span className="text-sm font-black text-gray-600">{c.quantiteTotale}</span>
-                                    </td>
-                                    <td className="px-6 py-4 text-right font-mono text-sm text-rose-600 font-bold tabular-nums">
-                                        {c.valeurAchatStock.toLocaleString()}
-                                    </td>
-                                    <td className="px-6 py-4 text-right font-black text-emerald-600 tabular-nums text-lg">
-                                        {c.valeurVenteStock.toLocaleString()}
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                {categoriesData
+                    .filter(c => (!selectedCatFilter || c.nom === selectedCatFilter))
+                    .filter(c => c.nom.toLowerCase().includes(searchTerm.toLowerCase()))
+                    .map((c, i) => {
+                        const totalPV = categoriesData.reduce((acc, cat) => acc + cat.valeurVenteStock, 0) || 1
+                        const ratio = (c.valeurVenteStock / totalPV) * 100
+
+                        return (
+                            <div key={i} className="group relative bg-white rounded-[2rem] border border-gray-100 p-6 shadow-xl hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 overflow-hidden">
+                                <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity pointer-events-none">
+                                    <PieChart className="h-24 w-24 text-gray-900" />
+                                </div>
+
+                                <div className="flex items-start justify-between mb-6">
+                                    <div>
+                                        <h3 className="text-xl font-black text-gray-900 uppercase tracking-tighter leading-none">{c.nom}</h3>
+                                        <p className="text-[10px] font-bold text-gray-400 mt-1 uppercase tracking-widest flex items-center gap-2">
+                                            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                            Catégorie Analystics
+                                        </p>
+                                    </div>
+                                    <div className="text-right">
+                                        <div className="text-sm font-black text-emerald-600">{ratio.toFixed(1)}%</div>
+                                        <div className="text-[8px] font-black text-gray-400 uppercase tracking-tighter">du Stock Global</div>
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4">
+                                    {/* Métriques */}
+                                    <div className="bg-indigo-50/50 p-3 rounded-2xl border border-indigo-100/50">
+                                        <div className="flex items-center gap-2 mb-1">
+                                            <Package className="h-3 w-3 text-indigo-500" />
+                                            <span className="text-[9px] font-black text-indigo-600 uppercase">Articles</span>
+                                        </div>
+                                        <div className="text-lg font-black text-indigo-900 tracking-tighter">{c.nbProduits}</div>
+                                    </div>
+
+                                    <div className="bg-amber-50/50 p-3 rounded-2xl border border-amber-100/50">
+                                        <div className="flex items-center gap-2 mb-1">
+                                            <TrendingUp className="h-3 w-3 text-amber-500" />
+                                            <span className="text-[9px] font-black text-amber-600 uppercase">Quantité</span>
+                                        </div>
+                                        <div className="text-lg font-black text-amber-900 tracking-tighter">{c.quantiteTotale.toLocaleString()}</div>
+                                    </div>
+
+                                    <div className="bg-rose-50/50 p-3 rounded-2xl border border-rose-100/50">
+                                        <div className="flex items-center gap-2 mb-1">
+                                            <DollarSign className="h-3 w-3 text-rose-500" />
+                                            <span className="text-[9px] font-black text-rose-600 uppercase">Achat</span>
+                                        </div>
+                                        <div className="text-sm font-black text-rose-900 tracking-tight whitespace-nowrap">{c.valeurAchatStock.toLocaleString()} F</div>
+                                    </div>
+
+                                    <div className="bg-emerald-50/50 p-3 rounded-2xl border border-emerald-100/50">
+                                        <div className="flex items-center gap-2 mb-1">
+                                            <DollarSign className="h-3 w-3 text-emerald-500" />
+                                            <span className="text-[9px] font-black text-emerald-600 uppercase">Vente</span>
+                                        </div>
+                                        <div className="text-sm font-black text-emerald-900 tracking-tight whitespace-nowrap">{c.valeurVenteStock.toLocaleString()} F</div>
+                                    </div>
+                                </div>
+
+                                <div className="mt-6 pt-6 border-t border-dashed border-gray-100">
+                                    <button 
+                                        onClick={() => setSelectedCatFilter(c.nom)}
+                                        className="w-full py-2.5 rounded-xl bg-gray-900 text-white text-[10px] font-black uppercase tracking-widest hover:bg-orange-500 transition-all shadow-lg active:scale-95"
+                                    >
+                                        Analyser cette catégorie
+                                    </button>
+                                </div>
+                            </div>
+                        )
+                    })}
             </div>
           </div>
         )}

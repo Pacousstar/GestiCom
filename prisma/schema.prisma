@@ -374,6 +374,7 @@ model AchatLigne {
   quantite     Int
   prixUnitaire Float
   tva          Float   @default(0)
+  remise       Float   @default(0)
   montant      Float
   produit      Produit @relation(fields: [produitId], references: [id], onDelete: Cascade)
   achat        Achat   @relation(fields: [achatId], references: [id], onDelete: Cascade)
@@ -567,3 +568,34 @@ model DashboardPreference {
 }
 
 
+model ArchiveVente {
+  id                    Int                  @id @default(autoincrement())
+  numeroFactureOrigine  String
+  date                  DateTime             @default(now())
+  magasinId             Int
+  entiteId              Int
+  utilisateurId         Int
+  clientId              Int?
+  clientLibre           String?
+  montantTotal          Float
+  observation           String?
+  createdAt             DateTime             @default(now())
+  utilisateur           Utilisateur          @relation(fields: [utilisateurId], references: [id])
+  entite                Entite               @relation(fields: [entiteId], references: [id])
+  magasin               Magasin              @relation(fields: [magasinId], references: [id])
+  client                Client?              @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  lignes                ArchiveVenteLigne[]
+
+  @@index([date])
+  @@index([numeroFactureOrigine])
+}
+
+model ArchiveVenteLigne {
+  id           Int          @id @default(autoincrement())
+  venteId      Int
+  designation  String
+  quantite     Int
+  prixUnitaire Float
+  montant      Float
+  vente        ArchiveVente @relation(fields: [venteId], references: [id], onDelete: Cascade)
+}

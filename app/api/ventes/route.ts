@@ -43,7 +43,7 @@ export async function GET(request: NextRequest) {
       orderBy: { date: 'desc' },
       include: {
         magasin: { select: { code: true, nom: true } },
-        client: { select: { nom: true } },
+        client: { select: { code: true, nom: true } },
         lignes: { include: { produit: { select: { code: true, designation: true } } } },
       },
     }),
@@ -128,7 +128,7 @@ export async function POST(request: NextRequest) {
       const designation = produit.designation
       const coutUnitaire = produit.pamp || produit.prixAchat || 0
       const montantHT = quantite * prixUnitaire
-      const montantLigne = Math.round((montantHT * (1 + tva / 100)) - remise)
+      const montantLigne = Math.round((montantHT - remise) * (1 + tva / 100))
       
       montantTotalAVantRemise += montantLigne
       lignesValides.push({ produitId, designation, quantite, prixUnitaire, coutUnitaire, tva, remise, montant: montantLigne })

@@ -75,8 +75,8 @@ export default function PaiementsClientsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Récapitulatif des Paiements</h1>
-          <p className="text-sm text-gray-500">Historique chronologique des encaissements clients</p>
+          <h1 className="text-2xl font-bold text-white uppercase tracking-tight">Récapitulatif des Paiements</h1>
+          <p className="text-sm text-white/90 font-medium">Historique chronologique des encaissements clients</p>
         </div>
         <button 
           onClick={() => window.print()}

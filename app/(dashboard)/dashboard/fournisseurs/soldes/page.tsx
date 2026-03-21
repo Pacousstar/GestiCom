@@ -14,6 +14,7 @@ interface SoldeFournisseur {
   paiements: number
   variationPeriode: number
   soldeGlobal: number
+  derniereFacture: string | null
 }
 
 export default function SoldesFournisseursPage() {
@@ -73,8 +74,8 @@ export default function SoldesFournisseursPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Soldes Fournisseurs</h1>
-          <p className="text-sm text-gray-500">Synthèse de nos dettes et paiements par fournisseur</p>
+          <h1 className="text-2xl font-bold text-white uppercase tracking-tight">Soldes Fournisseurs</h1>
+          <p className="text-sm text-white/90 font-medium">Synthèse de nos dettes et paiements par fournisseur</p>
         </div>
         <button 
           onClick={() => window.print()}
@@ -188,6 +189,7 @@ export default function SoldesFournisseursPage() {
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
+                  <th className="px-6 py-3 text-left text-xs font-bold uppercase tracking-wider text-gray-500">N° Facture F.</th>
                   <th className="px-6 py-3 text-left text-xs font-bold uppercase tracking-wider text-gray-500">Code / Nom</th>
                   <th className="px-6 py-3 text-left text-xs font-bold uppercase tracking-wider text-gray-500">Localisation</th>
                   <th className="px-6 py-3 text-right text-xs font-bold uppercase tracking-wider text-gray-500">Achats (Période)</th>
@@ -200,6 +202,9 @@ export default function SoldesFournisseursPage() {
               <tbody className="divide-y divide-gray-100 bg-white">
                 {filteredData.map((f) => (
                   <tr key={f.id} className="hover:bg-gray-50 transition-colors">
+                    <td className="px-6 py-4 text-sm font-mono font-bold text-purple-600">
+                      {f.derniereFacture || '—'}
+                    </td>
                     <td className="whitespace-nowrap px-6 py-4">
                       <div className="flex flex-col">
                         <span className="text-xs font-mono font-bold text-gray-400 uppercase">{f.code || 'SANS CODE'}</span>

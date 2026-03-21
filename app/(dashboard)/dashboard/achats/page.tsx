@@ -1,7 +1,11 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { ShoppingBag, Plus, Loader2, Trash2, Eye, FileSpreadsheet, Printer, X, Search, Wallet } from 'lucide-react'
+import {
+  ShoppingBag, Plus, Loader2, Trash2, Eye, FileSpreadsheet, Printer, X,
+  Search, Scan, Camera, Edit2, Pencil, Trash, CreditCard, Wallet, UserPlus,
+  AlertTriangle, Calculator, FileText, ChevronRight, HelpCircle, XCircle, ShoppingCart, Percent
+} from 'lucide-react'
 import { useToast } from '@/hooks/useToast'
 import { formatApiError } from '@/lib/validation-helpers'
 import { MESSAGES } from '@/lib/messages'
@@ -15,7 +19,7 @@ import { addToSyncQueue, isOnline } from '@/lib/offline-sync'
 type Magasin = { id: number; code: string; nom: string }
 type Fournisseur = { id: number; nom: string }
 type Produit = { id: number; code: string; designation: string; categorie?: string; prixAchat: number | null }
-type Ligne = { produitId: number; designation: string; quantite: number; prixUnitaire: number }
+type Ligne = { produitId: number; designation: string; quantite: number; prixUnitaire: number; tvaPerc: number; remise: number }
 
 export default function AchatsPage() {
   const [magasins, setMagasins] = useState<Magasin[]>([])
@@ -65,7 +69,15 @@ export default function AchatsPage() {
     montantPaye: '',
     lignes: [] as Ligne[],
   })
-  const [ajoutProduit, setAjoutProduit] = useState({ produitId: '', quantite: '1', prixUnitaire: '', recherche: '' })
+  const [ajoutProduit, setAjoutProduit] = useState({
+    produitId: '',
+    quantite: '1',
+    prixUnitaire: '',
+    recherche: '',
+    tvaPerc: '0',
+    remise: '',
+    remiseType: 'MONTANT' as 'MONTANT' | 'POURCENT'
+  })
   const [dateDebut, setDateDebut] = useState('')
   const [dateFin, setDateFin] = useState('')
   const [showCreateFournisseur, setShowCreateFournisseur] = useState(false)
@@ -176,15 +188,27 @@ export default function AchatsPage() {
 
   const addLigne = () => {
     const pid = Number(ajoutProduit.produitId)
-    const q = Math.max(1, Math.floor(Number(ajoutProduit.quantite) || 0))
-    const pu = Math.max(0, Number(ajoutProduit.prixUnitaire) || 0)
     const p = produits.find((x) => x.id === pid)
-    if (!p || !q) return
-    setFormData((f) => ({
-      ...f,
-      lignes: [...f.lignes, { produitId: pid, designation: p.designation, quantite: q, prixUnitaire: pu }],
-    }))
-    setAjoutProduit({ produitId: '', quantite: '1', prixUnitaire: '', recherche: '' })
+    if (!p) return
+
+    const qte = Number(ajoutProduit.quantite) || 0
+    if (qte <= 0) return
+
+    let remiseVal = Number(ajoutProduit.remise) || 0
+    if (ajoutProduit.remiseType === 'POURCENT' && remiseVal > 0) {
+      remiseVal = (Number(ajoutProduit.prixUnitaire) * qte) * (remiseVal / 100)
+    }
+
+    const nouvelleLigne: Ligne = {
+      produitId: p.id,
+      designation: p.designation,
+      quantite: qte,
+      prixUnitaire: Number(ajoutProduit.prixUnitaire),
+      tvaPerc: Number(ajoutProduit.tvaPerc) || 0,
+      remise: remiseVal
+    }
+    setFormData((f) => ({ ...f, lignes: [...f.lignes, nouvelleLigne] }))
+    setAjoutProduit({ produitId: '', quantite: '1', prixUnitaire: '', recherche: '', tvaPerc: '0', remise: '', remiseType: 'MONTANT' })
   }
 
   const editLigne = (i: number) => {
@@ -193,7 +217,10 @@ export default function AchatsPage() {
       produitId: String(l.produitId),
       quantite: String(l.quantite),
       prixUnitaire: String(l.prixUnitaire),
-      recherche: l.designation
+      recherche: l.designation,
+      tvaPerc: String(l.tvaPerc || '0'),
+      remise: String(l.remise || ''),
+      remiseType: 'MONTANT'
     })
     setFormData((f) => ({ ...f, lignes: f.lignes.filter((_, j) => j !== i) }))
   }
@@ -253,7 +280,25 @@ export default function AchatsPage() {
     }
   }
 
-  const total = formData.lignes.reduce((s, l) => s + l.quantite * l.prixUnitaire, 0)
+  const { totalHT, totalTVA, totalRemise, totalHTNet } = formData.lignes.reduce(
+    (acc, val) => {
+      const q = val.quantite
+      const pu = val.prixUnitaire
+      const t = val.tvaPerc || 0
+      const r = val.remise || 0
+      const ht = q * pu
+      const htNet = ht - r
+      const tvaMontant = htNet * (t / 100)
+      
+      acc.totalHT += ht
+      acc.totalTVA += tvaMontant
+      acc.totalRemise += r
+      acc.totalHTNet += htNet
+      return acc
+    },
+    { totalHT: 0, totalTVA: 0, totalRemise: 0, totalHTNet: 0 }
+  )
+  const total = Math.round(totalHTNet + totalTVA)
 
   // Récupérer le templateId par défaut pour ACHAT
   const [defaultTemplateId, setDefaultTemplateId] = useState<number | null>(null)
@@ -326,6 +371,8 @@ export default function AchatsPage() {
         produitId: l.produitId,
         quantite: l.quantite,
         prixUnitaire: l.prixUnitaire,
+        tva: l.tvaPerc,
+        remise: l.remise,
       })),
     }
 
@@ -416,8 +463,8 @@ export default function AchatsPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-white">Achats</h1>
-          <p className="mt-1 text-white/90">Approvisionnements et entrées en stock</p>
+          <h1 className="text-3xl font-bold text-white uppercase tracking-tight">Achats</h1>
+          <p className="mt-1 text-white/90 font-medium">Approvisionnements et entrées en stock (Journal Global)</p>
         </div>
         <button
           onClick={() => setForm(true)}
@@ -618,67 +665,136 @@ export default function AchatsPage() {
                   </div>
                   <input
                     type="text"
-                    placeholder="Chercher un produit (code, nom)..."
+                    placeholder="Taper le nom ou le code du produit..."
                     value={ajoutProduit.recherche || ''}
                     onChange={(e) => {
                       setAjoutProduit((a) => ({ ...a, recherche: e.target.value }))
                     }}
                     onFocus={refetchProduits}
-                    className="w-full rounded-lg border border-gray-200 py-3 pl-10 pr-4 text-sm focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500/20 transition-all"
+                    className="w-full rounded-lg border border-gray-200 py-3 pl-10 pr-4 text-sm focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500/20 transition-all shadow-sm"
                   />
+                  {ajoutProduit.recherche.length > 0 && !ajoutProduit.produitId && (
+                    <div className="absolute z-10 mt-1 w-full max-h-60 overflow-y-auto rounded-lg border border-gray-200 bg-white shadow-lg animate-in fade-in zoom-in duration-200">
+                      {produits
+                        .filter(p => {
+                          const search = ajoutProduit.recherche.toLowerCase()
+                          return p.code.toLowerCase().includes(search) || p.designation.toLowerCase().includes(search)
+                        })
+                        .map((p) => (
+                          <button
+                            key={p.id}
+                            type="button"
+                            onClick={() => {
+                              setAjoutProduit(a => ({ ...a, produitId: String(p.id), recherche: p.designation, prixUnitaire: String(p.prixAchat || '') }))
+                            }}
+                            className="flex w-full items-center justify-between px-4 py-3 text-left text-sm hover:bg-orange-50 transition-colors border-b last:border-0"
+                          >
+                            <div className="flex flex-col">
+                              <span className="font-semibold text-gray-900">{p.designation}</span>
+                              <span className="text-xs text-gray-400 font-mono">{p.code}</span>
+                            </div>
+                          </button>
+                        ))}
+                    </div>
+                  )}
+                  {ajoutProduit.produitId && (
+                    <button
+                      onClick={() => setAjoutProduit(a => ({ ...a, produitId: '', recherche: '' }))}
+                      className="absolute right-3 top-3 text-gray-400 hover:text-red-500"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  )}
                 </div>
-                <select
-                  value={ajoutProduit.produitId}
-                  onChange={(e) => onSelectProduit(e.target.value)}
-                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-orange-500 focus:outline-none bg-white shadow-sm"
-                  title="Sélectionner le produit filtré"
-                >
-                  <option value="">— Sélectionner le produit —</option>
-                  {produits
-                    .filter(p => {
-                      if (!ajoutProduit.recherche) return true
-                      const search = ajoutProduit.recherche.toLowerCase()
-                      return (
-                        p.code.toLowerCase().includes(search) ||
-                        p.designation.toLowerCase().includes(search) ||
-                        (p.categorie && p.categorie.toLowerCase().includes(search))
-                      )
-                    })
-                    .map((p) => (
-                      <option key={p.id} value={p.id}>{p.code} – {p.designation}</option>
-                    ))}
-                </select>
+                {ajoutProduit.produitId && (
+                  <div className="flex flex-col gap-1 px-1 py-1 animate-in slide-in-from-top-1 duration-200">
+                    {!formData.magasinId && (
+                      <p className="text-[10px] font-bold text-red-600 flex items-center gap-1">
+                        <AlertTriangle className="h-3 w-3" /> Veuillez sélectionner un magasin pour voir le stock exact.
+                      </p>
+                    )}
+                    <div className="flex items-center gap-2 text-xs font-semibold">
+                      <span className="text-gray-500 italic">Produit sélectionné.</span>
+                      <span className="text-gray-900">Stock disponible :</span>
+                      <span className={`px-2 py-0.5 rounded-full shadow-sm text-sm font-bold ${
+                        (produits.find(p => p.id === Number(ajoutProduit.produitId))?.stocks?.find(s => s.magasinId === Number(formData.magasinId))?.quantite || 0) > 0 
+                        ? 'bg-green-600 text-white' 
+                        : 'bg-red-600 text-white'
+                      }`}>
+                        {produits.find(p => p.id === Number(ajoutProduit.produitId))?.stocks?.find(s => s.magasinId === Number(formData.magasinId))?.quantite || 0}
+                      </span>
+                    </div>
+                  </div>
+                )}
 
               </div>
-              <div className="mb-3 flex flex-wrap gap-2">
-                <input
-                  type="number"
-                  min="1"
-                  value={ajoutProduit.quantite}
-                  onChange={(e) => setAjoutProduit((a) => ({ ...a, quantite: e.target.value }))}
-                  placeholder="Qté"
-                  className="w-20 rounded border border-gray-200 px-2 py-2 text-sm focus:border-orange-500 focus:outline-none"
-                />
-                <input
-                  type="number"
-                  min="0"
-                  step="1"
-                  value={ajoutProduit.prixUnitaire}
-                  onChange={(e) => setAjoutProduit((a) => ({ ...a, prixUnitaire: e.target.value }))}
-                  placeholder="P.U. (achat)"
-                  className="w-32 rounded border border-gray-200 px-2 py-2 text-sm focus:border-orange-500 focus:outline-none"
-                />
-                <div className="flex flex-col">
-                  <label className="text-[10px] text-gray-400 ml-1">Total</label>
+              <div className="mb-3 flex flex-wrap gap-2 items-center">
+                <div className="flex flex-col gap-1">
+                  <label className="text-[10px] text-gray-500 ml-1 font-bold">Quantité</label>
                   <input
-                    type="text"
-                    readOnly
-                    value={(Number(ajoutProduit.quantite) * Number(ajoutProduit.prixUnitaire)).toLocaleString('fr-FR') + ' F'}
-                    className="w-28 rounded border border-gray-100 bg-gray-50 px-2 py-2 text-sm font-semibold text-gray-600 focus:outline-none cursor-default"
+                    type="number"
+                    min="1"
+                    step="1"
+                    value={ajoutProduit.quantite}
+                    onChange={(e) => setAjoutProduit((a) => ({ ...a, quantite: e.target.value }))}
+                    placeholder="Qté"
+                    className="w-20 rounded border border-gray-200 px-2 py-2 text-sm focus:border-orange-500 focus:outline-none"
                   />
                 </div>
-
-                <button type="button" onClick={addLigne} className="rounded-lg border-2 border-orange-400 bg-orange-100 px-3 py-2 text-sm font-medium text-orange-900 hover:bg-orange-200">
+                <div className="flex flex-col gap-1">
+                  <label className="text-[10px] text-gray-500 ml-1 font-bold">P.U. (HT)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="1"
+                    value={ajoutProduit.prixUnitaire}
+                    onChange={(e) => setAjoutProduit((a) => ({ ...a, prixUnitaire: e.target.value }))}
+                    placeholder="Prix achat"
+                    className="w-28 rounded border border-gray-200 px-2 py-2 text-sm focus:border-orange-500 focus:outline-none"
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-[10px] text-gray-500 ml-1 font-bold">Remise</label>
+                  <div className="flex items-center">
+                    <input
+                      type="number"
+                      min="0"
+                      step="1"
+                      value={ajoutProduit.remise}
+                      onChange={(e) => setAjoutProduit((a) => ({ ...a, remise: e.target.value }))}
+                      placeholder="Remise"
+                      className="w-24 rounded-l border border-gray-200 px-2 py-2 text-sm focus:border-orange-500 focus:outline-none"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setAjoutProduit(a => ({ ...a, remiseType: a.remiseType === 'MONTANT' ? 'POURCENT' : 'MONTANT' }))}
+                      className={`px-2 py-2 border border-l-0 border-gray-200 text-xs font-bold rounded-r transition-colors ${
+                        ajoutProduit.remiseType === 'POURCENT' ? 'bg-orange-500 text-white border-orange-500' : 'bg-gray-100 text-gray-700'
+                      }`}
+                    >
+                      {ajoutProduit.remiseType === 'MONTANT' ? 'F' : '%'}
+                    </button>
+                  </div>
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-[10px] text-gray-500 ml-1 font-bold">TVA (%)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="1"
+                    value={ajoutProduit.tvaPerc}
+                    onChange={(e) => setAjoutProduit((a) => ({ ...a, tvaPerc: e.target.value }))}
+                    placeholder="TVA"
+                    className="w-16 rounded border border-gray-200 px-2 py-2 text-sm focus:border-orange-500 focus:outline-none"
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-[10px] text-orange-600 ml-1 font-bold">Total TTC</label>
+                  <div className="w-28 rounded border border-orange-100 bg-orange-50 px-2 py-2 text-sm font-bold text-orange-800">
+                    {Math.round((Number(ajoutProduit.quantite || 0) * Number(ajoutProduit.prixUnitaire || 0) - (ajoutProduit.remiseType === 'MONTANT' ? Number(ajoutProduit.remise || 0) : (Number(ajoutProduit.quantite || 0) * Number(ajoutProduit.prixUnitaire || 0)) * (Number(ajoutProduit.remise || 0) / 100))) * (1 + Number(ajoutProduit.tvaPerc || 0) / 100)).toLocaleString('fr-FR')} F
+                  </div>
+                </div>
+                <button type="button" onClick={addLigne} className="rounded-lg bg-orange-500 px-4 py-2 mt-auto text-sm font-bold text-white hover:bg-orange-600 transition-all shadow-sm">
                   Ajouter
                 </button>
               </div>
@@ -688,45 +804,61 @@ export default function AchatsPage() {
                     <tr className="border-b text-left text-gray-600">
                       <th className="pb-2">Désignation</th>
                       <th className="pb-2 text-right">Qté</th>
-                      <th className="pb-2 text-right">P.U.</th>
-                      <th className="pb-2 text-right">Total</th>
-                      <th></th>
+                      <th className="pb-2 text-right">P.U. (HT)</th>
+                      <th className="pb-2 text-right">Total (HT)</th>
+                      <th className="pb-2 text-right">Remise</th>
+                      <th className="pb-2 text-right">TVA</th>
+                      <th className="pb-2 text-right">Total TTC</th>
+                      <th className="w-16"></th>
                     </tr>
                   </thead>
                   <tbody>
-                    {formData.lignes.map((l, i) => (
-                      <tr key={i} className="border-b border-gray-100">
-                        <td className="py-2">{l.designation}</td>
-                        <td className="text-right">{l.quantite}</td>
-                        <td className="text-right">{l.prixUnitaire.toLocaleString('fr-FR')} F</td>
-                        <td className="text-right">{(l.quantite * l.prixUnitaire).toLocaleString('fr-FR')} F</td>
-                        <td className="w-16">
-                          <div className="flex items-center gap-1">
-                            <button
-                              type="button"
-                              onClick={() => editLigne(i)}
-                              title="Modifier cette ligne"
-                              className="rounded p-1 text-blue-600 hover:bg-blue-100 transition-colors"
-                            >
-                              <Pencil className="h-4 w-4" />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => removeLigne(i)}
-                              title="Supprimer la ligne"
-                              className="rounded p-1.5 text-red-600 hover:bg-red-100 transition-colors"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
+                    {formData.lignes.map((l, i) => {
+                      const ht = l.quantite * l.prixUnitaire
+                      const htNet = ht - (l.remise || 0)
+                      const tva = htNet * ((l.tvaPerc || 0) / 100)
+                      const ttc = htNet + tva
+                      return (
+                        <tr key={i} className="border-b border-gray-100">
+                          <td className="py-2">{l.designation}</td>
+                          <td className="text-right">{l.quantite}</td>
+                          <td className="text-right">{l.prixUnitaire.toLocaleString('fr-FR')} F</td>
+                          <td className="text-right">{ht.toLocaleString('fr-FR')} F</td>
+                          <td className="text-right text-red-600">-{l.remise.toLocaleString('fr-FR')} F</td>
+                          <td className="text-right">{l.tvaPerc}%</td>
+                          <td className="text-right font-bold text-emerald-700">{Math.round(ttc).toLocaleString('fr-FR')} F</td>
+                          <td className="w-16">
+                            <div className="flex items-center gap-1 justify-end">
+                              <button type="button" onClick={() => editLigne(i)} className="rounded p-1 text-blue-600 hover:bg-blue-100"><Pencil className="h-3.5 w-3.5" /></button>
+                              <button type="button" onClick={() => removeLigne(i)} className="rounded p-1 text-red-600 hover:bg-red-100"><Trash2 className="h-3.5 w-3.5" /></button>
+                            </div>
+                          </td>
+                        </tr>
+                      )
+                    })}
                   </tbody>
                 </table>
               )}
-              <p className="mt-2 font-medium text-gray-900">Total: {total.toLocaleString('fr-FR')} FCFA</p>
-              <p className="mt-1 text-xs text-gray-500">Les quantités seront ajoutées au stock du magasin sélectionné.</p>
+              <div className="mt-4 flex flex-col items-end text-sm gap-2 border-t border-gray-200 pt-3">
+                <p className="text-gray-600 flex justify-between w-64"><span>Total HT Brut :</span> <span className="font-bold">{totalHT.toLocaleString('fr-FR')} F</span></p>
+                
+                {totalRemise > 0 && (
+                  <div className="space-y-1 w-64 border-b border-gray-100 pb-2">
+                    <p className="text-red-500 flex justify-between font-medium"><span>Total Remises :</span> <span>-{totalRemise.toLocaleString('fr-FR')} F</span></p>
+                    <p className="text-gray-900 flex justify-between font-bold pt-1 border-t border-gray-50">
+                      <span>Total HT Net :</span> 
+                      <span>{totalHTNet.toLocaleString('fr-FR')} F</span>
+                    </p>
+                  </div>
+                )}
+
+                <p className="text-gray-600 flex justify-between w-64"><span>Total TVA :</span> <span className="font-bold">{totalTVA.toLocaleString('fr-FR', { maximumFractionDigits: 0 })} F</span></p>
+                
+                <p className="text-lg font-black text-white mt-2 bg-emerald-600 px-4 py-2 rounded shadow-lg w-64 flex justify-between ring-2 ring-emerald-500 ring-offset-2">
+                  <span>TOTAL TTC :</span> <span>{total.toLocaleString('fr-FR', { maximumFractionDigits: 0 })} FCFA</span>
+                </p>
+                <p className="mt-1 text-[10px] text-gray-500 italic">Les quantités seront ajoutées au stock du magasin sélectionné après validation.</p>
+              </div>
             </div>
 
             <div className="flex gap-2">

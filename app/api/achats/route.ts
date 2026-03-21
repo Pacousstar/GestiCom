@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
       orderBy: { date: 'desc' },
       include: {
         magasin: { select: { code: true, nom: true } },
-        fournisseur: { select: { id: true, nom: true } },
+        fournisseur: { select: { id: true, code: true, nom: true } },
         lignes: { include: { produit: { select: { code: true, designation: true } } } },
       },
     }),
@@ -120,21 +120,25 @@ export async function POST(request: NextRequest) {
     }
 
     let montantTotal = 0
-    const lignesValides: Array<{ produitId: number; designation: string; quantite: number; prixUnitaire: number; montant: number }> = []
+    const lignesValides: Array<{ produitId: number; designation: string; quantite: number; prixUnitaire: number; tva: number; remise: number; montant: number }> = []
 
     for (const l of lignes) {
       const produitId = Number(l?.produitId)
       const quantite = Math.max(1, Math.floor(Number(l?.quantite) || 0))
       const prixUnitaire = Math.max(0, Number(l?.prixUnitaire) || 0)
+      const tva = Math.max(0, Number(l?.tva) || 0)
+      const remise = Math.max(0, Number(l?.remise) || 0)
       if (!produitId || !quantite) continue
 
       const produit = await prisma.produit.findUnique({ where: { id: produitId } })
       if (!produit) continue
 
       const designation = produit.designation
-      const montant = quantite * prixUnitaire
-      montantTotal += montant
-      lignesValides.push({ produitId, designation, quantite, prixUnitaire, montant })
+      const montantHT = quantite * prixUnitaire
+      const montantLigne = Math.round((montantHT - remise) * (1 + tva / 100))
+      
+      montantTotal += montantLigne
+      lignesValides.push({ produitId, designation, quantite, prixUnitaire, tva, remise, montant: montantLigne })
     }
 
     if (!lignesValides.length) {
@@ -167,6 +171,8 @@ export async function POST(request: NextRequest) {
             designation: l.designation,
             quantite: l.quantite,
             prixUnitaire: l.prixUnitaire,
+            tva: l.tva,
+            remise: l.remise,
             montant: l.montant,
           })),
         },

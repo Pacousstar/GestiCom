@@ -401,14 +401,12 @@ export function getDefaultTemplate(type: 'VENTE' | 'ACHAT'): string {
 <hr>
 {LIGNES}
 <div class="print-totals">
-  {TOTAL_HT ? '<p><strong>Total HT:</strong> {TOTAL_HT}</p>' : ''}
+  {TOTAL_HT ? '<p><strong>Total HT Brut:</strong> {TOTAL_HT}</p>' : ''}
+  {TOTAL_REMISE ? '<p style="color: #ef4444;"><strong>Total Remises:</strong> -{TOTAL_REMISE}</p>' : ''}
+  {REMISE_GLOBALE ? '<p style="color: #ef4444;"><strong>Remise Globale:</strong> -{REMISE_GLOBALE}</p>' : ''}
   {TOTAL_TVA ? '<p><strong>Total TVA:</strong> {TOTAL_TVA}</p>' : ''}
-  {TOTAL_REMISE ? '<p style="color: #ef4444;"><strong>Total Remises:</strong> {TOTAL_REMISE}</p>' : ''}
-  {REMISE_GLOBALE ? '<p style="color: #ef4444;"><strong>Remise Globale:</strong> {REMISE_GLOBALE}</p>' : ''}
-  <p class="print-total"><strong>Total TTC:</strong> {TOTAL}</p>
-  {MONTANT_PAYE ? '<p><strong>Payé:</strong> {MONTANT_PAYE}</p>' : ''}
-  {RESTE ? '<p><strong>Reste:</strong> {RESTE}</p>' : ''}
-  <p><strong>Mode:</strong> {MODE_PAIEMENT}</p>
+  <p class="print-total"><strong>TOTAL TTC:</strong> {TOTAL}</p>
+  <p><strong>Mode de paiement:</strong> {MODE_PAIEMENT}</p>
 </div>
 {OBSERVATION ? '<p class="print-obs">{OBSERVATION}</p>' : ''}
 <hr>
@@ -457,16 +455,14 @@ export function getDefaultA4Template(type: 'VENTE' | 'ACHAT'): string {
 
 <div style="display: flex; justify-content: flex-end; margin-top: 30px;">
   <div style="width: 320px; background: #f8fafc; padding: 20px; border-radius: 8px;">
-    {TOTAL_HT ? '<div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 13px;"><span>Total HT :</span><span>{TOTAL_HT}</span></div>' : ''}
-    {TOTAL_TVA ? '<div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 13px;"><span>Total TVA :</span><span>{TOTAL_TVA}</span></div>' : ''}
+    {TOTAL_HT ? '<div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 13px;"><span>Total HT Brut :</span><span>{TOTAL_HT}</span></div>' : ''}
     {TOTAL_REMISE ? '<div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 13px; color: #ef4444;"><span>Total Remises :</span><span>-{TOTAL_REMISE}</span></div>' : ''}
     {REMISE_GLOBALE ? '<div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 13px; color: #ef4444;"><span>Remise Globale :</span><span>-{REMISE_GLOBALE}</span></div>' : ''}
+    {TOTAL_TVA ? '<div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 13px;"><span>Total TVA :</span><span>{TOTAL_TVA}</span></div>' : ''}
     <div style="display: flex; justify-content: space-between; margin-top: 10px; padding-top: 10px; border-top: 2px solid #e2e8f0; margin-bottom: 10px;">
-      <span style="font-weight: 700;">Total TTC :</span>
+      <span style="font-weight: 700;">TOTAL TTC :</span>
       <span style="font-weight: 700; font-size: 18px; color: #1e40af;">{TOTAL}</span>
     </div>
-    {MONTANT_PAYE ? '<div style="display: flex; justify-content: space-between; margin-bottom: 10px; color: #10b981;"><span>Montant Payé :</span><span>{MONTANT_PAYE}</span></div>' : ''}
-    {RESTE ? '<div style="display: flex; justify-content: space-between; margin-bottom: 10px; color: #ef4444; font-weight: 600;"><span>Reste à Payer :</span><span>{RESTE}</span></div>' : ''}
     <div style="border-top: 1px solid #e2e8f0; margin-top: 10px; padding-top: 10px; font-size: 12px; color: #64748b; text-align: center;">
       Mode de paiement : {MODE_PAIEMENT}
     </div>

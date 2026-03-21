@@ -17,6 +17,7 @@ interface SoldeClient {
   variationPeriode: number
   soldeClient: number
   statut: 'DOIT' | 'SOLDE' | 'CREDIT'
+  derniereFacture: string | null
 }
 
 export default function SoldesClientsPage() {
@@ -81,8 +82,8 @@ export default function SoldesClientsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Soldes Clients</h1>
-          <p className="text-sm text-gray-500">Synthèse financière globale par client</p>
+          <h1 className="text-2xl font-bold text-white uppercase tracking-tight">Soldes Clients</h1>
+          <p className="text-sm text-white/90 font-medium">Synthèse financière globale par client</p>
         </div>
         <button 
           onClick={() => window.print()}
@@ -196,6 +197,7 @@ export default function SoldesClientsPage() {
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
+                  <th className="px-6 py-3 text-left text-xs font-bold uppercase tracking-wider text-gray-500">N° Facture</th>
                   <th className="px-6 py-3 text-left text-xs font-bold uppercase tracking-wider text-gray-500">Code / Nom</th>
                   <th className="px-6 py-3 text-left text-xs font-bold uppercase tracking-wider text-gray-500">Localisation</th>
                   <th className="px-6 py-3 text-right text-xs font-bold uppercase tracking-wider text-gray-500">Total Factures (Période)</th>
@@ -208,6 +210,9 @@ export default function SoldesClientsPage() {
               <tbody className="divide-y divide-gray-100 bg-white">
                 {filteredData.map((c) => (
                   <tr key={c.id} className="hover:bg-gray-50 transition-colors">
+                    <td className="px-6 py-4 text-sm font-mono font-bold text-orange-600">
+                      {c.derniereFacture || '—'}
+                    </td>
                     <td className="whitespace-nowrap px-6 py-4">
                       <div className="flex flex-col">
                         <span className="text-xs font-mono font-bold text-gray-400 uppercase">{c.code || 'SANS CODE'}</span>
