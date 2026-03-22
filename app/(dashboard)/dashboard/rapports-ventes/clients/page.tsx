@@ -76,158 +76,175 @@ export default function ParClientPage() {
         <div className="space-y-6">
             <RapportsNav />
 
-            <div className="bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 p-8 rounded-2xl shadow-xl mb-8 relative overflow-hidden transition-all hover:shadow-2xl">
+            <div className="bg-white p-8 rounded-3xl border border-gray-100 shadow-xl mb-8 relative overflow-hidden transition-all hover:shadow-2xl">
                 <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
                     <div>
-                        <h1 className="text-3xl font-extrabold text-white flex items-center gap-3 tracking-tight uppercase italic">
-                            <div className="p-2 bg-green-500/20 rounded-lg">
-                                <UserCheck className="h-8 w-8 text-green-400" />
+                        <h1 className="text-3xl font-black text-slate-900 flex items-center gap-3 tracking-tighter uppercase italic">
+                            <div className="p-3 bg-orange-50 rounded-2xl shadow-sm">
+                                <UserCheck className="h-8 w-8 text-orange-600" />
                             </div>
                             Fidélité Clients
                         </h1>
-                        <p className="text-white/70 text-base mt-2 max-w-xl font-medium italic">
+                        <p className="text-slate-500 text-sm mt-3 max-w-xl font-bold uppercase tracking-widest opacity-80">
                             Classement des clients par volume d'achat et rentabilité globale
                         </p>
                     </div>
 
-                    <form onSubmit={handleFilter} className="flex flex-wrap gap-3 items-end bg-white/5 backdrop-blur-md p-4 rounded-xl border border-white/10 shadow-inner">
+                    <form onSubmit={handleFilter} className="flex flex-wrap gap-4 items-end bg-gray-50/50 p-6 rounded-2xl border border-gray-100 shadow-inner">
                         <div className="space-y-1.5">
-                            <label className="block text-xs font-bold text-green-300 uppercase tracking-wider ml-1">Du</label>
+                            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Date de début</label>
                             <input
                                 type="date"
                                 value={startDate}
                                 onChange={(e) => setStartDate(e.target.value)}
-                                className="bg-gray-900/50 border border-white/20 rounded-lg px-4 py-2 text-sm text-white focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-all"
+                                className="bg-white border border-gray-200 rounded-xl px-4 py-2 text-sm font-bold text-slate-900 focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 outline-none transition-all shadow-sm"
                             />
                         </div>
                         <div className="space-y-1.5">
-                            <label className="block text-xs font-bold text-green-300 uppercase tracking-wider ml-1">Au</label>
+                            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Date de fin</label>
                             <input
                                 type="date"
                                 value={endDate}
                                 onChange={(e) => setEndDate(e.target.value)}
-                                className="bg-gray-900/50 border border-white/20 rounded-lg px-4 py-2 text-sm text-white focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-all"
+                                className="bg-white border border-gray-200 rounded-xl px-4 py-2 text-sm font-bold text-slate-900 focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 outline-none transition-all shadow-sm"
                             />
                         </div>
-                        <button type="submit" className="bg-green-600 text-white px-6 py-2 rounded-lg text-sm font-black hover:bg-green-500 flex items-center gap-2 h-[42px] transition-all hover:scale-105 active:scale-95 shadow-lg shadow-green-900/20">
-                            <Filter className="h-5 w-5" /> RECHERCHER
+                        <button type="submit" className="bg-orange-600 text-white px-8 py-2 rounded-xl text-xs font-black hover:bg-orange-700 flex items-center gap-2 h-[42px] transition-all hover:scale-105 active:scale-95 shadow-lg shadow-orange-500/20 uppercase tracking-widest">
+                            <Filter className="h-4 w-4" /> Filtrer
                         </button>
                     </form>
                 </div>
-                {/* Décorations */}
-                <div className="absolute right-0 top-0 -mr-16 -mt-16 h-64 w-64 rounded-full bg-green-500/10 blur-3xl"></div>
-                <div className="absolute bottom-0 left-0 -ml-16 -mb-16 h-48 w-48 rounded-full bg-emerald-500/10 blur-3xl"></div>
+                {/* Décorations Light */}
+                <div className="absolute right-0 top-0 -mr-16 -mt-16 h-64 w-64 rounded-full bg-orange-500/5 blur-3xl"></div>
+                <div className="absolute bottom-0 left-0 -ml-16 -mb-16 h-48 w-48 rounded-full bg-green-500/5 blur-3xl"></div>
             </div>
 
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+            <div className="bg-white rounded-3xl shadow-2xl border border-gray-100 overflow-hidden mb-12">
                 {loading ? (
-                    <div className="p-12 flex justify-center items-center text-green-600">
-                        <Loader2 className="h-8 w-8 animate-spin" />
+                    <div className="p-24 flex flex-col justify-center items-center text-orange-600 gap-6">
+                        <Loader2 className="h-12 w-12 animate-spin" />
+                        <p className="text-[10px] font-black uppercase tracking-[0.4em] opacity-40">Chargement des données...</p>
                     </div>
                 ) : (
-                    <table className="w-full text-left border-collapse">
-                        <thead>
-                            <tr className="bg-gray-50 border-b border-gray-200">
-                                <th className="px-6 py-3 text-sm font-bold text-gray-900 uppercase">Client</th>
-                                <th className="px-6 py-3 text-sm font-bold text-gray-900 uppercase text-right">CA Généré</th>
-                                <th className="px-6 py-3 text-sm font-bold text-gray-900 uppercase text-right">Nb Achats</th>
-                                <th className="px-6 py-3 text-sm font-bold text-gray-900 uppercase text-right">Solde Dû</th>
-                                <th className="px-6 py-3 text-sm font-bold text-gray-900 uppercase text-right">Moyenne</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-100">
-                            {data.map((row: any, idx) => (
-                                <tr 
-                                    key={idx} 
-                                    className="hover:bg-white/5 transition-colors cursor-pointer group border-b border-white/5 last:border-0"
-                                    onClick={() => fetchHistory(row.clientId, row.client)}
-                                >
-                                    <td className="px-6 py-4 font-bold text-white flex items-center justify-between">
-                                        {row.client}
-                                        <ChevronRight className="h-4 w-4 text-gray-600 group-hover:text-green-400 transition-all opacity-0 group-hover:opacity-100 mr-2" />
-                                    </td>
-                                    <td className="px-6 py-4 text-right text-green-400 font-black tracking-tighter text-lg">{formatCurrency(row.caTotal)}</td>
-                                    <td className="px-6 py-4 text-right">
-                                        <span className="inline-flex items-center justify-center bg-white/5 px-2 py-1 rounded text-xs font-black text-white/70">
-                                            {row.nombreVentes}
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-4 text-right text-red-400 font-bold">{formatCurrency(row.soldeDu)}</td>
-                                    <td className="px-6 py-4 text-right text-white/60 italic text-sm">
-                                        {formatCurrency(row.nombreVentes > 0 ? row.caTotal / row.nombreVentes : 0)}
-                                    </td>
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left border-collapse">
+                            <thead>
+                                <tr className="bg-gray-50/50 border-b border-gray-100 font-black text-[10px] uppercase tracking-[0.2em] text-slate-400 italic">
+                                    <th className="px-8 py-6">Partenaire Client</th>
+                                    <th className="px-8 py-6 text-right">CA Généré</th>
+                                    <th className="px-8 py-6 text-right">Volume</th>
+                                    <th className="px-8 py-6 text-right">Solde Dû</th>
+                                    <th className="px-8 py-6 text-right">Panier Moyen</th>
+                                    <th className="px-8 py-6"></th>
                                 </tr>
-                            ))}
-                            {data.length === 0 && (
-                                <tr>
-                                    <td colSpan={4} className="px-6 py-8 text-center text-gray-900">Aucune donnée sur cette période</td>
-                                </tr>
-                            )}
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody className="divide-y divide-gray-50">
+                                {data.map((row: any, idx) => (
+                                    <tr 
+                                        key={idx} 
+                                        className="hover:bg-orange-50/30 transition-all duration-300 group cursor-pointer"
+                                        onClick={() => fetchHistory(row.clientId, row.client)}
+                                    >
+                                        <td className="px-8 py-7 font-black text-slate-900 uppercase tracking-tighter italic group-hover:text-orange-600 transition-colors">
+                                            <div className="flex items-center gap-2">
+                                                {row.client}
+                                                <ChevronRight className="h-4 w-4 text-orange-400 opacity-0 group-hover:opacity-100 transition-all" />
+                                            </div>
+                                        </td>
+                                        <td className="px-8 py-7 text-right">
+                                            <span className="text-blue-600 font-black tracking-tighter text-xl tabular-nums">
+                                                {formatCurrency(row.caTotal)}
+                                            </span>
+                                        </td>
+                                        <td className="px-8 py-7 text-right">
+                                            <span className="bg-white text-slate-900 px-3 py-1 rounded-full text-[10px] font-black tracking-tight border border-gray-200 shadow-sm">
+                                                {row.nombreVentes} Actes
+                                            </span>
+                                        </td>
+                                        <td className="px-8 py-7 text-right font-black text-rose-500 tabular-nums">
+                                            {row.soldeDu > 0 ? formatCurrency(row.soldeDu) : '---'}
+                                        </td>
+                                        <td className="px-8 py-7 text-right text-slate-500 font-bold tabular-nums font-mono text-xs">
+                                            {formatCurrency(row.nombreVentes > 0 ? row.caTotal / row.nombreVentes : 0)}
+                                        </td>
+                                        <td className="px-8 py-7 text-right">
+                                            <button className="bg-orange-600 hover:bg-slate-800 text-white px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg shadow-orange-500/10 border border-orange-500">
+                                                HISTORIQUE
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))}
+                                {data.length === 0 && (
+                                    <tr>
+                                        <td colSpan={6} className="px-8 py-32 text-center text-slate-200 font-black uppercase italic tracking-[0.5em] text-xs">
+                                            Aucune transaction détectée
+                                        </td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
                 )}
             </div>
 
             {selectedHistory && (
-                <div className="fixed inset-y-0 right-0 w-full max-w-xl bg-white shadow-2xl z-50 flex flex-col animate-in slide-in-from-right duration-300">
-                    <div className="p-6 border-b flex items-center justify-between bg-green-700 text-white">
+                <div className="fixed inset-y-0 right-0 w-full max-w-xl bg-white border-l border-gray-100 shadow-[0_0_60px_rgba(0,0,0,0.1)] z-50 flex flex-col animate-in slide-in-from-right duration-300">
+                    <div className="p-8 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
                         <div>
-                            <h2 className="text-xl font-bold">{selectedHistory.nom}</h2>
-                            <p className="text-green-100 text-xs">Mouvements & Historique</p>
+                            <h2 className="text-xl font-black text-slate-900 uppercase tracking-tighter italic">{selectedHistory.nom}</h2>
+                            <p className="text-orange-600 font-bold text-[10px] uppercase tracking-[0.2em] mt-1">Historique des transactions</p>
                         </div>
-                        <button onClick={() => setSelectedHistory(null)} className="p-2 hover:bg-white/10 rounded-full transition-colors">
+                        <button onClick={() => setSelectedHistory(null)} className="p-3 bg-white hover:bg-gray-100 text-slate-400 rounded-2xl transition-all hover:rotate-90 shadow-sm border border-gray-100">
                             <X className="h-6 w-6" />
                         </button>
                     </div>
 
-                    <div className="flex-1 overflow-y-auto p-6">
+                    <div className="flex-1 overflow-y-auto p-8 custom-scrollbar bg-gray-50/30">
                         {loadingHistory ? (
-                            <div className="flex flex-col items-center justify-center h-64 gap-3">
-                                <Loader2 className="h-8 w-8 animate-spin text-green-500" />
-                                <p className="text-gray-500 text-sm">Récupération des ventes...</p>
+                            <div className="flex flex-col items-center justify-center h-full gap-6 text-orange-600">
+                                <Loader2 className="h-12 w-12 animate-spin" />
+                                <p className="text-slate-400 font-black uppercase text-[10px] tracking-widest">Récupération du journal...</p>
                             </div>
                         ) : historyData.length === 0 ? (
-                            <div className="text-center py-20 text-gray-500">
-                                <Calendar className="h-12 w-12 mx-auto mb-4 opacity-20" />
-                                Aucune vente trouvée pour ce client sur cette période.
+                            <div className="flex flex-col items-center justify-center h-full text-slate-200 text-center">
+                                <Calendar className="h-24 w-24 mx-auto mb-6 opacity-20" />
+                                <p className="font-black uppercase text-xs italic tracking-[0.3em]">Aucune transaction trouvée</p>
                             </div>
                         ) : (
                             <div className="space-y-4">
                                 {historyData.map((h, i) => (
-                                    <div key={i} className="border rounded-xl p-4 bg-gray-50/50 hover:bg-white hover:shadow-md transition-all group border-gray-100">
-                                        <div className="flex items-center justify-between mb-3">
-                                            <div className="flex items-center gap-3">
-                                                <div className="p-2 bg-white rounded-lg border border-gray-100 shadow-sm">
-                                                    <FileText className="h-5 w-5 text-gray-400 group-hover:text-green-600 transition-colors" />
+                                    <div key={i} className="border rounded-3xl p-6 bg-white border-gray-100 hover:border-orange-500/30 hover:shadow-xl transition-all duration-300 group">
+                                        <div className="flex items-center justify-between mb-4">
+                                            <div className="flex items-center gap-4">
+                                                <div className="p-3 bg-orange-50 rounded-2xl border border-orange-100 shadow-sm">
+                                                    <FileText className="h-6 w-6 text-orange-600" />
                                                 </div>
                                                 <div>
-                                                    <p className="font-mono text-sm font-bold text-gray-900">{h.numero}</p>
-                                                    <p className="text-[10px] text-gray-500 uppercase tracking-tighter">
+                                                    <p className="font-mono text-sm font-black text-slate-900 group-hover:text-orange-600 transition-colors uppercase tracking-tight">{h.numero}</p>
+                                                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tighter">
                                                         {new Date(h.date).toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
                                                     </p>
                                                 </div>
                                             </div>
                                             <div className="text-right">
-                                                <p className="text-lg font-bold text-gray-900">{h.montantTotal.toLocaleString()} F</p>
-                                                <div className="flex items-center justify-end gap-1">
-                                                    {h.statutPaiement === 'PAYE' ? (
-                                                        <span className="text-[10px] bg-green-100 text-green-800 px-1.5 rounded font-bold uppercase">Payé</span>
-                                                    ) : (
-                                                        <span className="text-[10px] bg-orange-100 text-orange-800 px-1.5 rounded font-bold uppercase">Dette: {(h.montantTotal - h.montantPaye).toLocaleString()} F</span>
-                                                    )}
+                                                <p className="text-xl font-black text-slate-900 tracking-tighter tabular-nums">{h.montantTotal.toLocaleString()} F</p>
+                                                <div className="mt-1">
+                                                    <span className={`text-[9px] px-3 py-1 rounded-full font-black uppercase tracking-widest border shadow-sm ${h.statutPaiement === 'PAYE' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-rose-50 text-rose-600 border-rose-100'}`}>
+                                                        {h.statutPaiement}
+                                                    </span>
                                                 </div>
                                             </div>
                                         </div>
-                                        <div className="flex items-center justify-between text-xs text-gray-500 border-t pt-3 mt-3 border-gray-100 group-hover:border-green-100 transition-colors">
-                                            <div className="flex items-center gap-2">
-                                                <span className="bg-white px-2 py-0.5 rounded border border-gray-200">{h.modePaiement}</span>
+                                        <div className="flex items-center justify-between text-[10px] text-slate-400 border-t border-gray-50 pt-4 mt-4 font-black uppercase tracking-widest">
+                                            <div className="flex items-center gap-3">
+                                                <span className="bg-gray-50 px-3 py-1 rounded-lg border border-gray-100 text-slate-600 tracking-tight">{h.modePaiement}</span>
                                                 <span className="bg-gray-100 px-2 py-0.5 rounded italic opacity-70">Mag: {h.magasin?.nom}</span>
                                             </div>
                                             <button 
-                                                className="text-green-700 font-bold flex items-center gap-0.5 hover:gap-1.5 transition-all"
+                                                className="text-orange-600 font-black flex items-center gap-1 hover:gap-2 transition-all"
                                                 onClick={() => window.location.href = `/dashboard/ventes?numero=${h.numero}`}
                                             >
-                                                Bon de vente <ChevronRight className="h-3 w-3" />
+                                                DÉTAILS <ChevronRight className="h-3 w-3" />
                                             </button>
                                         </div>
                                     </div>
