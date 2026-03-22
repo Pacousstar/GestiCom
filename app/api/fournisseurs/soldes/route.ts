@@ -32,7 +32,10 @@ export async function GET(request: NextRequest) {
     }
     
     const whereReglement: any = {
-      entiteId,
+      OR: [
+        { achat: { entiteId } },
+        { achatId: null, utilisateur: { entiteId } }
+      ]
     }
     // Note: On pourrait aussi inclure les règlements LIBRES (venteId: null) si besoin
 
@@ -66,7 +69,12 @@ export async function GET(request: NextRequest) {
 
     const reglementsGlobaux = await prisma.reglementAchat.groupBy({
       by: ['fournisseurId'],
-      where: { entiteId },
+      where: {
+        OR: [
+          { achat: { entiteId } },
+          { achatId: null, utilisateur: { entiteId } }
+        ]
+      },
       _sum: { montant: true },
     })
 

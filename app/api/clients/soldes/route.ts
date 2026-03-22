@@ -35,8 +35,12 @@ export async function GET(request: NextRequest) {
     }
     
     // Pour les règlements, on filtre directement par entité
+    // Pour les règlements, on filtre par l'entité de la vente ou de l'utilisateur (cas libre)
     const whereReglement: any = {
-      entiteId,
+      OR: [
+        { vente: { entiteId } },
+        { venteId: null, utilisateur: { entiteId } }
+      ]
     }
 
     if (dateDebut && dateFin) {
@@ -67,7 +71,12 @@ export async function GET(request: NextRequest) {
 
     const reglementsGlobaux = await prisma.reglementVente.groupBy({
       by: ['clientId'],
-      where: { entiteId },
+      where: {
+        OR: [
+          { vente: { entiteId } },
+          { venteId: null, utilisateur: { entiteId } }
+        ]
+      },
       _sum: { montant: true },
     })
 

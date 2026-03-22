@@ -18,6 +18,7 @@ export async function GET(request: NextRequest) {
           code: true,
           nom: true,
           type: true,
+          soldeInitial: true,
           ventes: {
             where: {
               statut: 'VALIDEE',
@@ -52,6 +53,7 @@ export async function GET(request: NextRequest) {
           id: true,
           code: true,
           nom: true,
+          soldeInitial: true,
           achats: {
             where: {
               ...(entiteId && session.role !== 'SUPER_ADMIN' ? { entiteId } : {}),
