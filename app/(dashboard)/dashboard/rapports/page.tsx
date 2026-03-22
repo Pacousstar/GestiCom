@@ -515,55 +515,11 @@ export default function RapportsPage() {
             </div>
 
             {/* Valorisation du Stock Détaillée */}
-            <div className="bg-white rounded-3xl border border-gray-200 shadow-xl overflow-hidden">
-                <div className="p-6 border-b border-gray-100 bg-gray-50/30">
-                    <h3 className="text-lg font-black text-gray-900 flex items-center gap-3 uppercase tracking-tight">
-                        <DollarSign className="h-5 w-5 text-indigo-500" />
-                        Valorisation Analytique du Stock
-                    </h3>
-                </div>
-                <div className="overflow-x-auto">
-                    <table className="min-w-full">
-                        <thead className="bg-gray-50/50">
-                            <tr className="text-left text-[10px] font-black text-gray-400 uppercase tracking-widest border-b">
-                                <th className="px-6 py-4">Article</th>
-                                <th className="px-6 py-4">Catégorie</th>
-                                <th className="px-6 py-4 text-right">Qté en Stock</th>
-                                <th className="px-6 py-4 text-right">Prix Achat Estimé</th>
-                                <th className="px-6 py-4 text-right">Valeur Actuelle</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-100">
-                            {valeurStock?.data?.filter(v => v.designation.toLowerCase().includes(searchTerm.toLowerCase())).map(v => (
-                                <tr key={v.id} className="hover:bg-gray-50/70 transition-colors">
-                                    <td className="px-6 py-4">
-                                        <div className="text-sm font-black text-gray-900">{v.designation}</div>
-                                        <div className="text-[10px] text-gray-400 font-mono tracking-tighter uppercase">{v.code}</div>
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <span className="text-[10px] font-bold bg-gray-100 text-gray-500 px-3 py-1 rounded-lg uppercase">
-                                            {v.categorie}
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-4 text-right font-black text-gray-600 tabular-nums">{v.quantite}</td>
-                                    <td className="px-6 py-4 text-right text-gray-400 font-mono text-xs tabular-nums">{v.prixAchat.toLocaleString()}</td>
-                                    <td className="px-6 py-4 text-right font-black text-indigo-600 tabular-nums text-lg">
-                                        {v.valeur.toLocaleString()}
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                        <tfoot className="bg-indigo-600 text-white shadow-inner">
-                            <tr className="font-black">
-                                <td colSpan={3} className="px-6 py-6 italic text-sm tracking-widest uppercase">Total Valorisation Stock</td>
-                                <td colSpan={2} className="px-6 py-6 text-right text-3xl tracking-tighter whitespace-nowrap">
-                                    {(valeurStock?.totalValeur || 0).toLocaleString()} <span className="text-sm font-bold opacity-70">FCFA</span>
-                                </td>
-                            </tr>
-                        </tfoot>
-                    </table>
-                </div>
-            </div>
+            {/* Valorisation du Stock Détaillée (Paginée) */}
+            <LogistiqueValorisationTable 
+               valeurStock={valeurStock} 
+               searchTerm={searchTerm} 
+            />
           </div>
         )}
 
@@ -736,11 +692,11 @@ export default function RapportsPage() {
           <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
              {/* Grille de Soldes Tiers */}
              <div className="grid lg:grid-cols-2 gap-8">
-                 <div className="bg-white p-8 rounded-3xl border border-gray-200 shadow-2xl relative overflow-hidden group">
+                 <div className="bg-white/10 p-8 rounded-3xl border border-white/20 shadow-2xl relative overflow-hidden group">
                     <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none group-hover:scale-110 transition-transform">
-                        <Users className="h-40 w-40" />
+                        <Users className="h-40 w-40 text-white" />
                     </div>
-                    <h3 className="text-xl font-black text-gray-900 mb-6 flex items-center justify-between">
+                    <h3 className="text-xl font-black text-white mb-6 flex items-center justify-between">
                         <span className="flex items-center gap-3 uppercase tracking-tight"><Users className="h-4 w-4 text-red-500" /> Créances Clients</span>
                         <span className="text-xs bg-red-50 text-red-600 px-3 py-1 rounded-full">{soldesClients.length} dossiers</span>
                     </h3>
@@ -766,11 +722,11 @@ export default function RapportsPage() {
                     </div>
                  </div>
 
-                 <div className="bg-white p-8 rounded-3xl border border-gray-200 shadow-2xl relative overflow-hidden group">
+                 <div className="bg-white/10 p-8 rounded-3xl border border-white/20 shadow-2xl relative overflow-hidden group">
                     <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none group-hover:scale-110 transition-transform">
-                        <ShoppingBag className="h-40 w-40" />
+                        <ShoppingBag className="h-40 w-40 text-white" />
                     </div>
-                    <h3 className="text-xl font-black text-gray-900 mb-6 flex items-center justify-between">
+                    <h3 className="text-xl font-black text-white mb-6 flex items-center justify-between">
                         <span className="flex items-center gap-3 uppercase tracking-tight"><ShoppingBag className="h-4 w-4 text-orange-500" /> Dettes Fournisseurs</span>
                         <span className="text-xs bg-orange-50 text-orange-600 px-3 py-1 rounded-full">{soldesFournisseurs.length} dossiers</span>
                     </h3>
@@ -798,8 +754,8 @@ export default function RapportsPage() {
              </div>
 
             <div className="grid lg:grid-cols-3 gap-8">
-              <div className="lg:col-span-1 border border-gray-200 bg-white p-6 rounded-3xl shadow-xl">
-                <h3 className="text-lg font-black text-gray-900 mb-6 flex items-center gap-3 uppercase tracking-tight">
+              <div className="lg:col-span-1 border border-white/20 bg-white/10 p-6 rounded-3xl shadow-xl">
+                <h3 className="text-lg font-black text-white mb-6 flex items-center gap-3 uppercase tracking-tight">
                   <TrendingUp className="h-5 w-5 text-blue-500" />
                   Performance CA Clients
                 </h3>
@@ -826,8 +782,8 @@ export default function RapportsPage() {
                 </div>
               </div>
 
-              <div className="lg:col-span-2 border border-gray-200 bg-white p-6 rounded-3xl shadow-xl">
-                <h3 className="text-lg font-black text-gray-900 mb-6 uppercase tracking-tight flex items-center gap-3">
+              <div className="lg:col-span-2 border border-white/20 bg-white/10 p-6 rounded-3xl shadow-xl">
+                <h3 className="text-lg font-black text-white mb-6 uppercase tracking-tight flex items-center gap-3">
                     <Package className="h-5 w-5 text-blue-500" />
                     Détail des Achats par Produit
                 </h3>
@@ -1079,7 +1035,84 @@ function LogistiqueTop({ top, searchTerm }: any) {
   )
 }
 
+function LogistiqueValorisationTable({ valeurStock, searchTerm }: any) {
+  const [page, setPage] = require('react').useState(1)
+  const itemsPerPage = 20
+  const filteredData = (valeurStock?.data || []).filter((v: any) => (v.designation || '').toLowerCase().includes(searchTerm.toLowerCase()))
+  const totalPages = Math.ceil(filteredData.length / itemsPerPage)
+  const paginatedData = filteredData.slice((page - 1) * itemsPerPage, page * itemsPerPage)
+
+  return (
+    <div className="bg-white rounded-3xl border border-gray-200 shadow-xl overflow-hidden mt-6">
+      <div className="p-6 border-b border-gray-100 bg-gray-50/30">
+          <h3 className="text-lg font-black text-gray-900 flex items-center gap-3 uppercase tracking-tight">
+              <DollarSign className="h-5 w-5 text-indigo-500" />
+              Valorisation Analytique du Stock
+          </h3>
+      </div>
+      <div className="overflow-x-auto">
+          <table className="min-w-full">
+              <thead className="bg-gray-50/50">
+                  <tr className="text-left text-[10px] font-black text-gray-400 uppercase tracking-widest border-b">
+                      <th className="px-6 py-4">Article</th>
+                      <th className="px-6 py-4">Catégorie</th>
+                      <th className="px-6 py-4 text-right">Qté en Stock</th>
+                      <th className="px-6 py-4 text-right">Prix Achat Estimé</th>
+                      <th className="px-6 py-4 text-right">Valeur Actuelle</th>
+                  </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                  {paginatedData.map((v: any) => (
+                      <tr key={v.id} className="hover:bg-gray-50/70 transition-colors">
+                          <td className="px-6 py-4">
+                              <div className="text-sm font-black text-gray-900">{v.designation}</div>
+                              <div className="text-[10px] text-gray-400 font-mono tracking-tighter uppercase">{v.code}</div>
+                          </td>
+                          <td className="px-6 py-4">
+                              <span className="text-[10px] font-bold bg-gray-100 text-gray-500 px-3 py-1 rounded-lg uppercase">
+                                  {v.categorie}
+                              </span>
+                          </td>
+                          <td className="px-6 py-4 text-right font-black text-gray-600 tabular-nums">{v.quantite}</td>
+                          <td className="px-6 py-4 text-right text-gray-400 font-mono text-xs tabular-nums">{v.prixAchat.toLocaleString()}</td>
+                          <td className="px-6 py-4 text-right font-black text-indigo-600 tabular-nums text-lg">
+                              {v.valeur.toLocaleString()}
+                          </td>
+                      </tr>
+                  ))}
+              </tbody>
+              <tfoot className="bg-indigo-600 text-white shadow-inner">
+                  <tr className="font-black">
+                      <td colSpan={3} className="px-6 py-6 italic text-sm tracking-widest uppercase">Total Valorisation Stock</td>
+                      <td colSpan={2} className="px-6 py-6 text-right text-3xl tracking-tighter whitespace-nowrap">
+                          {(valeurStock?.totalValeur || 0).toLocaleString()} <span className="text-sm font-bold opacity-70">FCFA</span>
+                      </td>
+                  </tr>
+              </tfoot>
+          </table>
+      </div>
+      {totalPages > 1 && (
+        <div className="p-4 flex justify-center border-t border-gray-100 pb-6 mt-4">
+          <Pagination 
+            currentPage={page} 
+            totalPages={totalPages} 
+            itemsPerPage={itemsPerPage} 
+            totalItems={filteredData.length} 
+            onPageChange={setPage} 
+          />
+        </div>
+      )}
+    </div>
+  )
+}
+
 function PaiementTable({ title, data, type, searchTerm }: any) {
+  const [page, setPage] = require('react').useState(1)
+  const itemsPerPage = 20
+  const filteredData = data.filter((d: any) => ((d.client || d.fournisseur) || '').toLowerCase().includes(searchTerm.toLowerCase()))
+  const totalPages = Math.ceil(filteredData.length / itemsPerPage)
+  const paginatedData = filteredData.slice((page - 1) * itemsPerPage, page * itemsPerPage)
+
   return (
     <div className="bg-white rounded-3xl border border-gray-200 shadow-2xl overflow-hidden">
       <div className="p-8 border-b border-gray-100 flex items-center justify-between">
@@ -1099,7 +1132,7 @@ function PaiementTable({ title, data, type, searchTerm }: any) {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {data.filter((d: any) => ((d.client || d.fournisseur) || '').toLowerCase().includes(searchTerm.toLowerCase())).map((d: any, i: number) => {
+            {paginatedData.map((d: any, i: number) => {
               const solde = d.resteAPayer
               const pourcentage = d.montantTotal > 0 ? (d.montantPaye / d.montantTotal) * 100 : 0
               return (
@@ -1132,6 +1165,17 @@ function PaiementTable({ title, data, type, searchTerm }: any) {
           </tbody>
         </table>
       </div>
+      {totalPages > 1 && (
+        <div className="p-4 flex justify-center border-t border-gray-100 pb-6 mt-4">
+          <Pagination 
+            currentPage={page} 
+            totalPages={totalPages} 
+            itemsPerPage={itemsPerPage} 
+            totalItems={filteredData.length} 
+            onPageChange={setPage} 
+          />
+        </div>
+      )}
     </div>
   )
 }

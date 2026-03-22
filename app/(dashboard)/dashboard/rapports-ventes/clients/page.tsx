@@ -76,38 +76,47 @@ export default function ParClientPage() {
         <div className="space-y-6">
             <RapportsNav />
 
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div>
-                    <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-                        <UserCheck className="h-6 w-6 text-green-600" />
-                        Fidélité Clients
-                    </h1>
-                    <p className="text-gray-900 text-sm mt-1">Meilleurs clients par volume d'achat</p>
-                </div>
+            <div className="bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 p-8 rounded-2xl shadow-xl mb-8 relative overflow-hidden transition-all hover:shadow-2xl">
+                <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+                    <div>
+                        <h1 className="text-3xl font-extrabold text-white flex items-center gap-3 tracking-tight uppercase italic">
+                            <div className="p-2 bg-green-500/20 rounded-lg">
+                                <UserCheck className="h-8 w-8 text-green-400" />
+                            </div>
+                            Fidélité Clients
+                        </h1>
+                        <p className="text-white/70 text-base mt-2 max-w-xl font-medium italic">
+                            Classement des clients par volume d'achat et rentabilité globale
+                        </p>
+                    </div>
 
-                <form onSubmit={handleFilter} className="flex gap-2 items-end bg-white p-3 rounded-lg border border-gray-200 shadow-sm">
-                    <div>
-                        <label className="block text-xs font-medium text-gray-900 mb-1">Du</label>
-                        <input
-                            type="date"
-                            value={startDate}
-                            onChange={(e) => setStartDate(e.target.value)}
-                            className="border border-gray-300 rounded-md px-3 py-1.5 text-sm focus:ring-green-500 focus:border-green-500"
-                        />
-                    </div>
-                    <div>
-                        <label className="block text-xs font-medium text-gray-900 mb-1">Au</label>
-                        <input
-                            type="date"
-                            value={endDate}
-                            onChange={(e) => setEndDate(e.target.value)}
-                            className="border border-gray-300 rounded-md px-3 py-1.5 text-sm focus:ring-green-500 focus:border-green-500"
-                        />
-                    </div>
-                    <button type="submit" className="bg-green-600 text-white px-3 py-1.5 rounded-md text-sm font-medium hover:bg-green-700 flex items-center gap-2 h-[34px]">
-                        <Filter className="h-4 w-4" /> Filtrer
-                    </button>
-                </form>
+                    <form onSubmit={handleFilter} className="flex flex-wrap gap-3 items-end bg-white/5 backdrop-blur-md p-4 rounded-xl border border-white/10 shadow-inner">
+                        <div className="space-y-1.5">
+                            <label className="block text-xs font-bold text-green-300 uppercase tracking-wider ml-1">Du</label>
+                            <input
+                                type="date"
+                                value={startDate}
+                                onChange={(e) => setStartDate(e.target.value)}
+                                className="bg-gray-900/50 border border-white/20 rounded-lg px-4 py-2 text-sm text-white focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-all"
+                            />
+                        </div>
+                        <div className="space-y-1.5">
+                            <label className="block text-xs font-bold text-green-300 uppercase tracking-wider ml-1">Au</label>
+                            <input
+                                type="date"
+                                value={endDate}
+                                onChange={(e) => setEndDate(e.target.value)}
+                                className="bg-gray-900/50 border border-white/20 rounded-lg px-4 py-2 text-sm text-white focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-all"
+                            />
+                        </div>
+                        <button type="submit" className="bg-green-600 text-white px-6 py-2 rounded-lg text-sm font-black hover:bg-green-500 flex items-center gap-2 h-[42px] transition-all hover:scale-105 active:scale-95 shadow-lg shadow-green-900/20">
+                            <Filter className="h-5 w-5" /> RECHERCHER
+                        </button>
+                    </form>
+                </div>
+                {/* Décorations */}
+                <div className="absolute right-0 top-0 -mr-16 -mt-16 h-64 w-64 rounded-full bg-green-500/10 blur-3xl"></div>
+                <div className="absolute bottom-0 left-0 -ml-16 -mb-16 h-48 w-48 rounded-full bg-emerald-500/10 blur-3xl"></div>
             </div>
 
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
@@ -130,21 +139,21 @@ export default function ParClientPage() {
                             {data.map((row: any, idx) => (
                                 <tr 
                                     key={idx} 
-                                    className="hover:bg-green-50/50 transition-colors cursor-pointer group"
+                                    className="hover:bg-white/5 transition-colors cursor-pointer group border-b border-white/5 last:border-0"
                                     onClick={() => fetchHistory(row.clientId, row.client)}
                                 >
-                                    <td className="px-6 py-4 font-medium text-gray-900 flex items-center justify-between">
+                                    <td className="px-6 py-4 font-bold text-white flex items-center justify-between">
                                         {row.client}
-                                        <ChevronRight className="h-4 w-4 text-gray-300 group-hover:text-green-500 transition-all opacity-0 group-hover:opacity-100 mr-2" />
+                                        <ChevronRight className="h-4 w-4 text-gray-600 group-hover:text-green-400 transition-all opacity-0 group-hover:opacity-100 mr-2" />
                                     </td>
-                                    <td className="px-6 py-4 text-right text-green-700 font-bold">{formatCurrency(row.caTotal)}</td>
-                                    <td className="px-6 py-4 text-right text-gray-900">
-                                        <span className="inline-flex items-center justify-center bg-gray-100 px-2 py-1 rounded text-xs font-semibold">
+                                    <td className="px-6 py-4 text-right text-green-400 font-black tracking-tighter text-lg">{formatCurrency(row.caTotal)}</td>
+                                    <td className="px-6 py-4 text-right">
+                                        <span className="inline-flex items-center justify-center bg-white/5 px-2 py-1 rounded text-xs font-black text-white/70">
                                             {row.nombreVentes}
                                         </span>
                                     </td>
-                                    <td className="px-6 py-4 text-right text-red-600 font-bold">{formatCurrency(row.soldeDu)}</td>
-                                    <td className="px-6 py-4 text-right text-gray-900">
+                                    <td className="px-6 py-4 text-right text-red-400 font-bold">{formatCurrency(row.soldeDu)}</td>
+                                    <td className="px-6 py-4 text-right text-white/60 italic text-sm">
                                         {formatCurrency(row.nombreVentes > 0 ? row.caTotal / row.nombreVentes : 0)}
                                     </td>
                                 </tr>

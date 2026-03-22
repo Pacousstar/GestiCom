@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Settings, Save, Loader2, Store, Plus, Trash2, Camera, Mail, Info, Clock, Shield, Globe, MapPin, Phone, CreditCard, User, Upload, Download, RotateCcw, X, Printer } from 'lucide-react'
+import { Settings, Save, Loader2, Store, Plus, Trash2, Camera, Mail, Info, Clock, Shield, Globe, MapPin, Phone, CreditCard, User, Upload, Download, RotateCcw, X, Printer, Edit2 } from 'lucide-react'
 import { useToast } from '@/hooks/useToast'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -38,6 +38,7 @@ export default function ParametresPage() {
     siteWeb: '',
     localisation: '',
     numNCC: '',
+    registreCommerce: '',
     devise: 'FCFA',
     tvaParDefaut: '0',
     typeCommerce: 'GENERAL',
@@ -96,6 +97,7 @@ export default function ParametresPage() {
           siteWeb: p.siteWeb ?? '',
           localisation: p.localisation ?? '',
           numNCC: p.numNCC ?? '',
+          registreCommerce: p.registreCommerce ?? '',
           devise: p.devise ?? 'FCFA',
           tvaParDefaut: String(p.tvaParDefaut ?? 0),
           typeCommerce: p.typeCommerce ?? 'GENERAL',
@@ -288,6 +290,23 @@ export default function ParametresPage() {
               <label className="block text-sm font-medium text-gray-700">Email</label>
               <input value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/20" />
             </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Localisation</label>
+              <input value={form.localisation} onChange={(e) => setForm({ ...form, localisation: e.target.value })} placeholder="Ex: Abidjan, Cocody..." className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/20" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Compte Contribuable (NCC)</label>
+              <input value={form.numNCC} onChange={(e) => setForm({ ...form, numNCC: e.target.value })} className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/20" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Registre de Commerce (RC)</label>
+              <input value={form.registreCommerce} onChange={(e) => setForm({ ...form, registreCommerce: e.target.value })} className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/20" />
+            </div>
+            <div className="sm:col-span-2">
+              <label className="block text-sm font-medium text-gray-700">URL du Logo</label>
+              <input value={form.logo} onChange={(e) => setForm({ ...form, logo: e.target.value })} placeholder="https://..." className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/20" />
+              {form.logo && <img src={form.logo} alt="Logo Entreprise" className="mt-2 h-16 object-contain" />}
+            </div>
           </div>
         </div>
 
@@ -348,17 +367,30 @@ export default function ParametresPage() {
           <input value={magasinForm.nom} onChange={(e) => setMagasinForm({ ...magasinForm, nom: e.target.value })} placeholder="Nom" className="rounded-lg border border-gray-200 px-3 py-2 text-sm flex-1" />
           <button type="submit" disabled={magasinSaving} className="rounded-lg bg-orange-500 px-4 py-2 text-white hover:bg-orange-600">Ajouter</button>
         </form>
-        <div className="mt-4 overflow-x-auto">
-          <table className="min-w-full text-sm">
-            <thead><tr className="border-b bg-gray-50 text-left"><th className="px-4 py-2">Code</th><th className="px-4 py-2">Nom</th><th className="px-4 py-2">Statut</th><th className="px-4 py-2">Actions</th></tr></thead>
-            <tbody>
+        <div className="mt-4 overflow-hidden rounded-xl border border-gray-200">
+          <table className="min-w-full divide-y divide-gray-200 text-sm">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-4 py-3 text-left font-semibold text-gray-700 uppercase tracking-wider text-xs">Code</th>
+                <th className="px-4 py-3 text-left font-semibold text-gray-700 uppercase tracking-wider text-xs">Nom</th>
+                <th className="px-4 py-3 text-left font-semibold text-gray-700 uppercase tracking-wider text-xs">Statut</th>
+                <th className="px-4 py-3 text-right font-semibold text-gray-700 uppercase tracking-wider text-xs">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-200 bg-white">
               {magasins.map(m => (
-                <tr key={m.id} className="border-b">
-                  <td className="px-4 py-2">{m.code}</td>
-                  <td className="px-4 py-2">{m.nom}</td>
-                  <td className="px-4 py-2">{m.actif ? 'Actif' : 'Inactif'}</td>
-                  <td className="px-4 py-2">
-                    <button onClick={() => { setMagasinEdit(m.id); setMagasinEditForm({ code: m.code, nom: m.nom, localisation: m.localisation, actif: m.actif }); }} className="text-orange-600">Modifier</button>
+                <tr key={m.id} className="hover:bg-gray-50 transition-colors">
+                  <td className="px-4 py-3 font-mono font-bold text-gray-700">{m.code}</td>
+                  <td className="px-4 py-3 font-medium text-gray-900">{m.nom}</td>
+                  <td className="px-4 py-3">
+                    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${m.actif ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                      {m.actif ? 'Actif' : 'Inactif'}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    <button onClick={() => { setMagasinEdit(m.id); setMagasinEditForm({ code: m.code, nom: m.nom, localisation: m.localisation, actif: m.actif }); }} className="text-orange-600 hover:text-orange-800 font-medium flex items-center justify-end gap-1 ml-auto">
+                      <Edit2 className="h-4 w-4" /> Modifier
+                    </button>
                   </td>
                 </tr>
               ))}

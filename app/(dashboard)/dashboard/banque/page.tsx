@@ -6,6 +6,7 @@ import { useToast } from '@/hooks/useToast'
 import { formatApiError } from '@/lib/validation-helpers'
 import { MESSAGES } from '@/lib/messages'
 import { addToSyncQueue, isOnline } from '@/lib/offline-sync'
+import Pagination from '@/components/ui/Pagination'
 
 type Banque = {
   id: number
@@ -86,6 +87,12 @@ export default function BanquePage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [userRole, setUserRole] = useState<string>('')
   const [deletingOpId, setDeletingOpId] = useState<number | null>(null)
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 20
+
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [dateDebut, dateFin, filtreType, searchTerm, selectedBanque])
 
   useEffect(() => {
     fetch('/api/auth/check').then((r) => r.ok && r.json()).then((d) => d && setUserRole(d.role)).catch(() => {})
@@ -695,8 +702,8 @@ export default function BanquePage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200 bg-white">
-                    {operations
-                      .filter((op) => {
+                    {(() => {
+                      const filtered = operations.filter((op) => {
                         if (!searchTerm) return true
                         const search = searchTerm.toLowerCase()
                         return (
@@ -705,9 +712,14 @@ export default function BanquePage() {
                           (op.beneficiaire && op.beneficiaire.toLowerCase().includes(search))
                         )
                       })
-                      .map((op) => {
-                        const isEntree = op.type === 'DEPOT' || op.type === 'VIREMENT_ENTRANT' || op.type === 'INTERETS'
-                        return (
+                      const totalPages = Math.ceil(filtered.length / itemsPerPage)
+                      const paginated = filtered.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+
+                      return (
+                        <>
+                          {paginated.map((op) => {
+                            const isEntree = op.type === 'DEPOT' || op.type === 'VIREMENT_ENTRANT' || op.type === 'INTERETS'
+                            return (
                           <tr key={op.id} className="hover:bg-gray-50">
                             <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-900">
                               {new Date(op.date).toLocaleDateString('fr-FR')}
@@ -767,8 +779,24 @@ export default function BanquePage() {
                               </td>
                             )}
                           </tr>
-                        )
-                      })}
+                            )
+                          })}
+                          {totalPages > 1 && (
+                            <tr>
+                              <td colSpan={userRole === 'SUPER_ADMIN' ? (selectedBanque ? 8 : 9) : (selectedBanque ? 7 : 8)} className="px-0 py-0 border-t border-gray-200">
+                                <div className="bg-white px-4 py-3">
+                                  <Pagination
+                                    currentPage={currentPage}
+                                    totalPages={totalPages}
+                                    onPageChange={setCurrentPage}
+                                  />
+                                </div>
+                              </td>
+                            </tr>
+                          )}
+                        </>
+                      )
+                    })()}
                   </tbody>
                 </table>
               </div>

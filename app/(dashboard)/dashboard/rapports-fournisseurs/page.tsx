@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { Truck, Search, Loader2, ArrowUpRight, Scale, Clock, Wallet, X, Calendar, FileText, ChevronRight } from 'lucide-react'
 import { useToast } from '@/hooks/useToast'
+import Pagination from '@/components/ui/Pagination'
 
 type RapportFournisseur = {
     fournisseurId: number | null
@@ -23,6 +24,7 @@ export default function RapportFournisseursPage() {
     const [selectedHistory, setSelectedHistory] = useState<{ id: number | null; nom: string } | null>(null)
     const [historyData, setHistoryData] = useState<any[]>([])
     const [loadingHistory, setLoadingHistory] = useState(false)
+    const [page, setPage] = useState(1)
 
     const fetchData = async () => {
         setLoading(true)
@@ -52,6 +54,10 @@ export default function RapportFournisseursPage() {
     const filteredData = data.filter(f => 
         f.fournisseur.toLowerCase().includes(searchTerm.toLowerCase())
     )
+
+    const itemsPerPage = 20
+    const totalPages = Math.ceil(filteredData.length / itemsPerPage)
+    const paginatedData = filteredData.slice((page - 1) * itemsPerPage, page * itemsPerPage)
 
     const stats = {
         totalAchats: data.reduce((acc, curr) => acc + curr.montantTotal, 0),
@@ -167,9 +173,9 @@ export default function RapportFournisseursPage() {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100">
-                                {filteredData.map((f, i) => (
+                                {paginatedData.map((f, i) => (
                                     <tr 
-                                        key={i} 
+                                        key={f.fournisseurId || i} 
                                         className="hover:bg-gray-50 transition-colors group cursor-pointer"
                                         onClick={() => fetchHistory(f.fournisseurId, f.fournisseur)}
                                     >
@@ -211,6 +217,18 @@ export default function RapportFournisseursPage() {
                     )}
                 </div>
             </div>
+
+            {totalPages > 1 && (
+                <div className="flex justify-center mt-6">
+                    <Pagination 
+                        currentPage={page} 
+                        totalPages={totalPages} 
+                        itemsPerPage={itemsPerPage} 
+                        totalItems={filteredData.length} 
+                        onPageChange={setPage} 
+                    />
+                </div>
+            )}
 
             {selectedHistory && (
                 <div className="fixed inset-y-0 right-0 w-full max-w-xl bg-white shadow-2xl z-50 flex flex-col animate-in slide-in-from-right duration-300">

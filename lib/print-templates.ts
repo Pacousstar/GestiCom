@@ -9,6 +9,8 @@ export type TemplateData = {
   ENTREPRISE_CONTACT?: string
   ENTREPRISE_LOCALISATION?: string
   ENTREPRISE_LOGO?: string
+  ENTREPRISE_NCC?: string
+  ENTREPRISE_RC?: string
   ENTREPRISE_PIED_DE_PAGE?: string
 
   // Données document
@@ -22,6 +24,7 @@ export type TemplateData = {
   CLIENT_NOM?: string
   CLIENT_CONTACT?: string
   CLIENT_LOCALISATION?: string
+  CLIENT_CODE?: string
   CLIENT_NCC?: string
   FOURNISSEUR_NOM?: string
   FOURNISSEUR_TELEPHONE?: string
@@ -319,6 +322,8 @@ export async function printDocument(templateId: number | null, type: 'VENTE' | '
     data.ENTREPRISE_NOM = entrepriseData.nomEntreprise || data.ENTREPRISE_NOM || ''
     data.ENTREPRISE_CONTACT = entrepriseData.contact || data.ENTREPRISE_CONTACT || ''
     data.ENTREPRISE_LOCALISATION = entrepriseData.localisation || data.ENTREPRISE_LOCALISATION || ''
+    data.ENTREPRISE_NCC = (entrepriseData as any).numNCC || ''
+    data.ENTREPRISE_RC = (entrepriseData as any).registreCommerce || ''
     data.ENTREPRISE_PIED_DE_PAGE = entrepriseData.piedDePage || data.ENTREPRISE_PIED_DE_PAGE || ''
 
     // Ajouter le logo si disponible (priorité au logo du template, sinon logo des paramètres)
@@ -384,6 +389,8 @@ export function getDefaultTemplate(type: 'VENTE' | 'ACHAT'): string {
     <h1 class="print-entreprise-nom">{ENTREPRISE_NOM}</h1>
     <p class="print-contact">{ENTREPRISE_CONTACT}</p>
     <p class="print-localisation">{ENTREPRISE_LOCALISATION}</p>
+    {ENTREPRISE_NCC ? '<p class="print-contact" style="font-size: 10px;">NCC: {ENTREPRISE_NCC}</p>' : ''}
+    {ENTREPRISE_RC ? '<p class="print-contact" style="font-size: 10px;">RC: {ENTREPRISE_RC}</p>' : ''}
   </div>
 </div>
 <hr>
@@ -392,7 +399,7 @@ export function getDefaultTemplate(type: 'VENTE' | 'ACHAT'): string {
   <p><strong>Date:</strong> {DATE} {HEURE}</p>
   <p><strong>Magasin:</strong> {MAGASIN_CODE} – {MAGASIN_NOM}</p>
   ${isVente ? `
-  <p><strong>Client:</strong> {CLIENT_NOM}</p>
+  <p><strong>Client:</strong> {CLIENT_CODE ? '['+CLIENT_CODE+'] ' : ''}{CLIENT_NOM}</p>
   {CLIENT_CONTACT ? '<p><strong>Contact:</strong> {CLIENT_CONTACT}</p>' : ''}
   {CLIENT_LOCALISATION ? '<p><strong>Localisation:</strong> {CLIENT_LOCALISATION}</p>' : ''}
   {CLIENT_NCC ? '<p><strong>NCC:</strong> {CLIENT_NCC}</p>' : ''}
@@ -430,6 +437,8 @@ export function getDefaultA4Template(type: 'VENTE' | 'ACHAT'): string {
     <h1>{ENTREPRISE_NOM}</h1>
     <p> {ENTREPRISE_LOCALISATION}</p>
     <p> {ENTREPRISE_CONTACT}</p>
+    {ENTREPRISE_NCC ? '<p style="font-size: 11px; color: #64748b;"><strong>NCC:</strong> {ENTREPRISE_NCC}</p>' : ''}
+    {ENTREPRISE_RC ? '<p style="font-size: 11px; color: #64748b;"><strong>RC:</strong> {ENTREPRISE_RC}</p>' : ''}
   </div>
   <div class="a4-invoice-meta">
     <h2>FACTURE</h2>
@@ -438,7 +447,7 @@ export function getDefaultA4Template(type: 'VENTE' | 'ACHAT'): string {
     <p><strong>Heure :</strong> {HEURE}</p>
     <div style="margin-top: 20px;" class="a4-client-info">
       <h3>Destinataire</h3>
-      <p>{CLIENT_NOM}</p>
+      <p>{CLIENT_CODE ? '['+CLIENT_CODE+'] ' : ''}{CLIENT_NOM}</p>
       {CLIENT_CONTACT ? '<p>{CLIENT_CONTACT}</p>' : ''}
       {CLIENT_LOCALISATION ? '<p>{CLIENT_LOCALISATION}</p>' : ''}
       {CLIENT_NCC ? '<p style="font-size: 12px; color: #64748b; margin-top: 8px;">NCC: {CLIENT_NCC}</p>' : ''}
@@ -588,6 +597,8 @@ export const DEFAULT_VENTE_TEMPLATE = `
     <h1 class="print-entreprise-nom">{ENTREPRISE_NOM}</h1>
     <p class="print-contact">{ENTREPRISE_CONTACT}</p>
     <p class="print-localisation">{ENTREPRISE_LOCALISATION}</p>
+    {ENTREPRISE_NCC ? '<p class="print-contact" style="font-size: 10px;">NCC: {ENTREPRISE_NCC}</p>' : ''}
+    {ENTREPRISE_RC ? '<p class="print-contact" style="font-size: 10px;">RC: {ENTREPRISE_RC}</p>' : ''}
   </div>
 </div>
 <hr>
@@ -595,7 +606,7 @@ export const DEFAULT_VENTE_TEMPLATE = `
   <p><strong>Ticket N°:</strong> {NUMERO}</p>
   <p><strong>Date:</strong> {DATE} {HEURE}</p>
   <p><strong>Magasin:</strong> {MAGASIN_CODE} – {MAGASIN_NOM}</p>
-  {CLIENT_NOM ? '<p><strong>Client:</strong> {CLIENT_NOM}</p>' : ''}
+  {CLIENT_NOM ? '<p><strong>Client:</strong> {CLIENT_CODE ? \'[\'+CLIENT_CODE+\'] \' : \'\'}{CLIENT_NOM}</p>' : ''}
   {CLIENT_CONTACT ? '<p><strong>Contact:</strong> {CLIENT_CONTACT}</p>' : ''}
   {CLIENT_LOCALISATION ? '<p><strong>Localisation:</strong> {CLIENT_LOCALISATION}</p>' : ''}
   {CLIENT_NCC ? '<p><strong>NCC:</strong> {CLIENT_NCC}</p>' : ''}

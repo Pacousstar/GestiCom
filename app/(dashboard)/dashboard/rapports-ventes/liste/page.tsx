@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { Search, Loader2, Download, Filter, ShoppingCart, User, Calendar, Tag, CreditCard, Warehouse } from 'lucide-react'
 import { useToast } from '@/hooks/useToast'
+import Pagination from '@/components/ui/Pagination'
 
 interface VenteListe {
   id: number
@@ -23,6 +24,7 @@ export default function ListeVentesPage() {
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
   const [search, setSearch] = useState('')
+  const [page, setPage] = useState(1)
   const { error: showError } = useToast()
 
   useEffect(() => {
@@ -64,6 +66,10 @@ export default function ListeVentesPage() {
   const caTotal = filteredData.reduce((acc, v) => acc + v.montantTotal, 0)
   const encaisseTotal = filteredData.reduce((acc, v) => acc + v.montantPaye, 0)
   const resteTotal = caTotal - encaisseTotal
+
+  const itemsPerPage = 20
+  const totalPages = Math.ceil(filteredData.length / itemsPerPage)
+  const paginatedData = filteredData.slice((page - 1) * itemsPerPage, page * itemsPerPage)
 
   return (
     <div className="space-y-6">
@@ -164,7 +170,7 @@ export default function ListeVentesPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 bg-white">
-                {filteredData.map((v) => (
+                {paginatedData.map((v) => (
                   <tr key={v.id} className="hover:bg-gray-50 transition-colors group">
                     <td className="whitespace-nowrap px-6 py-4">
                       <div className="flex flex-col">
@@ -208,6 +214,18 @@ export default function ListeVentesPage() {
           </div>
         )}
       </div>
+
+      {totalPages > 1 && (
+        <div className="flex justify-center mt-6">
+          <Pagination 
+            currentPage={page} 
+            totalPages={totalPages} 
+            itemsPerPage={itemsPerPage} 
+            totalItems={filteredData.length} 
+            onPageChange={setPage} 
+          />
+        </div>
+      )}
     </div>
   )
 }

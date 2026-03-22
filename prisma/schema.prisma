@@ -284,6 +284,7 @@ model Parametre {
   siteWeb             String?
   localisation        String   @default("")
   numNCC              String?
+  registreCommerce    String?
   devise              String   @default("FCFA")
   tvaParDefaut        Float    @default(0)
   typeCommerce        String   @default("GENERAL")

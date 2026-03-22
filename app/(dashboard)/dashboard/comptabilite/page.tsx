@@ -68,8 +68,8 @@ export default async function ComptabilitePage({
     }),
     prisma.vente.count({ where: { date: { gte: debMois, lte: finMois }, statut: 'VALIDEE' } }),
     prisma.vente.count({ where: { date: { gte: debMoisPrec, lte: finMoisPrec }, statut: 'VALIDEE' } }),
-    prisma.$queryRaw<[{ n: number }]>`SELECT COUNT(*) as n FROM Client WHERE actif = 1`,
-    prisma.$queryRaw<[{ n: number }]>(Prisma.sql`SELECT COUNT(*) as n FROM Client WHERE actif = 1 AND createdAt <= ${finMoisPrec}`),
+    prisma.$queryRaw<[{ n: number }]>`SELECT COUNT(*) as n FROM "Client"`,
+    prisma.$queryRaw<[{ n: number }]>(Prisma.sql`SELECT COUNT(*) as n FROM "Client" WHERE "createdAt" <= ${finMoisPrec}`),
     prisma.achat.aggregate({
       where: { date: { gte: debMois, lte: finMois } },
       _sum: { montantTotal: true },

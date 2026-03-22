@@ -7,6 +7,7 @@ import { depenseSchema } from '@/lib/validations'
 import { validateForm, formatApiError } from '@/lib/validation-helpers'
 import { MESSAGES } from '@/lib/messages'
 import { addToSyncQueue, isOnline } from '@/lib/offline-sync'
+import Pagination from '@/components/ui/Pagination'
 
 type Magasin = { id: number; code: string; nom: string }
 type Depense = {
@@ -103,6 +104,12 @@ export default function DepensesPage() {
   const [filtreMagasin, setFiltreMagasin] = useState('')
   const [searchTerm, setSearchTerm] = useState('')
   const [showFilters, setShowFilters] = useState(false)
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 20
+
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [dateDebut, dateFin, filtreCategorie, filtreMagasin, searchTerm])
 
   useEffect(() => {
     fetch('/api/magasins')
@@ -436,8 +443,8 @@ export default function DepensesPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
-                {depenses
-                  .filter((d) => {
+                {(() => {
+                  const filtered = depenses.filter((d) => {
                     if (!searchTerm) return true
                     const search = searchTerm.toLowerCase()
                     return (
@@ -448,7 +455,12 @@ export default function DepensesPage() {
                       d.modePaiement.toLowerCase().includes(search)
                     )
                   })
-                  .map((d) => (
+                  const totalPages = Math.ceil(filtered.length / itemsPerPage)
+                  const paginated = filtered.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+
+                  return (
+                    <>
+                      {paginated.map((d) => (
                     <tr key={d.id} className="hover:bg-gray-50">
                       <td className="px-4 py-3 text-sm text-gray-900">
                         {new Date(d.date).toLocaleDateString('fr-FR')}
@@ -487,6 +499,42 @@ export default function DepensesPage() {
                       </td>
                     </tr>
                   ))}
+                  {Math.ceil(depenses.filter((d) => {
+                    if (!searchTerm) return true
+                    const search = searchTerm.toLowerCase()
+                    return (
+                      d.libelle.toLowerCase().includes(search) ||
+                      d.categorie.toLowerCase().includes(search) ||
+                      (d.beneficiaire && d.beneficiaire.toLowerCase().includes(search)) ||
+                      (d.magasin && d.magasin.nom.toLowerCase().includes(search)) ||
+                      d.modePaiement.toLowerCase().includes(search)
+                    )
+                  }).length / itemsPerPage) > 1 && (
+                    <tr>
+                      <td colSpan={8} className="px-0 py-0 border-t border-gray-200">
+                        <div className="bg-white px-4 py-3">
+                          <Pagination
+                            currentPage={currentPage}
+                            totalPages={Math.ceil(depenses.filter((d) => {
+                              if (!searchTerm) return true
+                              const search = searchTerm.toLowerCase()
+                              return (
+                                d.libelle.toLowerCase().includes(search) ||
+                                d.categorie.toLowerCase().includes(search) ||
+                                (d.beneficiaire && d.beneficiaire.toLowerCase().includes(search)) ||
+                                (d.magasin && d.magasin.nom.toLowerCase().includes(search)) ||
+                                d.modePaiement.toLowerCase().includes(search)
+                              )
+                            }).length / itemsPerPage)}
+                            onPageChange={setCurrentPage}
+                          />
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                    </>
+                  )
+                })()}
               </tbody>
             </table>
           </div>

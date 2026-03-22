@@ -192,6 +192,7 @@ export default function VentesPage() {
       MAGASIN_CODE: d.magasin.code,
       MAGASIN_NOM: d.magasin.nom,
       CLIENT_NOM: d.client?.nom || d.clientLibre || undefined,
+      CLIENT_CODE: (d.client as any)?.code || undefined,
       CLIENT_CONTACT: d.client?.telephone || undefined,
       CLIENT_LOCALISATION: d.client?.adresse || undefined,
       CLIENT_NCC: d.client?.ncc || undefined,

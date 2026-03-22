@@ -1,38 +1,40 @@
-import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
+import { getSession } from '@/lib/auth'
+import { NextResponse } from 'next/server'
 
 export async function POST(req: Request) {
   try {
-    const userHeader = req.headers.get('x-user')
-    if (!userHeader) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-    const currentUser = JSON.parse(userHeader)
+    const session = await getSession()
+    if (!session) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+    const currentUser = { id: session.userId, entiteId: session.entiteId, role: session.role }
 
     const data = await req.json()
     const {
       magasinId,
       clientId,
+      clientLibre,
       modePaiement,
-      numeroFactureOrigine,
-      dateFacture,
-      lignes
+      date,
+      lignes,
+      observation
     } = data
 
-    if (!magasinId || !numeroFactureOrigine || !lignes || lignes.length === 0) {
-      return NextResponse.json({ error: 'Données incomplètes (magasin, N°, lignes manquants)' }, { status: 400 })
+    if (!magasinId || !lignes || lignes.length === 0) {
+      return NextResponse.json({ error: 'Données incomplètes (magasin, lignes manquants)' }, { status: 400 })
     }
 
     // Calcul du total
-    const montantTotal = lignes.reduce((acc: number, l: any) => acc + (l.quantite * l.prixUnitaire), 0)
+    const montantTotal = lignes.reduce((acc: any, l: any) => acc + (l.quantite * l.prixUnitaire), 0)
 
     const nouvelleArchive = await prisma.archiveVente.create({
       data: {
-        numeroFactureOrigine: String(numeroFactureOrigine),
-        date: dateFacture ? new Date(dateFacture) : new Date(),
+        numeroFactureOrigine: `A${Date.now()}`,
+        date: date ? new Date(date) : new Date(),
         magasinId: Number(magasinId),
         entiteId: currentUser.entiteId,
         utilisateurId: currentUser.id,
         clientId: clientId ? Number(clientId) : null,
-        clientLibre: !clientId ? 'Client de passage' : null,
+        clientLibre: clientLibre || (!clientId ? 'Client de passage' : null),
         montantTotal,
         lignes: {
           create: lignes.map((l: any) => ({

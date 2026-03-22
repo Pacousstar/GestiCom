@@ -7,6 +7,7 @@ import { chargeSchema } from '@/lib/validations'
 import { validateForm, formatApiError } from '@/lib/validation-helpers'
 import { MESSAGES } from '@/lib/messages'
 import { addToSyncQueue, isOnline } from '@/lib/offline-sync'
+import Pagination from '@/components/ui/Pagination'
 
 type Charge = {
   id: number
@@ -89,6 +90,12 @@ export default function ChargesPage() {
   const [showFilters, setShowFilters] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
   const [userRole, setUserRole] = useState<string>('')
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 20
+
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [dateDebut, dateFin, filtreType, filtreRubrique, filtreMagasin, searchTerm])
 
   useEffect(() => {
     fetch('/api/auth/check').then((r) => r.ok && r.json()).then((d) => d && setUserRole(d.role)).catch(() => { })
@@ -419,8 +426,8 @@ export default function ChargesPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200 bg-white">
-                {charges
-                  .filter((c) => {
+                {(() => {
+                  const filtered = charges.filter((c) => {
                     if (!searchTerm) return true
                     const search = searchTerm.toLowerCase()
                     return (
@@ -430,7 +437,12 @@ export default function ChargesPage() {
                       c.utilisateur.nom.toLowerCase().includes(search)
                     )
                   })
-                  .map((c) => (
+                  const totalPages = Math.ceil(filtered.length / itemsPerPage)
+                  const paginated = filtered.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+
+                  return (
+                    <>
+                      {paginated.map((c) => (
                     <tr key={c.id} className="hover:bg-gray-50">
                       <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-900">
                         {new Date(c.date).toLocaleDateString('fr-FR')}
@@ -474,6 +486,40 @@ export default function ChargesPage() {
                       </td>
                     </tr>
                   ))}
+                  {Math.ceil(charges.filter((c) => {
+                    if (!searchTerm) return true
+                    const search = searchTerm.toLowerCase()
+                    return (
+                      c.rubrique.toLowerCase().includes(search) ||
+                      (c.observation && c.observation.toLowerCase().includes(search)) ||
+                      (c.magasin && c.magasin.nom.toLowerCase().includes(search)) ||
+                      c.utilisateur.nom.toLowerCase().includes(search)
+                    )
+                  }).length / itemsPerPage) > 1 && (
+                    <tr>
+                      <td colSpan={8} className="px-0 py-0 border-t border-gray-200">
+                        <div className="bg-white px-4 py-3">
+                          <Pagination
+                            currentPage={currentPage}
+                            totalPages={Math.ceil(charges.filter((c) => {
+                              if (!searchTerm) return true
+                              const search = searchTerm.toLowerCase()
+                              return (
+                                c.rubrique.toLowerCase().includes(search) ||
+                                (c.observation && c.observation.toLowerCase().includes(search)) ||
+                                (c.magasin && c.magasin.nom.toLowerCase().includes(search)) ||
+                                c.utilisateur.nom.toLowerCase().includes(search)
+                              )
+                            }).length / itemsPerPage)}
+                            onPageChange={setCurrentPage}
+                          />
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                    </>
+                  )
+                })()}
               </tbody>
             </table>
           </div>

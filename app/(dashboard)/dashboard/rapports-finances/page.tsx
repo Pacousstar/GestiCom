@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { Filter, DollarSign, Loader2, Calendar, FileText, ArrowUpCircle, ArrowDownCircle, Download, FileSpreadsheet } from 'lucide-react'
 import { useToast } from '@/hooks/useToast'
+import Pagination from '@/components/ui/Pagination'
 
 const formatCurrency = (val: number) => {
     return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'XOF' }).format(val).replace('XOF', 'FCFA')
@@ -15,6 +16,7 @@ export default function RapportFinancesPage() {
     const [endDate, setEndDate] = useState('')
     const [data, setData] = useState<any[]>([])
     const [loading, setLoading] = useState(true)
+    const [page, setPage] = useState(1)
     const { error: showError } = useToast()
 
     useEffect(() => {
@@ -48,6 +50,10 @@ export default function RapportFinancesPage() {
     const totalMontant = data.reduce((acc, curr) => acc + curr.montantTotal, 0)
     const totalPaye = data.reduce((acc, curr) => acc + curr.montantPaye, 0)
     const totalSolde = data.reduce((acc, curr) => acc + curr.solde, 0)
+
+    const itemsPerPage = 20
+    const totalPages = Math.ceil(data.length / itemsPerPage)
+    const paginatedData = data.slice((page - 1) * itemsPerPage, page * itemsPerPage)
 
     return (
         <div className="space-y-6">
@@ -150,7 +156,7 @@ export default function RapportFinancesPage() {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100">
-                                {data.map((row, idx) => (
+                                {paginatedData.map((row, idx) => (
                                     <tr key={idx} className="hover:bg-gray-50 transition-colors">
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-2">
@@ -196,6 +202,18 @@ export default function RapportFinancesPage() {
                     </div>
                 )}
             </div>
+            
+            {totalPages > 1 && (
+                <div className="flex justify-center mt-6 p-4">
+                    <Pagination 
+                        currentPage={page} 
+                        totalPages={totalPages} 
+                        itemsPerPage={itemsPerPage} 
+                        totalItems={data.length} 
+                        onPageChange={setPage} 
+                    />
+                </div>
+            )}
         </div>
     )
 }

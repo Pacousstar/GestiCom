@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { TrendingUp, ArrowUpRight, ArrowDownRight, Filter, FileBarChart2, Loader2, Package, Search } from 'lucide-react'
 import { formatDate } from '@/lib/format-date'
+import Pagination from '@/components/ui/Pagination'
 
 export default function RentabilitePage() {
   const [data, setData] = useState<any[]>([])
@@ -14,6 +15,7 @@ export default function RentabilitePage() {
   })
   const [dateFin, setDateFin] = useState(() => new Date().toISOString().split('T')[0])
   const [recherche, setRecherche] = useState('')
+  const [page, setPage] = useState(1)
 
   useEffect(() => {
     fetchRentabilite()
@@ -41,6 +43,10 @@ export default function RentabilitePage() {
     acc.marge += item.margeBrute
     return acc
   }, { ca: 0, marge: 0 })
+
+  const itemsPerPage = 20
+  const totalPages = Math.ceil(filteredData.length / itemsPerPage)
+  const paginatedData = filteredData.slice((page - 1) * itemsPerPage, page * itemsPerPage)
 
   const tauxMoy = stats.ca > 0 ? (stats.marge / stats.ca) * 100 : 0
 
@@ -136,7 +142,7 @@ export default function RentabilitePage() {
                   </td>
                 </tr>
               ) : (
-                filteredData.map((item) => (
+                paginatedData.map((item) => (
                   <tr key={item.produitId} className="hover:bg-gray-50 transition-colors">
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
@@ -176,6 +182,17 @@ export default function RentabilitePage() {
             </tbody>
           </table>
         </div>
+        {!loading && totalPages > 1 && (
+          <div className="flex justify-center p-6 border-t border-gray-100 mt-2">
+            <Pagination 
+              currentPage={page} 
+              totalPages={totalPages} 
+              itemsPerPage={itemsPerPage} 
+              totalItems={filteredData.length} 
+              onPageChange={setPage} 
+            />
+          </div>
+        )}
       </div>
     </div>
   )

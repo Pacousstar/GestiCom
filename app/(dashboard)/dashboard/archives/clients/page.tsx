@@ -113,6 +113,13 @@ export default function ArchivesClientsPage() {
     }
   }
 
+  const handleExport = (format: 'EXCEL' | 'PDF') => {
+    const params = new URLSearchParams()
+    if (q) params.set('q', q)
+    const endpoint = format === 'EXCEL' ? 'export-excel' : 'export-pdf'
+    window.location.href = `/api/archives/clients/${endpoint}?${params.toString()}`
+  }
+
   const filteredData = list.filter(a => {
     const nom = (a.client?.nom || a.clientLibre || '').toLowerCase()
     return nom.includes(q.toLowerCase())
@@ -156,14 +163,16 @@ export default function ArchivesClientsPage() {
         <div className="flex gap-2">
           <button
             type="button"
-            className="flex items-center gap-2 rounded-lg border-2 border-green-500 bg-green-50 px-3 py-2 text-sm font-medium text-green-800 opacity-50 cursor-not-allowed"
+            onClick={() => handleExport('EXCEL')}
+            className="flex items-center gap-2 rounded-lg border-2 border-green-500 bg-green-50 px-3 py-2 text-sm font-medium text-green-800 hover:bg-green-100 transition-colors shadow-sm"
           >
             <FileSpreadsheet className="h-4 w-4" />
             Excel
           </button>
           <button
             type="button"
-            className="flex items-center gap-2 rounded-lg border-2 border-red-500 bg-red-50 px-3 py-2 text-sm font-medium text-red-800 opacity-50 cursor-not-allowed"
+            onClick={() => handleExport('PDF')}
+            className="flex items-center gap-2 rounded-lg border-2 border-red-500 bg-red-50 px-3 py-2 text-sm font-medium text-red-800 hover:bg-red-100 transition-colors shadow-sm"
           >
             <Download className="h-4 w-4" />
             PDF

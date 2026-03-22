@@ -6,6 +6,7 @@ import { useToast } from '@/hooks/useToast'
 import { formatApiError } from '@/lib/validation-helpers'
 import { MESSAGES } from '@/lib/messages'
 import { addToSyncQueue, isOnline } from '@/lib/offline-sync'
+import Pagination from '@/components/ui/Pagination'
 
 type Magasin = { id: number; code: string; nom: string }
 type OperationCaisse = {
@@ -41,6 +42,12 @@ export default function CaissePage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [userRole, setUserRole] = useState<string>('')
   const [deletingId, setDeletingId] = useState<number | null>(null)
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 20
+
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [dateDebut, dateFin, filtreMagasin, filtreType, searchTerm])
 
   useEffect(() => {
     fetch('/api/auth/check')
@@ -326,8 +333,8 @@ export default function CaissePage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200 bg-white">
-                {operations
-                  .filter((o) => {
+                {(() => {
+                  const filtered = operations.filter((o) => {
                     if (!searchTerm) return true
                     const search = searchTerm.toLowerCase()
                     return (
@@ -337,7 +344,12 @@ export default function CaissePage() {
                       o.utilisateur.nom.toLowerCase().includes(search)
                     )
                   })
-                  .map((o) => (
+                  const totalPages = Math.ceil(filtered.length / itemsPerPage)
+                  const paginated = filtered.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+                  
+                  return (
+                    <>
+                      {paginated.map((o) => (
                     <tr key={o.id} className="hover:bg-gray-50">
                       <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-900">
                         {new Date(o.date).toLocaleDateString('fr-FR')}
@@ -390,6 +402,40 @@ export default function CaissePage() {
                       </td>
                     </tr>
                   ))}
+                  {Math.ceil(operations.filter((o) => {
+                    if (!searchTerm) return true
+                    const search = searchTerm.toLowerCase()
+                    return (
+                      o.motif.toLowerCase().includes(search) ||
+                      o.magasin.code.toLowerCase().includes(search) ||
+                      o.magasin.nom.toLowerCase().includes(search) ||
+                      o.utilisateur.nom.toLowerCase().includes(search)
+                    )
+                  }).length / itemsPerPage) > 1 && (
+                    <tr>
+                      <td colSpan={7} className="px-0 py-0 border-t border-gray-200">
+                        <div className="bg-white px-4 py-3">
+                          <Pagination
+                            currentPage={currentPage}
+                            totalPages={Math.ceil(operations.filter((o) => {
+                              if (!searchTerm) return true
+                              const search = searchTerm.toLowerCase()
+                              return (
+                                o.motif.toLowerCase().includes(search) ||
+                                o.magasin.code.toLowerCase().includes(search) ||
+                                o.magasin.nom.toLowerCase().includes(search) ||
+                                o.utilisateur.nom.toLowerCase().includes(search)
+                              )
+                            }).length / itemsPerPage)}
+                            onPageChange={setCurrentPage}
+                          />
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                    </>
+                  )
+                })()}
               </tbody>
             </table>
           </div>

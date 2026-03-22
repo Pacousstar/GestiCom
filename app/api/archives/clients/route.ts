@@ -1,11 +1,12 @@
-import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
+import { getSession } from '@/lib/auth'
+import { NextResponse } from 'next/server'
 
 export async function GET(req: Request) {
   try {
-    const userHeader = req.headers.get('x-user')
-    if (!userHeader) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-    const currentUser = JSON.parse(userHeader)
+    const session = await getSession()
+    if (!session) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+    const currentUser = { id: session.userId, entiteId: session.entiteId, role: session.role }
 
     const soldes = await prisma.archiveSoldeClient.findMany({
       where: { entiteId: currentUser.entiteId },
@@ -24,9 +25,9 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
-    const userHeader = req.headers.get('x-user')
-    if (!userHeader) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-    const currentUser = JSON.parse(userHeader)
+    const session = await getSession()
+    if (!session) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+    const currentUser = { id: session.userId, entiteId: session.entiteId, role: session.role }
 
     const body = await req.json()
     const { clientId, clientLibre, montant, dateArchive, observation } = body
@@ -55,9 +56,9 @@ export async function POST(req: Request) {
 
 export async function DELETE(req: Request) {
   try {
-    const userHeader = req.headers.get('x-user')
-    if (!userHeader) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-    const currentUser = JSON.parse(userHeader)
+    const session = await getSession()
+    if (!session) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+    const currentUser = { id: session.userId, entiteId: session.entiteId, role: session.role }
 
     if (currentUser.role !== 'SUPER_ADMIN' && currentUser.role !== 'ADMIN') {
        return NextResponse.json({ error: 'Permission refusée' }, { status: 403 })

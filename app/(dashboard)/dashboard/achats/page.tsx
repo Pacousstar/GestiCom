@@ -87,6 +87,7 @@ export default function AchatsPage() {
   })
   const [dateDebut, setDateDebut] = useState('')
   const [dateFin, setDateFin] = useState('')
+  const [searchQuery, setSearchQuery] = useState('')
   const [showCreateFournisseur, setShowCreateFournisseur] = useState(false)
   const [fournisseurForm, setFournisseurForm] = useState({
     nom: '',
@@ -509,13 +510,26 @@ export default function AchatsPage() {
       </div>
 
       <div className="flex flex-wrap items-end gap-3 rounded-xl border border-gray-200 bg-gray-50 p-3">
+        <div className="relative flex-1 min-w-[200px] max-w-sm">
+          <label className="block text-xs font-medium text-gray-700 mb-1">Rechercher</label>
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+            <input
+              type="search"
+              placeholder="N°, fournisseur..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full rounded-lg border border-gray-200 py-[6px] pl-9 pr-4 focus:border-orange-500 focus:outline-none bg-white text-sm"
+            />
+          </div>
+        </div>
         <div>
           <label className="block text-xs font-medium text-gray-700">Du</label>
           <input
             type="date"
             value={dateDebut}
             onChange={(e) => setDateDebut(e.target.value)}
-            className="mt-1 rounded-lg border border-gray-200 px-2 py-1.5 text-sm text-gray-900 bg-white"
+            className="mt-1 rounded-lg border border-gray-200 px-2 py-1.5 text-sm text-gray-900 bg-white focus:border-orange-500 focus:outline-none"
           />
         </div>
         <div>
