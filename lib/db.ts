@@ -18,7 +18,7 @@ if (process.env.NODE_ENV !== 'production' && process.platform === 'win32') {
   }
 }
 // On utilise la DATABASE_URL du .env en priorité absolue.
-// Si rien n'est défini, on tente une détection intelligente mais sans verrouillage forcé.
+// Si rien n'est défini, on tente une détection intelligente.
 if (!process.env.DATABASE_URL) {
   const centralDb = "C:/gesticom/gesticom.db";
   if (fs.existsSync(centralDb)) {
@@ -26,17 +26,17 @@ if (!process.env.DATABASE_URL) {
   }
 }
 
-if (process.env.DATABASE_URL) {
-  console.log('[lib/db] Connecté à : ' + process.env.DATABASE_URL);
-}
+const dbUrl = process.env.DATABASE_URL;
 
-const dbUrl = process.env.DATABASE_URL || "file:C:/gesticom/gesticom.db";
+if (!dbUrl && process.env.NODE_ENV === 'production') {
+  console.error('[lib/db] ERREUR FATALE : DATABASE_URL non définie en production !');
+}
 
 export const prisma = globalForPrisma.prisma ?? new PrismaClient({
   log: ['error'], 
   datasources: {
     db: {
-      url: dbUrl,
+      url: dbUrl || "file:C:/gesticom/gesticom.db",
     },
   },
 })
