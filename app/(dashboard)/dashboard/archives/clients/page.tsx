@@ -69,7 +69,7 @@ export default function ArchivesClientsPage() {
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!formData.montant || (!formData.clientId && !formData.clientLibre)) {
+    if (!formData.montant || !formData.clientId) {
       error('Veuillez remplir les champs obligatoires')
       return
     }
@@ -301,14 +301,15 @@ export default function ArchivesClientsPage() {
                 <div className="space-y-6">
                   {/* Sélection Client */}
                   <div className="space-y-3">
-                    <label className="text-[10px] font-black uppercase text-gray-400 tracking-[0.2em] ml-2">Associer à un client réel (Base de données)</label>
+                    <label className="text-[10px] font-black uppercase text-gray-400 tracking-[0.2em] ml-2">Sélectionner un client (Base de données)</label>
                     <div className="relative">
                       <select 
+                        required
                         className="w-full px-8 py-5 rounded-[28px] bg-gray-50 border-4 border-transparent focus:border-orange-500/30 focus:bg-white font-black text-gray-900 shadow-inner appearance-none transition-all"
                         value={formData.clientId}
                         onChange={e => setFormData({...formData, clientId: e.target.value, clientLibre: ''})}
                       >
-                        <option value="">-- Client Divers (Saisie libre uniquement) --</option>
+                        <option value="">-- Sélectionner un client --</option>
                         {clients.map(c => <option key={c.id} value={c.id}>{c.nom}</option>)}
                       </select>
                       <div className="absolute right-8 top-1/2 -translate-y-1/2 pointer-events-none text-orange-500">
@@ -317,20 +318,7 @@ export default function ArchivesClientsPage() {
                     </div>
                   </div>
 
-                  {/* Saisie Libre si pas de client sélectionné */}
-                  {!formData.clientId && (
-                    <div className="space-y-3 animate-in slide-in-from-top-4 duration-500">
-                      <label className="text-[10px] font-black uppercase text-gray-400 tracking-[0.2em] ml-2">Nom du Client (Identification Archive)</label>
-                      <input 
-                        required
-                        type="text"
-                        className="w-full px-8 py-5 rounded-[28px] bg-gray-50 border-4 border-transparent focus:border-orange-500/30 focus:bg-white font-black text-gray-900 shadow-inner transition-all sm:text-lg"
-                        placeholder="Ex: M. Jean Philippe (Reliquat 2022)"
-                        value={formData.clientLibre}
-                        onChange={e => setFormData({...formData, clientLibre: e.target.value})}
-                      />
-                    </div>
-                  )}
+
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-3">

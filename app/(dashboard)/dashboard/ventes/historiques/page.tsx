@@ -254,20 +254,13 @@ export default function AnciennesVentesPage() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700">Client (optionnel)</label>
-                <select value={formData.clientId}
+                <label className="block text-sm font-medium text-gray-700">Client *</label>
+                <select required value={formData.clientId}
                   onChange={e => setFormData(f => ({ ...f, clientId: e.target.value, clientLibre: '' }))}
                   className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 focus:border-amber-500 focus:outline-none">
                   <option value="">—</option>
                   {clients.map(c => <option key={c.id} value={c.id}>{c.nom}</option>)}
                 </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Ou nom libre</label>
-                <input value={formData.clientLibre}
-                  onChange={e => setFormData(f => ({ ...f, clientLibre: e.target.value }))}
-                  placeholder="Si pas de fiche client" disabled={!!formData.clientId}
-                  className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 disabled:bg-gray-100 focus:border-amber-500 focus:outline-none" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700">Mode de paiement</label>
@@ -293,34 +286,46 @@ export default function AnciennesVentesPage() {
             {/* Lignes */}
             <div className="rounded-lg border border-gray-200 bg-white p-4">
               <h3 className="mb-3 text-sm font-semibold text-gray-700">Lignes de produits</h3>
-              <div className="mb-3 flex flex-wrap gap-2">
-                <select value={ajoutProduit.produitId}
-                  onChange={e => {
-                    const p = produits.find(x => x.id === Number(e.target.value))
-                    setAjoutProduit(a => ({ ...a, produitId: e.target.value, prixUnitaire: String(p?.prixVente || ''), recherche: p?.designation || '' }))
-                  }}
-                  className="flex-1 rounded border border-gray-200 px-3 py-2 text-sm focus:border-amber-500 focus:outline-none">
-                  <option value="">Choisir un produit</option>
-                  {produits.filter(p => !ajoutProduit.recherche || p.designation.toLowerCase().includes(ajoutProduit.recherche.toLowerCase()))
-                    .map(p => <option key={p.id} value={p.id}>{p.code} – {p.designation}</option>)}
-                </select>
-                <input placeholder="Désignation manuelle" value={ajoutProduit.recherche}
-                  onChange={e => setAjoutProduit(a => ({ ...a, recherche: e.target.value, produitId: '' }))}
-                  className="w-40 rounded border border-gray-200 px-2 py-2 text-sm focus:border-amber-500 focus:outline-none" />
+              <div className="mb-3 flex flex-wrap gap-2 items-center relative z-10">
+                <div className="relative flex-1 min-w-[300px]">
+                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                  <input type="text" placeholder="Rechercher un produit (code ou nom)..."
+                    value={ajoutProduit.recherche} onChange={e => setAjoutProduit(a => ({ ...a, recherche: e.target.value, produitId: '' }))}
+                    className="w-full rounded-lg border border-gray-200 py-2 pl-10 pr-4 text-sm focus:border-amber-500 focus:outline-none shadow-sm" />
+                  {ajoutProduit.recherche.length > 0 && !ajoutProduit.produitId && (
+                    <div className="absolute top-full left-0 mt-1 z-50 w-full max-h-48 overflow-y-auto rounded-lg border border-gray-200 bg-white shadow-xl">
+                      {produits.filter(p => {
+                        const s = ajoutProduit.recherche.toLowerCase()
+                        return p.designation.toLowerCase().includes(s) || p.code.toLowerCase().includes(s)
+                      }).map(p => (
+                        <button key={p.id} type="button" 
+                          onClick={() => setAjoutProduit(a => ({ ...a, produitId: String(p.id), recherche: p.designation, prixUnitaire: String(p.prixVente || '') }))}
+                          className="w-full px-4 py-2 text-left hover:bg-amber-50 text-sm border-b last:border-b-0 transition-colors">
+                          <span className="font-semibold text-gray-900">{p.designation}</span> <span className="text-gray-400 font-mono text-xs ml-2">{p.code}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  {ajoutProduit.produitId && (
+                    <button type="button" onClick={() => setAjoutProduit(a => ({ ...a, produitId: '', recherche: '' }))} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-red-500 font-bold px-2">✕</button>
+                  )}
+                </div>
+                
                 <input type="number" min="1" placeholder="Qté" value={ajoutProduit.quantite}
                   onChange={e => setAjoutProduit(a => ({ ...a, quantite: e.target.value }))}
-                  className="w-16 rounded border border-gray-200 px-2 py-2 text-sm" />
+                  className="w-16 rounded border border-gray-200 px-2 py-2 text-sm focus:border-amber-500 focus:outline-none" />
                 <input type="number" min="0" placeholder="P.U." value={ajoutProduit.prixUnitaire}
                   onChange={e => setAjoutProduit(a => ({ ...a, prixUnitaire: e.target.value }))}
-                  className="w-24 rounded border border-gray-200 px-2 py-2 text-sm" />
+                  className="w-24 rounded border border-gray-200 px-2 py-2 text-sm focus:border-amber-500 focus:outline-none" />
                 <input type="number" min="0" placeholder="TVA %" value={ajoutProduit.tva}
                   onChange={e => setAjoutProduit(a => ({ ...a, tva: e.target.value }))}
-                  className="w-16 rounded border border-gray-200 px-2 py-2 text-sm" />
+                  className="w-16 rounded border border-gray-200 px-2 py-2 text-sm focus:border-amber-500 focus:outline-none bg-amber-50/50" />
                 <input type="number" min="0" placeholder="Remise F" value={ajoutProduit.remise}
                   onChange={e => setAjoutProduit(a => ({ ...a, remise: e.target.value }))}
-                  className="w-20 rounded border border-gray-200 px-2 py-2 text-sm" />
+                  className="w-20 rounded border border-gray-200 px-2 py-2 text-sm focus:border-amber-500 focus:outline-none" />
                 <button type="button" onClick={addLigne}
-                  className="rounded-lg border-2 border-amber-400 bg-amber-100 px-3 py-2 text-sm font-medium text-amber-900 hover:bg-amber-200">
+                  disabled={!ajoutProduit.produitId}
+                  className="rounded-lg border-2 border-amber-400 bg-amber-500 px-4 py-2 text-sm font-bold text-white shadow hover:bg-amber-600 disabled:opacity-50 transition-colors">
                   Ajouter
                 </button>
               </div>

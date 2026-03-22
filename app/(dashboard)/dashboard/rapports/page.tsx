@@ -1099,7 +1099,7 @@ function PaiementTable({ title, data, type, searchTerm }: any) {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {data.filter((d: any) => (d.client || d.fournisseur).toLowerCase().includes(searchTerm.toLowerCase())).map((d: any, i: number) => {
+            {data.filter((d: any) => ((d.client || d.fournisseur) || '').toLowerCase().includes(searchTerm.toLowerCase())).map((d: any, i: number) => {
               const solde = d.resteAPayer
               const pourcentage = d.montantTotal > 0 ? (d.montantPaye / d.montantTotal) * 100 : 0
               return (
