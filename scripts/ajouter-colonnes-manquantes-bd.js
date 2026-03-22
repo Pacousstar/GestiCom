@@ -12,14 +12,16 @@ let dbPath = path.join(projectRoot, 'prisma', 'gesticom.db')
 
 if (fs.existsSync(envPath)) {
   const content = fs.readFileSync(envPath, 'utf8')
-  const m = content.match(/DATABASE_URL\s*=\s*["']?file:(.+?)["']?\s*$/m)
+  const m = content.match(/^DATABASE_URL\s*=\s*["']?file:(.+?)["']?\s*$/m)
   if (m) {
-    let p = m[1].trim().replace(/\?.*$/, '') // retirer ?busy_timeout=5000 etc.
+    let p = m[1].trim().replace(/\?.*$/, '')
     if (p.startsWith('./')) p = path.join(projectRoot, p.slice(2))
     else if (!path.isAbsolute(p)) p = path.join(projectRoot, p)
     dbPath = path.normalize(p)
   }
 }
+
+console.log('🔍 Chemin DB cible:', dbPath)
 
 if (!fs.existsSync(dbPath)) {
   console.error('❌ Base introuvable:', dbPath)
@@ -65,6 +67,12 @@ try {
   // Fournisseur.updatedAt
   if (addColumn(db, 'Fournisseur', 'updatedAt', 'TEXT', "current_timestamp")) {
     console.log('✅ Colonne Fournisseur.updatedAt ajoutée.')
+    changed = true
+  }
+  
+  // Fournisseur.avoirInitial
+  if (addColumn(db, 'Fournisseur', 'avoirInitial', 'REAL', '0')) {
+    console.log('✅ Colonne Fournisseur.avoirInitial ajoutée.')
     changed = true
   }
 

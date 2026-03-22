@@ -15,7 +15,7 @@ export default function RapportsNav() {
     ]
 
     return (
-        <div className="mb-8 flex space-x-3 border-b border-gray-100 pb-4 overflow-x-auto custom-scrollbar scrollbar-hide">
+        <div className="mb-6 flex space-x-2 border-b border-gray-200 pb-2 overflow-x-auto">
             {tabs.map((tab) => {
                 const isActive = pathname === tab.href
                 const Icon = tab.icon
@@ -23,9 +23,9 @@ export default function RapportsNav() {
                     <Link
                         key={tab.name}
                         href={tab.href}
-                        className={`flex items-center gap-2 rounded-xl px-5 py-2.5 text-[10px] font-black tracking-widest uppercase transition-all whitespace-nowrap border ${isActive
-                                ? 'bg-orange-600 text-white shadow-xl shadow-orange-500/20 border-orange-500'
-                                : 'text-slate-400 hover:text-slate-900 bg-white border-gray-100 hover:border-gray-300 shadow-sm'
+                        className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors whitespace-nowrap ${isActive
+                                ? 'bg-orange-600 text-white'
+                                : 'text-gray-900 hover:bg-gray-100 hover:text-gray-900'
                             }`}
                     >
                         <Icon className="h-4 w-4" />
