@@ -18,7 +18,14 @@ import { addToSyncQueue, isOnline } from '@/lib/offline-sync'
 
 type Magasin = { id: number; code: string; nom: string }
 type Fournisseur = { id: number; nom: string }
-type Produit = { id: number; code: string; designation: string; categorie?: string; prixAchat: number | null }
+type Produit = { 
+  id: number; 
+  code: string; 
+  designation: string; 
+  categorie?: string; 
+  prixAchat: number | null;
+  stocks?: Array<{ magasinId: number; quantite: number }>;
+}
 type Ligne = { produitId: number; designation: string; quantite: number; prixUnitaire: number; tvaPerc: number; remise: number }
 
 export default function AchatsPage() {
