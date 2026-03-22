@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { 
-  Wallet, Plus, Loader2, Search, FileText, 
+  Wallet, Plus, Loader2, Search, FileText, Save, 
   ArrowLeft, Calendar, User, History, Trash2, Printer
 } from 'lucide-react'
 import { useToast } from '@/hooks/useToast'
