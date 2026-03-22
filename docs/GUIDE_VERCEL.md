@@ -35,3 +35,6 @@ npx prisma db push
 
 ---
 **Bravo !** GestiCom sera alors accessible partout pour nos tests de suivi.
+
+
+postgresql://neondb_owner:npg_yCaISbs0l4UW@ep-spring-flower-am9lpvf8-pooler.c-5.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require

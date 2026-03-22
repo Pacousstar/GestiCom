@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { db } from '@/lib/db'
+import { prisma } from '@/lib/db'
 import { getSession } from '@/lib/auth'
 
 export async function GET() {
@@ -7,8 +7,8 @@ export async function GET() {
   if (!session) return new NextResponse('Non autorisé', { status: 401 })
 
   try {
-    const archives = await db.archiveSoldeClient.findMany({
-      where: { entiteId: session.user.entiteId },
+    const archives = await prisma.archiveSoldeClient.findMany({
+      where: { entiteId: session.entiteId },
       include: {
         client: { select: { nom: true } },
         utilisateur: { select: { nom: true } }
@@ -34,10 +34,10 @@ export async function POST(req: Request) {
       return new NextResponse('Données manquantes', { status: 400 })
     }
 
-    const archive = await db.archiveSoldeClient.create({
+    const archive = await prisma.archiveSoldeClient.create({
       data: {
-        entiteId: session.user.entiteId,
-        utilisateurId: session.user.id,
+        entiteId: session.entiteId,
+        utilisateurId: session.userId,
         clientId: clientId ? Number(clientId) : null,
         clientLibre,
         montant: Number(montant),
