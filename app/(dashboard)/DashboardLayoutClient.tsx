@@ -49,7 +49,6 @@ const navigation = [
     items: [
       { name: 'Ventes', href: '/dashboard/ventes', icon: ShoppingCart, permission: 'ventes:view' },
       { name: 'Vente Rapide (PRO)', href: '/dashboard/ventes/rapide', icon: CreditCard, permission: 'ventes:view' },
-      { name: 'Anciennes Ventes', href: '/dashboard/ventes/historiques', icon: Archive, permission: 'ventes:view' },
       { name: 'Achats', href: '/dashboard/achats', icon: ShoppingBag, permission: 'achats:view' },
       { name: 'Tous les Achats', href: '/dashboard/rapports-fournisseurs/liste-achats', icon: FileText, permission: 'rapports:view' },
     ]

@@ -136,11 +136,11 @@ export default function NouvelleArchiveVentePage() {
             <ArrowLeft className="h-6 w-6" />
           </Link>
           <div>
-            <h1 className="text-2xl font-black text-emerald-950 uppercase tracking-tight flex items-center gap-3">
+            <h1 className="text-2xl font-black text-white uppercase tracking-tight flex items-center gap-3">
               <History className="h-8 w-8 text-orange-600" />
               Saisie d'Ancienne Vente
             </h1>
-            <p className="text-emerald-800/60 font-medium">Historique pré-GestiCom (Sans impact stock/finance)</p>
+            <p className="text-white/70 font-medium whitespace-pre-wrap">Historique pré-GestiCom (Sans impact stock/finance)</p>
           </div>
         </div>
       </div>

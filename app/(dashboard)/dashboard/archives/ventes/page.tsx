@@ -61,11 +61,11 @@ export default function ArchivesVentesPage() {
     <div className="p-6 space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-black text-emerald-950 uppercase tracking-tight flex items-center gap-3">
+          <h1 className="text-2xl font-black text-white uppercase tracking-tight flex items-center gap-3">
             <History className="h-8 w-8 text-orange-600" />
             Archives des Anciennes Ventes
           </h1>
-          <p className="text-emerald-800/60 font-medium">Consultation de l'historique pré-GestiCom</p>
+          <p className="text-white/70 font-medium whitespace-pre-wrap">Consultation de l'historique pré-GestiCom</p>
         </div>
         <Link 
           href="/dashboard/archives/ventes/nouvelle"

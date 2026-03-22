@@ -113,11 +113,11 @@ export default function ArchivesClientsPage() {
     <div className="p-6 space-y-6 max-w-7xl mx-auto">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-black text-emerald-950 uppercase tracking-tight flex items-center gap-3">
+          <h1 className="text-2xl font-black text-white uppercase tracking-tight flex items-center gap-3">
             <Wallet className="h-8 w-8 text-orange-600" />
             Soldes Clients Archivés
           </h1>
-          <p className="text-emerald-800/60 font-medium italic">Historique des dettes d'avant GestiCom (Sans impact financier)</p>
+          <p className="text-white/70 font-medium italic">Historique des dettes d'avant GestiCom (Sans impact financier)</p>
         </div>
         <button 
           onClick={() => setShowAddModal(true)}

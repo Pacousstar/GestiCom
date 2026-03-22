@@ -381,7 +381,7 @@ export default function RapportsPage() {
                     <p className="text-indigo-100 text-xs font-black uppercase tracking-[0.2em]">Valeur Globale du Stock</p>
                     <div className="mt-4 flex items-baseline gap-2">
                         <span className="text-5xl font-black tabular-nums tracking-tighter">
-                            {valeurStock?.totalValeur.toLocaleString()}
+                            {(valeurStock?.totalValeur || 0).toLocaleString()}
                         </span>
                         <span className="text-xl font-bold opacity-60 uppercase">FCFA</span>
                     </div>
@@ -484,8 +484,8 @@ export default function RapportsPage() {
                                 <tr>
                                     <td colSpan={4} className="px-6 py-4 uppercase text-[10px] tracking-widest text-gray-500 italic">Total Mouvements Période</td>
                                     <td className="px-6 py-4 text-right tabular-nums">
-                                        <div className="text-emerald-600">+{mouvementTotals.entree.toLocaleString()}</div>
-                                        <div className="text-rose-600">-{mouvementTotals.sortie.toLocaleString()}</div>
+                                        <div className="text-emerald-600">+{(mouvementTotals.entree || 0).toLocaleString()}</div>
+                                        <div className="text-rose-600">-{(mouvementTotals.sortie || 0).toLocaleString()}</div>
                                     </td>
                                     <td colSpan={2}></td>
                                 </tr>
@@ -526,7 +526,7 @@ export default function RapportsPage() {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100">
-                            {valeurStock?.data.filter(v => v.designation.toLowerCase().includes(searchTerm.toLowerCase())).map(v => (
+                            {valeurStock?.data?.filter(v => v.designation.toLowerCase().includes(searchTerm.toLowerCase())).map(v => (
                                 <tr key={v.id} className="hover:bg-gray-50/70 transition-colors">
                                     <td className="px-6 py-4">
                                         <div className="text-sm font-black text-gray-900">{v.designation}</div>
@@ -549,7 +549,7 @@ export default function RapportsPage() {
                             <tr className="font-black">
                                 <td colSpan={3} className="px-6 py-6 italic text-sm tracking-widest uppercase">Total Valorisation Stock</td>
                                 <td colSpan={2} className="px-6 py-6 text-right text-3xl tracking-tighter whitespace-nowrap">
-                                    {valeurStock?.totalValeur.toLocaleString()} <span className="text-sm font-bold opacity-70">FCFA</span>
+                                    {(valeurStock?.totalValeur || 0).toLocaleString()} <span className="text-sm font-bold opacity-70">FCFA</span>
                                 </td>
                             </tr>
                         </tfoot>
