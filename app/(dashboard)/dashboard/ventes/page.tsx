@@ -30,7 +30,7 @@ type Produit = {
   prixVente: number | null;
   stocks: Array<{ magasinId: number; quantite: number }>; prixAchat?: number | null 
 }
-type Ligne = { produitId: number; designation: string; quantite: number; prixUnitaire: number; tvaPerc?: number; remise?: number }
+type Ligne = { produitId: number; designation: string; code?: string; quantite: number; prixUnitaire: number; tvaPerc?: number; remise?: number }
 
 export default function VentesPage() {
   const searchParams = useSearchParams()
