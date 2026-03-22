@@ -31,6 +31,8 @@ export async function GET(request: NextRequest) {
       const report = clients.map(c => {
         const totalDu = c.ventes.reduce((acc, v) => acc + v.montantTotal, 0)
         const totalPaye = c.ventes.reduce((acc, v) => acc + v.montantPaye, 0)
+        // Le soldeInitial est soustrait car il est considéré comme un "dépôt/acompte" par défaut (Avoir)
+        const solde = (totalDu - totalPaye) - (c.soldeInitial || 0)
         return {
           id: c.id,
           code: c.code,
@@ -38,9 +40,9 @@ export async function GET(request: NextRequest) {
           type: c.type,
           totalDu,
           totalPaye,
-          solde: totalDu - totalPaye
+          solde
         }
-      }).filter(c => c.solde !== 0)
+      }).filter(c => Math.abs(c.solde) > 0.01)
 
       return NextResponse.json(report)
     } else {
@@ -62,15 +64,17 @@ export async function GET(request: NextRequest) {
       const report = fournisseurs.map(f => {
         const totalDu = f.achats.reduce((acc, a) => acc + a.montantTotal, 0)
         const totalPaye = f.achats.reduce((acc, a) => acc + a.montantPaye, 0)
+        // Solde initial fournisseur (souvent un acompte versé = Crédit pour nous, donc à soustraire de ce qu'on doit)
+        const solde = (totalDu - totalPaye) - (f.soldeInitial || 0)
         return {
           id: f.id,
           code: f.code,
           nom: f.nom,
           totalDu,
           totalPaye,
-          solde: totalDu - totalPaye
+          solde
         }
-      }).filter(f => f.solde !== 0)
+      }).filter(f => Math.abs(f.solde) > 0.01)
 
       return NextResponse.json(report)
     }

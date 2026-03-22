@@ -154,8 +154,17 @@ export async function POST(request: NextRequest) {
       if (client.plafondCredit == null) return NextResponse.json({ error: 'Le client doit avoir un plafond de crédit.' }, { status: 400 })
       
       const ventesClient = await prisma.vente.findMany({ where: { clientId, statut: 'VALIDEE' }})
-      const dette = ventesClient.reduce((s, v) => s + (v.montantTotal - (v.montantPaye ?? 0)), 0)
-      if (dette + (montantTotal - montantPaye) > client.plafondCredit) {
+      const detteFactures = ventesClient.reduce((s, v) => s + (v.montantTotal - (v.montantPaye ?? 0)), 0)
+      
+      const regsLibres = await prisma.reglementVente.aggregate({
+        where: { clientId, venteId: null },
+        _sum: { montant: true }
+      })
+      const totalRegsLibres = regsLibres._sum?.montant || 0
+      
+      const detteReelle = (detteFactures - totalRegsLibres) - (client.soldeInitial || 0)
+      
+      if (detteReelle + (montantTotal - montantPaye) > client.plafondCredit) {
          return NextResponse.json({ error: 'Plafond crédit dépassé.' }, { status: 400 })
       }
     }

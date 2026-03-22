@@ -255,7 +255,10 @@ export default function ClientsPage() {
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-white">Clients</h1>
-          <p className="mt-1 text-white/90">Fiches clients (CREDIT / CASH). Pour les CREDIT : Plafond = limite de crédit (FCFA) ; Dette = montant dû (ventes à crédit non réglées).</p>
+          <p className="mt-1 text-white/90 italic">
+            <strong>Gestion des soldes :</strong> Le "Solde Initial (Déposé)" est traité comme un <strong>Avoir</strong> (crédit) pour le client. 
+            La "Dette" inclut les factures impayées moins cet avoir et vos éventuels règlements libres.
+          </p>
         </div>
         <button
           onClick={() => openForm()}
@@ -427,8 +430,8 @@ export default function ClientsPage() {
                   <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-gray-600">Type</th>
                   <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-gray-600">NCC</th>
                   <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-gray-600">Localisation</th>
-                  <th className="px-4 py-3 text-right text-xs font-semibold uppercase text-gray-600">Plafond</th>
-                  <th className="px-4 py-3 text-right text-xs font-semibold uppercase text-gray-600">Dette</th>
+                   <th className="px-4 py-3 text-right text-xs font-semibold uppercase text-gray-600">Plafond</th>
+                  <th className="px-4 py-3 text-right text-xs font-semibold uppercase text-gray-600">Solde Global</th>
                   <th className="px-4 py-3"></th>
                 </tr>
               </thead>
@@ -451,8 +454,14 @@ export default function ClientsPage() {
                         ? `${Number(c.plafondCredit).toLocaleString('fr-FR')} F`
                         : '—'}
                     </td>
-                    <td className="px-4 py-3 text-right text-sm font-medium text-gray-700">
-                      {Number(c.dette ?? 0).toLocaleString('fr-FR')} F
+                     <td className="px-4 py-3 text-right text-sm font-black tabular-nums">
+                      {Number(c.dette ?? 0) > 0 ? (
+                        <span className="text-red-600">+{Math.abs(c.dette || 0).toLocaleString('fr-FR')} F (Dette)</span>
+                      ) : Number(c.dette ?? 0) < 0 ? (
+                        <span className="text-green-600">-{Math.abs(c.dette || 0).toLocaleString('fr-FR')} F (Avoir)</span>
+                      ) : (
+                        <span className="text-gray-400">À jour</span>
+                      )}
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-1">

@@ -34,9 +34,9 @@ export async function GET(request: NextRequest) {
       clientId: { not: null },
     }
     
-    // Pour les règlements, la relation Vente donne l'entité
+    // Pour les règlements, on filtre directement par entité
     const whereReglement: any = {
-      vente: { entiteId },
+      entiteId,
     }
 
     if (dateDebut && dateFin) {
@@ -67,7 +67,7 @@ export async function GET(request: NextRequest) {
 
     const reglementsGlobaux = await prisma.reglementVente.groupBy({
       by: ['clientId'],
-      where: { vente: { entiteId } },
+      where: { entiteId },
       _sum: { montant: true },
     })
 
@@ -86,8 +86,9 @@ export async function GET(request: NextRequest) {
       const soldeInitial = c.soldeInitial || 0
       
       const variationPeriode = factures - paiements
-      // ✅ FORMULE CORRIGÉE : SoldeGlobal = Dettes(factures-paiements) + DetteDépart
-      const soldeClient = facturesGlobal - paiementsGlobal + soldeInitial
+      // ✅ FORMULE UNIFIÉE : SoldeGlobal = Dettes(factures-paiements) - DépôtDépart
+      // Le soldeInitial est ici un dépôt (Avoir), donc il réduit la dette.
+      const soldeClient = facturesGlobal - paiementsGlobal - (c.soldeInitial || 0)
 
       const statut = soldeClient > 0.01 ? 'DOIT' : soldeClient < -0.01 ? 'CREDIT' : 'SOLDE'
 

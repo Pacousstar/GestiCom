@@ -4,12 +4,7 @@ import { getSession } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 import { requirePermission } from '@/lib/require-role'
 
-type ClientDelegate = {
-  findMany: (args: object) => Promise<Array<{ id: number; code: string | null; nom: string; telephone: string | null; type: string; plafondCredit: number | null; localisation: string | null; soldeInitial: number; actif: boolean }>>
-  create: (args: object) => Promise<{ id: number; code: string | null; nom: string; telephone: string | null; email: string | null; adresse: string | null; localisation: string | null; type: string; plafondCredit: number | null; soldeInitial: number }>
-}
-
-const clientRepo = (prisma as unknown as { client: ClientDelegate }).client
+// Utilisation directe du client Prisma pour éviter les erreurs de type complexes
 
 export async function GET(request: NextRequest) {
   const session = await getSession()
@@ -21,7 +16,7 @@ export async function GET(request: NextRequest) {
   const skip = (page - 1) * limit
 
   const q = String(request.nextUrl.searchParams.get('q') || '').trim().toLowerCase()
-  const list = await clientRepo.findMany({
+  const list = await prisma.client.findMany({
     where: { actif: true },
     orderBy: { nom: 'asc' },
     select: { id: true, code: true, nom: true, telephone: true, type: true, plafondCredit: true, ncc: true, localisation: true, soldeInitial: true },
@@ -57,14 +52,26 @@ export async function GET(request: NextRequest) {
         detteByClient[r.clientId] = totalV - payeV
       }
     }
+    // Inclure aussi les règlements LIBRES (non liés à une vente spécifique)
+    const reglementsLibres = await prisma.reglementVente.groupBy({
+      by: ['clientId'],
+      where: { clientId: { in: clientIds }, venteId: null },
+      _sum: { montant: true }
+    })
+    for (const rl of reglementsLibres) {
+      if (rl.clientId != null) {
+        detteByClient[rl.clientId] = (detteByClient[rl.clientId] || 0) - (rl._sum?.montant || 0)
+      }
+    }
   }
 
   const result = await Promise.all(paginated.map(async (c) => {
     const base = { ...c } as any
-    if (c.type === 'CREDIT') {
-      const totalVentes = detteByClient[c.id] ?? 0
-      base.dette = Math.max(0, totalVentes - (c.soldeInitial || 0))
-    }
+    const totalVentes = detteByClient[c.id] ?? 0
+    // Solde = (Dette Factures) - (Solde Initial/Dépôt)
+    // Si Solde > 0 => Dette réelle
+    // Si Solde < 0 => Avoir (Le client a trop payé ou a un dépôt)
+    base.dette = totalVentes - (c.soldeInitial || 0)
     
     // Récupérer le numéro de la dernière facture
     const derniereVente = await prisma.vente.findFirst({
@@ -121,7 +128,7 @@ export async function POST(request: NextRequest) {
       code = `${String(count + 1).padStart(6, '0')}${prefix}`
     }
 
-    const c = await clientRepo.create({
+    const c = await prisma.client.create({
       data: { code, nom, telephone, email, adresse, localisation, type, plafondCredit, ncc, soldeInitial, actif: true },
     })
 

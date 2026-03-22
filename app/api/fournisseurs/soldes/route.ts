@@ -32,8 +32,9 @@ export async function GET(request: NextRequest) {
     }
     
     const whereReglement: any = {
-      achat: { entiteId },
+      entiteId,
     }
+    // Note: On pourrait aussi inclure les règlements LIBRES (venteId: null) si besoin
 
     if (dateDebut && dateFin) {
       const gte = new Date(dateDebut + 'T00:00:00')
@@ -65,7 +66,7 @@ export async function GET(request: NextRequest) {
 
     const reglementsGlobaux = await prisma.reglementAchat.groupBy({
       by: ['fournisseurId'],
-      where: { achat: { entiteId } },
+      where: { entiteId },
       _sum: { montant: true },
     })
 
@@ -80,9 +81,8 @@ export async function GET(request: NextRequest) {
       
       const totalAchatsGlobal = achatGlobalMap[f.id] || 0
       const totalPaiementsGlobal = reglementGlobalMap[f.id] || 0
-      const soldeInitial = f.soldeInitial || 0
-      
-      const soldeGlobal = totalAchatsGlobal - totalPaiementsGlobal + soldeInitial
+      // Solde = Ce qu'on doit sur factures - ce qu'on a déjà déposé au départ
+      const soldeGlobal = (totalAchatsGlobal - totalPaiementsGlobal) - (f.soldeInitial || 0)
 
       // Récupérer le numéro de la dernière facture d'achat
       const derA = await prisma.achat.findFirst({

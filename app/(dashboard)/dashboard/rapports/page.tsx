@@ -206,9 +206,12 @@ export default function RapportsPage() {
 
       // 3. Etat Paiement Ventes & Achats
       const resPV = await fetch(`/api/rapports/ventes/etat-paiement?start=${dateDebut}&end=${dateFin}`)
-      setEtatPaiementVentes(await resPV.json())
+      const dataPV = await resPV.json()
+      setEtatPaiementVentes(Array.isArray(dataPV) ? dataPV : [])
+
       const resPA = await fetch(`/api/rapports/achats/fournisseurs?start=${dateDebut}&end=${dateFin}`)
-      setEtatPaiementAchats(await resPA.json())
+      const dataPA = await resPA.json()
+      setEtatPaiementAchats(Array.isArray(dataPA) ? dataPA : [])
 
       // 4. Factures
       const resF = await fetch(`/api/rapports/ventes/factures?start=${dateDebut}&end=${dateFin}&page=${facturesPage}`)
@@ -237,7 +240,8 @@ export default function RapportsPage() {
       setPaiementsByMode(dataPM.summary || [])
 
       const resVal = await fetch(`/api/rapports/stocks/valeur?dateFin=${dateFin}&magasinId=${filtreMagasin}`)
-      setValeurStock(await resVal.json())
+      const dataVal = await resVal.json()
+      setValeurStock(dataVal && typeof dataVal === 'object' && !dataVal.error ? dataVal : { data: [], totalValeur: 0 })
 
       const resCat = await fetch(`/api/rapports/categories`)
       const dataCat = await resCat.json()
@@ -742,16 +746,20 @@ export default function RapportsPage() {
                     </h3>
                     <div className="space-y-3 overflow-y-auto max-h-[450px] pr-2 custom-scrollbar">
                         {soldesClients.filter(s => (s.nom || '').toLowerCase().includes(searchTerm.toLowerCase())).map(s => (
-                            <div key={s.id} className="flex items-center justify-between p-4 rounded-2xl border border-gray-50 bg-gray-50/30 hover:bg-white hover:shadow-lg transition-all border-l-4 border-l-red-500">
+                            <div key={s.id} className={`flex items-center justify-between p-4 rounded-2xl border ${s.solde > 0 ? 'border-red-50 bg-red-50/30 border-l-red-500' : 'border-green-50 bg-green-50/30 border-l-green-500'} hover:bg-white hover:shadow-lg transition-all border-l-4`}>
                                 <div>
                                     <div className="text-sm font-black text-gray-900 uppercase tracking-tighter">
-                                        {s.nom} <span className="ml-2 text-[10px] text-gray-400 font-mono">[{s.code || '---'}]</span>
+                                        {s.nom}
                                     </div>
-                                    <div className="text-[10px] text-gray-400 font-bold">Total Facturé: {s.totalDu.toLocaleString()} FCFA</div>
+                                    <div className="text-[10px] text-gray-400 font-bold">{s.type} • {s.code || 'SANS CODE'}</div>
                                 </div>
                                 <div className="text-right">
-                                    <div className="text-lg font-black text-red-600 tabular-nums">{s.solde.toLocaleString()}</div>
-                                    <div className="text-[9px] text-gray-400 uppercase font-black tracking-widest">A Recevoir</div>
+                                    <div className={`text-xl font-black tabular-nums ${s.solde > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                                        {Math.abs(s.solde).toLocaleString()}
+                                    </div>
+                                    <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                                        {s.solde > 0 ? 'Dette' : 'Avoir'}
+                                    </div>
                                 </div>
                             </div>
                         ))}
@@ -768,16 +776,20 @@ export default function RapportsPage() {
                     </h3>
                     <div className="space-y-3 overflow-y-auto max-h-[450px] pr-2 custom-scrollbar">
                         {soldesFournisseurs.filter(s => (s.nom || '').toLowerCase().includes(searchTerm.toLowerCase())).map(s => (
-                            <div key={s.id} className="flex items-center justify-between p-4 rounded-2xl border border-gray-50 bg-gray-50/30 hover:bg-white hover:shadow-lg transition-all border-l-4 border-l-orange-500">
+                            <div key={s.id} className={`flex items-center justify-between p-4 rounded-2xl border ${s.solde > 0 ? 'border-orange-50 bg-orange-50/30 border-l-orange-500' : 'border-green-50 bg-green-50/30 border-l-green-500'} hover:bg-white hover:shadow-lg transition-all border-l-4`}>
                                 <div>
                                     <div className="text-sm font-black text-gray-900 uppercase tracking-tighter">
-                                        {s.nom} <span className="ml-2 text-[10px] text-gray-400 font-mono">[{s.code || '---'}]</span>
+                                        {s.nom}
                                     </div>
-                                    <div className="text-[10px] text-gray-400 font-bold">Total Achats: {s.totalDu.toLocaleString()} FCFA</div>
+                                    <div className="text-[10px] text-gray-400 font-bold">{s.code || 'FOURNISSEUR'}</div>
                                 </div>
                                 <div className="text-right">
-                                    <div className="text-lg font-black text-orange-600 tabular-nums">{s.solde.toLocaleString()}</div>
-                                    <div className="text-[9px] text-gray-400 uppercase font-black tracking-widest">A Payer</div>
+                                    <div className={`text-xl font-black tabular-nums ${s.solde > 0 ? 'text-orange-600' : 'text-green-600'}`}>
+                                        {Math.abs(s.solde).toLocaleString()}
+                                    </div>
+                                    <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                                        {s.solde > 0 ? 'Dû (Dette)' : 'Crédit (Avoir)'}
+                                    </div>
                                 </div>
                             </div>
                         ))}
@@ -792,7 +804,7 @@ export default function RapportsPage() {
                   Performance CA Clients
                 </h3>
                 <div className="space-y-2 overflow-y-auto max-h-[600px] pr-2 custom-scrollbar">
-                  {caClients.filter(c => (c.client || '').toLowerCase().includes(searchTerm.toLowerCase())).map(c => (
+                  {(Array.isArray(caClients) ? caClients : []).filter(c => (c.client || '').toLowerCase().includes(searchTerm.toLowerCase())).map(c => (
                     <button
                       key={c.clientId || c.client}
                       onClick={() => c.clientId && fetchProduitsClient(c.clientId)}

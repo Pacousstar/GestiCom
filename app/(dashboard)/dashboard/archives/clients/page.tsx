@@ -268,39 +268,42 @@ export default function ArchivesClientsPage() {
       {showAddModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-emerald-950/40 backdrop-blur-md" onClick={() => setShowAddModal(false)} />
-          <form onSubmit={handleAdd} className="relative bg-white rounded-[40px] w-full max-w-lg overflow-hidden shadow-2xl animate-in zoom-in-95 duration-300">
-            <div className="p-8 bg-emerald-50 border-b border-emerald-100 flex items-center justify-between">
-              <h2 className="text-xl font-black text-emerald-950 uppercase tracking-tighter">Nouvelle Archive Solde</h2>
+          <form onSubmit={handleAdd} className="relative bg-white/95 backdrop-blur-3xl rounded-[40px] w-full max-w-lg overflow-hidden shadow-2xl animate-in zoom-in-95 duration-500 border border-white/50">
+            <div className="p-10 bg-gray-50/50 border-b border-gray-100 flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-black text-gray-900 uppercase tracking-tighter">Arrêt de Solde</h2>
+                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-1">Archive Historique</p>
+              </div>
               <button 
                 type="button"
                 onClick={() => setShowAddModal(false)}
-                className="p-2 rounded-full hover:bg-emerald-100 transition-colors"
+                className="p-3 rounded-2xl bg-white shadow-sm hover:bg-red-50 hover:text-red-500 transition-all border border-gray-100"
               >
-                <Plus className="h-6 w-6 rotate-45 text-emerald-900" />
+                <Plus className="h-6 w-6 rotate-45" />
               </button>
             </div>
 
-            <div className="p-8 space-y-6">
-              <div className="space-y-4">
+            <div className="p-10 space-y-8">
+              <div className="space-y-6">
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase text-emerald-900/40 tracking-widest ml-1">Client Existant (Facultatif)</label>
+                  <label className="text-[10px] font-black uppercase text-gray-400 tracking-[0.2em] ml-1">Client (Sélectionner dans la base)</label>
                   <select 
-                    className="w-full px-5 py-3.5 rounded-2xl bg-emerald-50/50 border-none font-bold text-emerald-950"
+                    className="w-full px-6 py-5 rounded-[24px] bg-gray-50 border-2 border-transparent focus:border-orange-500 font-bold text-gray-900 shadow-inner appearance-none"
                     value={formData.clientId}
                     onChange={e => setFormData({...formData, clientId: e.target.value, clientLibre: ''})}
                   >
-                    <option value="">-- Nouveau client ou Client Libre --</option>
+                    <option value="">-- Client Divers (Saisie libre) --</option>
                     {clients.map(c => <option key={c.id} value={c.id}>{c.nom}</option>)}
                   </select>
                 </div>
 
                 {!formData.clientId && (
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase text-emerald-900/40 tracking-widest ml-1">Nom Client Libre (D'époque)</label>
+                  <div className="space-y-2 animate-in slide-in-from-top-2 duration-300">
+                    <label className="text-[10px] font-black uppercase text-gray-400 tracking-[0.2em] ml-1">Nom Client d'époque</label>
                     <input 
                       required
                       type="text"
-                      className="w-full px-5 py-3.5 rounded-2xl bg-emerald-50/50 border-none font-bold text-emerald-950"
+                      className="w-full px-6 py-5 rounded-[24px] bg-gray-50 border-2 border-transparent focus:border-orange-500 font-bold text-gray-900 shadow-inner"
                       placeholder="Ex: M. Kouadio (Dette 2023)"
                       value={formData.clientLibre}
                       onChange={e => setFormData({...formData, clientLibre: e.target.value})}
@@ -308,24 +311,24 @@ export default function ArchivesClientsPage() {
                   </div>
                 )}
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase text-emerald-900/40 tracking-widest ml-1">Montant dû</label>
+                    <label className="text-[10px] font-black uppercase text-gray-400 tracking-[0.2em] ml-1">Montant dû</label>
                     <input 
                       required
                       type="number"
-                      className="w-full px-5 py-3.5 rounded-2xl bg-emerald-50/50 border-none font-bold text-emerald-950"
+                      className="w-full px-6 py-5 rounded-[24px] bg-gray-50 border-2 border-transparent focus:border-orange-500 font-black text-gray-900 shadow-inner"
                       placeholder="0"
                       value={formData.montant}
                       onChange={e => setFormData({...formData, montant: e.target.value})}
                     />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase text-emerald-900/40 tracking-widest ml-1">Date d'arrêt</label>
+                    <label className="text-[10px] font-black uppercase text-gray-400 tracking-[0.2em] ml-1">Date d'arrêt</label>
                     <input 
                       required
                       type="date"
-                      className="w-full px-5 py-3.5 rounded-2xl bg-emerald-50/50 border-none font-bold text-emerald-950"
+                      className="w-full px-6 py-5 rounded-[24px] bg-gray-50 border-2 border-transparent focus:border-orange-500 font-bold text-gray-900 shadow-inner"
                       value={formData.dateArchive}
                       onChange={e => setFormData({...formData, dateArchive: e.target.value})}
                     />
@@ -333,31 +336,31 @@ export default function ArchivesClientsPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase text-emerald-900/40 tracking-widest ml-1">Observation</label>
+                  <label className="text-[10px] font-black uppercase text-gray-400 tracking-[0.2em] ml-1">Notes / Observation</label>
                   <textarea 
-                    rows={2}
-                    className="w-full px-5 py-3.5 rounded-2xl bg-emerald-50/50 border-none font-bold text-emerald-950 resize-none"
-                    placeholder="Notes historiques..."
+                    rows={3}
+                    className="w-full px-6 py-5 rounded-[24px] bg-gray-50 border-2 border-transparent focus:border-orange-500 font-bold text-gray-900 shadow-inner resize-none"
+                    placeholder="Précisions sur cette ancienne dette..."
                     value={formData.observation}
                     onChange={e => setFormData({...formData, observation: e.target.value})}
                   />
                 </div>
               </div>
 
-              <div className="p-4 bg-orange-50 rounded-2xl border border-orange-100 flex items-start gap-3">
-                 <History className="h-5 w-5 text-orange-600 mt-1 shrink-0" />
-                 <p className="text-[10px] text-orange-900/60 font-bold uppercase leading-tight">
-                    Attention : cet enregistrement est purement informatif. Il ne s'ajoutera pas au solde actuel du client dans le module Tiers.
+              <div className="p-6 bg-orange-50 rounded-[24px] border border-orange-100 flex items-start gap-4">
+                 <History className="h-6 w-6 text-orange-600 mt-1 shrink-0" />
+                 <p className="text-[10px] text-orange-900/60 font-black uppercase leading-relaxed">
+                    Information : Cet arrêt de solde est à titre indicatif pour l'historique seulement. Il ne sera pas comptabilisé dans le solde comptable GestiCom actuel du client.
                  </p>
               </div>
 
               <button 
                 type="submit"
                 disabled={saving}
-                className="w-full py-5 bg-orange-600 hover:bg-orange-700 disabled:bg-emerald-200 text-white rounded-[24px] font-black uppercase tracking-widest shadow-xl shadow-orange-600/20 transition-all flex items-center justify-center gap-3"
+                className="w-full py-6 bg-orange-500 hover:bg-orange-600 active:scale-95 disabled:bg-gray-200 text-white rounded-[32px] font-black uppercase tracking-[0.2em] shadow-2xl shadow-orange-500/20 transition-all flex items-center justify-center gap-4"
               >
-                {saving ? <Loader2 className="h-5 w-5 animate-spin" /> : <Plus className="h-5 w-5" />}
-                Enregistrer le Solde Archivé
+                {saving ? <Loader2 className="h-6 w-6 animate-spin" /> : <Save className="h-6 w-6" />}
+                Enregistrer l'Archive
               </button>
             </div>
           </form>

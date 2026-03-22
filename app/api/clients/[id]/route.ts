@@ -2,13 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 
-type ClientDelegate = {
-  findUnique: (args: object) => Promise<{ id: number; code: string | null; nom: string; telephone: string | null; type: string; plafondCredit: number | null; localisation: string | null; soldeInitial: number } | null>
-  update: (args: object) => Promise<{ id: number; code: string | null; nom: string; telephone: string | null; type: string; plafondCredit: number | null; localisation: string | null; soldeInitial: number }>
-  delete: (args: object) => Promise<unknown>
-}
-
-const clientRepo = (prisma as unknown as { client: ClientDelegate }).client
+// Utilisation directe du client Prisma
 
 export async function GET(
   _request: NextRequest,
@@ -22,7 +16,7 @@ export async function GET(
     return NextResponse.json({ error: 'ID invalide.' }, { status: 400 })
   }
 
-  const c = await clientRepo.findUnique({ where: { id } })
+  const c = await prisma.client.findUnique({ where: { id } })
   if (!c) return NextResponse.json({ error: 'Client introuvable.' }, { status: 404 })
   return NextResponse.json(c)
 }
@@ -66,7 +60,7 @@ export async function PATCH(
     if (soldeInitial !== undefined) data.soldeInitial = soldeInitial
     if (actif !== undefined) data.actif = actif
 
-    const c = await clientRepo.update({ where: { id }, data: data as object })
+    const c = await prisma.client.update({ where: { id }, data: data as any })
     return NextResponse.json(c)
   } catch (e) {
     console.error('PATCH /api/clients/[id]:', e)
@@ -93,7 +87,7 @@ export async function DELETE(
 
   try {
     // Note: Le schéma Prisma gère le cascade pour les Ventes et Règlements.
-    await clientRepo.delete({ where: { id } })
+    await prisma.client.delete({ where: { id } })
     return NextResponse.json({ ok: true })
   } catch (e) {
     console.error('DELETE /api/clients/[id]:', e)

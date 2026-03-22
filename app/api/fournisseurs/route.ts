@@ -54,7 +54,8 @@ export async function GET(request: NextRequest) {
 
   const result = paginated.map((f) => ({
     ...f,
-    dette: (detteByFournisseur[f.id] ?? 0) + (f.soldeInitial || 0)
+    // Solde = Dettes sur achats - Dépôt initial (Avoir)
+    dette: (detteByFournisseur[f.id] ?? 0) - (f.soldeInitial || 0)
   }))
 
   const res = NextResponse.json({
