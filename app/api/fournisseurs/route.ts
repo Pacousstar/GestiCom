@@ -84,8 +84,10 @@ export async function POST(request: NextRequest) {
     const email = body?.email != null ? String(body.email).trim() || null : null
     const ncc = body?.ncc != null ? String(body.ncc).trim() || null : null
     const localisation = body?.localisation != null ? String(body.localisation).trim() || null : null
-    const soldeInitial = body?.soldeInitial != null ? Number(body.soldeInitial) : 0
-    const avoirInitial = body?.avoirInitial != null ? Number(body.avoirInitial) : 0
+    let soldeInitial = Number(body?.soldeInitial)
+    if (isNaN(soldeInitial)) soldeInitial = 0
+    let avoirInitial = Number(body?.avoirInitial)
+    if (isNaN(avoirInitial)) avoirInitial = 0
 
     if (!nom) {
       return NextResponse.json({ error: 'Nom du fournisseur requis.' }, { status: 400 })
@@ -106,8 +108,8 @@ export async function POST(request: NextRequest) {
     revalidatePath('/api/fournisseurs')
 
     return NextResponse.json(f)
-  } catch (e) {
+  } catch (e: any) {
     console.error('POST /api/fournisseurs:', e)
-    return NextResponse.json({ error: 'Erreur serveur.' }, { status: 500 })
+    return NextResponse.json({ error: `Erreur serveur: ${e.message || 'Inconnue'}` }, { status: 500 })
   }
 }

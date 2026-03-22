@@ -11,11 +11,12 @@ import {
   TrendingUp,
   FileText,
   DollarSign,
-  Receipt,
-  ShoppingBag,
   Download,
   Share2,
-  FileSpreadsheet
+  FileSpreadsheet,
+  Clock,
+  ShoppingBag,
+  Receipt
 } from 'lucide-react'
 import InitButton from './InitButton'
 import DiagnosticButton from './DiagnosticButton'
@@ -240,54 +241,58 @@ export default async function ComptabilitePage({
         </div>
       </div>
 
-      <form action="/dashboard/comptabilite" method="GET" className="flex flex-wrap items-end gap-3 rounded-xl border border-gray-200 bg-gray-50 p-4">
+      <form action="/dashboard/comptabilite" method="GET" className="flex flex-wrap items-end gap-3 rounded-2xl border border-white/10 bg-white/5 backdrop-blur-md p-4 shadow-inner">
         <div>
-          <label className="block text-xs font-medium text-gray-500">Mois</label>
-          <select name="mois" defaultValue={mois} className="mt-1 rounded-lg border border-gray-200 px-3 py-2 text-sm">
+          <label className="block text-[10px] font-black text-orange-400 uppercase tracking-widest ml-1">Mois de l'exercice</label>
+          <select name="mois" defaultValue={mois} className="mt-1 rounded-xl border border-white/20 bg-gray-900 text-white px-4 py-2 text-sm font-bold focus:ring-2 focus:ring-orange-500 outline-none transition-all">
             {MOIS.map((m) => (
               <option key={m.v} value={m.v}>{m.l}</option>
             ))}
           </select>
         </div>
         <div>
-          <label className="block text-xs font-medium text-gray-500">Année</label>
-          <select name="annee" defaultValue={annee} className="mt-1 rounded-lg border border-gray-200 px-3 py-2 text-sm">
-            {Array.from({ length: 7 }, (_, i) => new Date().getFullYear() - 2 + i).map((a) => (
+          <label className="block text-[10px] font-black text-orange-400 uppercase tracking-widest ml-1">Année</label>
+          <select name="annee" defaultValue={annee} className="mt-1 rounded-xl border border-white/20 bg-gray-900 text-white px-4 py-2 text-sm font-bold focus:ring-2 focus:ring-orange-500 outline-none transition-all">
+            {Array.from({ length: 11 }, (_, i) => 2020 + i).map((a) => (
               <option key={a} value={a}>{a}</option>
             ))}
           </select>
         </div>
-        <button type="submit" className="rounded-lg bg-orange-500 px-4 py-2 text-sm font-medium text-white hover:bg-orange-600">
+        <button type="submit" className="rounded-xl bg-orange-600 px-6 py-2 text-sm font-black text-white hover:bg-orange-500 transition-all shadow-lg shadow-orange-900/40 uppercase tracking-tighter">
           Appliquer
         </button>
       </form>
 
-      <div className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-blue-200 bg-blue-50 p-6 shadow-sm">
-        <div>
-          <h2 className="text-lg font-bold text-blue-900">Exports Experts (GestiCom Pro)</h2>
-          <p className="text-sm text-blue-700">Générez vos fichiers pour votre expert-comptable (Format Sage SAS ou Excel).</p>
+      <div className="flex flex-wrap items-center justify-between gap-6 rounded-[2rem] border border-blue-500/30 bg-blue-950/40 p-8 shadow-2xl backdrop-blur-xl relative overflow-hidden">
+        <div className="relative z-10">
+          <h2 className="text-2xl font-black text-white uppercase tracking-tighter italic">Exports Experts (GestiCom Pro)</h2>
+          <p className="text-sm text-blue-200/70 font-medium mt-1">Générez vos fichiers pour votre expert-comptable (Format Sage SAS ou Excel).</p>
         </div>
-        <div className="flex gap-3">
+        <div className="flex gap-4 relative z-10">
           <a
             href={`/api/comptabilite/export-pro?type=SAGE&mois=${mois}&annee=${annee}&dateDebut=${annee}-${String(mois).padStart(2, '0')}-01&dateFin=${annee}-${String(mois).padStart(2, '0')}-${new Date(annee, mois, 0).getDate()}`}
-            className="flex items-center gap-2 rounded-xl bg-blue-600 px-6 py-3 font-bold text-white hover:bg-blue-700 shadow-md transition-all transform active:scale-95"
+            className="flex items-center gap-3 rounded-2xl bg-blue-600 px-8 py-4 font-black text-white hover:bg-blue-500 shadow-xl shadow-blue-900/40 transition-all transform hover:-translate-y-1 active:scale-95 uppercase text-xs tracking-widest"
           >
             <Share2 className="h-5 w-5" />
             Export Sage (.txt)
           </a>
           <a
             href={`/api/comptabilite/export-pro?type=EXCEL&mois=${mois}&annee=${annee}&dateDebut=${annee}-${String(mois).padStart(2, '0')}-01&dateFin=${annee}-${String(mois).padStart(2, '0')}-${new Date(annee, mois, 0).getDate()}`}
-            className="flex items-center gap-2 rounded-xl border-2 border-green-600 bg-white px-6 py-3 font-bold text-green-700 hover:bg-green-50 shadow-md transition-all transform active:scale-95"
+            className="flex items-center gap-3 rounded-2xl border border-emerald-500/50 bg-emerald-500/10 px-8 py-4 font-black text-emerald-400 hover:bg-emerald-500 hover:text-white shadow-xl transition-all transform hover:-translate-y-1 active:scale-95 uppercase text-xs tracking-widest"
           >
             <FileSpreadsheet className="h-5 w-5" />
             Synthèse Excel
           </a>
         </div>
+        <div className="absolute top-0 right-0 p-8 opacity-5 pointer-events-none">
+            <TrendingUp className="h-40 w-40 text-blue-500" />
+        </div>
       </div>
 
-      <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-amber-800">
-        <p className="text-sm font-medium">
-          Résumé du mois de <span className="font-bold capitalize">{moisLabel}</span>
+      <div className="rounded-2xl border border-orange-500/30 bg-orange-500/10 p-4 text-orange-200/80 backdrop-blur-md">
+        <p className="text-sm font-black uppercase tracking-widest flex items-center gap-3">
+          <Clock className="h-4 w-4" />
+          Résumé financier du mois de <span className="text-white brightness-125 underline decoration-orange-500 decoration-2 underline-offset-4">{moisLabel}</span>
         </p>
       </div>
 
@@ -438,26 +443,32 @@ export default async function ComptabilitePage({
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2 xl:grid-cols-4">
-        <div className="rounded-xl bg-white shadow-lg border border-gray-200 overflow-hidden">
-          <div className="bg-gradient-to-r from-emerald-500 to-green-600 p-4">
+        <div className="rounded-[2rem] bg-gray-900/60 backdrop-blur-xl shadow-2xl border border-white/10 overflow-hidden group hover:border-emerald-500/50 transition-all duration-500">
+          <div className="bg-gradient-to-r from-emerald-600/20 to-green-700/20 p-6 border-b border-white/10">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <ShoppingCart className="h-5 w-5 text-white" />
-                <h2 className="text-xl font-bold text-white">Ventes du mois</h2>
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-emerald-500/20 rounded-lg">
+                    <ShoppingCart className="h-5 w-5 text-emerald-400" />
+                </div>
+                <h2 className="text-lg font-black text-white uppercase tracking-tight">Ventes</h2>
               </div>
-              <a href="/dashboard/ventes" className="text-sm font-medium text-white/90 hover:text-white underline">Voir tout</a>
+              <a href="/dashboard/ventes" className="text-[10px] font-black text-emerald-400 hover:text-emerald-300 uppercase underline tracking-widest">Voir tout</a>
             </div>
           </div>
           <div className="p-6">
           {ventesMois.length === 0 ? (
-            <p className="text-sm text-gray-500">Aucune vente ce mois.</p>
+            <p className="py-10 text-center text-[10px] font-black text-white/20 uppercase italic tracking-widest">Aucune vente ce mois.</p>
           ) : (
-            <div className="max-h-64 overflow-y-auto">
+            <div className="max-h-64 overflow-y-auto pr-2 custom-scrollbar">
               <table className="min-w-full text-sm">
-                <thead><tr className="border-b text-left text-gray-600"><th className="py-2">N°</th><th className="py-2">Date</th><th className="py-2 text-right">Montant</th></tr></thead>
-                <tbody className="divide-y divide-gray-100">
+                <thead><tr className="text-left text-[9px] font-black text-white/30 uppercase tracking-[0.2em] border-b border-white/5"><th className="py-3">Réf.</th><th className="py-3">Date</th><th className="py-3 text-right">Montant</th></tr></thead>
+                <tbody className="divide-y divide-white/5">
                   {ventesMois.map((v) => (
-                    <tr key={v.id}><td className="py-1.5 font-mono text-gray-900">{v.numero}</td><td className="py-1.5 text-gray-700">{new Date(v.date).toLocaleDateString('fr-FR')}</td><td className="py-1.5 text-right font-medium text-gray-900">{formatFcfa(Number(v.montantTotal))}</td></tr>
+                    <tr key={v.id} className="hover:bg-white/5 transition-colors group/row">
+                        <td className="py-3 font-mono text-[11px] text-emerald-400 group-hover/row:scale-105 origin-left transition-transform">{v.numero}</td>
+                        <td className="py-3 text-[10px] font-black text-white/50 uppercase">{new Date(v.date).toLocaleDateString('fr-FR', {day: '2-digit', month: 'short'})}</td>
+                        <td className="py-3 text-right font-black text-white">{formatFcfa(Number(v.montantTotal))}</td>
+                    </tr>
                   ))}
                 </tbody>
               </table>
@@ -465,26 +476,32 @@ export default async function ComptabilitePage({
           )}
           </div>
         </div>
-        <div className="rounded-xl bg-white shadow-lg border border-gray-200 overflow-hidden">
-          <div className="bg-gradient-to-r from-blue-500 to-cyan-600 p-4">
+        <div className="rounded-[2rem] bg-gray-900/60 backdrop-blur-xl shadow-2xl border border-white/10 overflow-hidden group hover:border-blue-500/50 transition-all duration-500">
+          <div className="bg-gradient-to-r from-blue-600/20 to-cyan-700/20 p-6 border-b border-white/10">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <FileText className="h-5 w-5 text-white" />
-                <h2 className="text-xl font-bold text-white">Achats du mois</h2>
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-blue-500/20 rounded-lg">
+                    <FileText className="h-5 w-5 text-blue-400" />
+                </div>
+                <h2 className="text-lg font-black text-white uppercase tracking-tight">Achats</h2>
               </div>
-              <a href="/dashboard/achats" className="text-sm font-medium text-white/90 hover:text-white underline">Voir tout</a>
+              <a href="/dashboard/achats" className="text-[10px] font-black text-blue-400 hover:text-blue-300 uppercase underline tracking-widest">Voir tout</a>
             </div>
           </div>
           <div className="p-6">
           {achatsMois.length === 0 ? (
-            <p className="text-sm text-gray-500">Aucun achat ce mois.</p>
+            <p className="py-10 text-center text-[10px] font-black text-white/20 uppercase italic tracking-widest">Aucun achat ce mois.</p>
           ) : (
-            <div className="max-h-64 overflow-y-auto">
+            <div className="max-h-64 overflow-y-auto pr-2 custom-scrollbar">
               <table className="min-w-full text-sm">
-                <thead><tr className="border-b text-left text-gray-600"><th className="py-2">N°</th><th className="py-2">Date</th><th className="py-2 text-right">Montant</th></tr></thead>
-                <tbody className="divide-y divide-gray-100">
+                <thead><tr className="text-left text-[9px] font-black text-white/30 uppercase tracking-[0.2em] border-b border-white/5"><th className="py-3">Réf.</th><th className="py-3">Date</th><th className="py-3 text-right">Montant</th></tr></thead>
+                <tbody className="divide-y divide-white/5">
                   {achatsMois.map((a) => (
-                    <tr key={a.id}><td className="py-1.5 font-mono text-gray-900">{a.numero}</td><td className="py-1.5 text-gray-700">{new Date(a.date).toLocaleDateString('fr-FR')}</td><td className="py-1.5 text-right font-medium text-gray-900">{formatFcfa(Number(a.montantTotal))}</td></tr>
+                    <tr key={a.id} className="hover:bg-white/5 transition-colors group/row">
+                        <td className="py-3 font-mono text-[11px] text-blue-400 group-hover/row:scale-105 origin-left transition-transform">{a.numero}</td>
+                        <td className="py-3 text-[10px] font-black text-white/50 uppercase">{new Date(a.date).toLocaleDateString('fr-FR', {day: '2-digit', month: 'short'})}</td>
+                        <td className="py-3 text-right font-black text-white">{formatFcfa(Number(a.montantTotal))}</td>
+                    </tr>
                   ))}
                 </tbody>
               </table>
@@ -492,26 +509,32 @@ export default async function ComptabilitePage({
           )}
           </div>
         </div>
-        <div className="rounded-xl bg-white shadow-lg border border-gray-200 overflow-hidden">
-          <div className="bg-gradient-to-r from-red-500 to-pink-600 p-4">
+        <div className="rounded-[2rem] bg-gray-900/60 backdrop-blur-xl shadow-2xl border border-white/10 overflow-hidden group hover:border-red-500/50 transition-all duration-500">
+          <div className="bg-gradient-to-r from-red-600/20 to-pink-700/20 p-6 border-b border-white/10">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <DollarSign className="h-5 w-5 text-white" />
-                <h2 className="text-xl font-bold text-white">Dépenses du mois</h2>
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-red-500/20 rounded-lg">
+                    <DollarSign className="h-5 w-5 text-red-400" />
+                </div>
+                <h2 className="text-lg font-black text-white uppercase tracking-tight">Dépenses</h2>
               </div>
-              <a href="/dashboard/depenses" className="text-sm font-medium text-white/90 hover:text-white underline">Voir tout</a>
+              <a href="/dashboard/depenses" className="text-[10px] font-black text-red-400 hover:text-red-300 uppercase underline tracking-widest">Voir tout</a>
             </div>
           </div>
           <div className="p-6">
           {depensesMois.length === 0 ? (
-            <p className="text-sm text-gray-500">Aucune dépense ce mois.</p>
+            <p className="py-10 text-center text-[10px] font-black text-white/20 uppercase italic tracking-widest">Aucune dépense ce mois.</p>
           ) : (
-            <div className="max-h-64 overflow-y-auto">
+            <div className="max-h-64 overflow-y-auto pr-2 custom-scrollbar">
               <table className="min-w-full text-sm">
-                <thead><tr className="border-b text-left text-gray-600"><th className="py-2">Date</th><th className="py-2">Libellé</th><th className="py-2 text-right">Montant</th></tr></thead>
-                <tbody className="divide-y divide-gray-100">
+                <thead><tr className="text-left text-[9px] font-black text-white/30 uppercase tracking-[0.2em] border-b border-white/5"><th className="py-3">Date</th><th className="py-3">Libellé</th><th className="py-3 text-right">Montant</th></tr></thead>
+                <tbody className="divide-y divide-white/5">
                   {depensesMois.map((d) => (
-                    <tr key={d.id}><td className="py-1.5 text-gray-700">{new Date(d.date).toLocaleDateString('fr-FR')}</td><td className="py-1.5 text-gray-900">{d.libelle}</td><td className="py-1.5 text-right font-medium text-gray-900">{formatFcfa(Number(d.montant))}</td></tr>
+                    <tr key={d.id} className="hover:bg-white/5 transition-colors group/row">
+                        <td className="py-3 text-[10px] font-black text-white/50 uppercase">{new Date(d.date).toLocaleDateString('fr-FR', {day: '2-digit', month: 'short'})}</td>
+                        <td className="py-3 text-[11px] font-bold text-white group-hover/row:text-red-400 transition-colors uppercase">{d.libelle}</td>
+                        <td className="py-3 text-right font-black text-white">{formatFcfa(Number(d.montant))}</td>
+                    </tr>
                   ))}
                 </tbody>
               </table>
@@ -519,29 +542,31 @@ export default async function ComptabilitePage({
           )}
           </div>
         </div>
-        <div className="rounded-xl bg-white shadow-lg border border-gray-200 overflow-hidden">
-          <div className="bg-gradient-to-r from-purple-500 to-pink-600 p-4">
+        <div className="rounded-[2rem] bg-gray-900/60 backdrop-blur-xl shadow-2xl border border-white/10 overflow-hidden group hover:border-purple-500/50 transition-all duration-500">
+          <div className="bg-gradient-to-r from-purple-600/20 to-pink-700/20 p-6 border-b border-white/10">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Receipt className="h-5 w-5 text-white" />
-                <h2 className="text-xl font-bold text-white">Charges du mois</h2>
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-purple-500/20 rounded-lg">
+                    <Receipt className="h-5 w-5 text-purple-400" />
+                </div>
+                <h2 className="text-lg font-black text-white uppercase tracking-tight">Charges</h2>
               </div>
-              <a href="/dashboard/charges" className="text-sm font-medium text-white/90 hover:text-white underline">Voir tout</a>
+              <a href="/dashboard/charges" className="text-[10px] font-black text-purple-400 hover:text-purple-300 uppercase underline tracking-widest">Voir tout</a>
             </div>
           </div>
           <div className="p-6">
           {chargesMois.length === 0 ? (
-            <p className="text-sm text-gray-500">Aucune charge ce mois.</p>
+            <p className="py-10 text-center text-[10px] font-black text-white/20 uppercase italic tracking-widest">Aucune charge ce mois.</p>
           ) : (
-            <div className="max-h-64 overflow-y-auto">
+            <div className="max-h-64 overflow-y-auto pr-2 custom-scrollbar">
               <table className="min-w-full text-sm">
-                <thead><tr className="border-b text-left text-gray-600"><th className="py-2">Date</th><th className="py-2">Rubrique</th><th className="py-2 text-right">Montant</th></tr></thead>
-                <tbody className="divide-y divide-gray-100">
+                <thead><tr className="text-left text-[9px] font-black text-white/30 uppercase tracking-[0.2em] border-b border-white/5"><th className="py-3">Date</th><th className="py-3">Rubrique</th><th className="py-3 text-right">Montant</th></tr></thead>
+                <tbody className="divide-y divide-white/5">
                   {chargesMois.map((c) => (
-                    <tr key={c.id}>
-                      <td className="py-1.5 text-gray-700">{new Date(c.date).toLocaleDateString('fr-FR')}</td>
-                      <td className="py-1.5 text-gray-900">{c.rubrique}</td>
-                      <td className="py-1.5 text-right font-medium text-gray-900">{formatFcfa(Number(c.montant))}</td>
+                    <tr key={c.id} className="hover:bg-white/5 transition-colors group/row">
+                        <td className="py-3 text-[10px] font-black text-white/50 uppercase">{new Date(c.date).toLocaleDateString('fr-FR', {day: '2-digit', month: 'short'})}</td>
+                        <td className="py-3 text-[11px] font-bold text-white group-hover/row:text-purple-400 transition-colors uppercase">{c.rubrique}</td>
+                        <td className="py-3 text-right font-black text-white">{formatFcfa(Number(c.montant))}</td>
                     </tr>
                   ))}
                 </tbody>

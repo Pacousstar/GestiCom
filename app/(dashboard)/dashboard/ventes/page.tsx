@@ -727,8 +727,8 @@ export default function VentesPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-white uppercase tracking-tight">Ventes</h1>
-          <p className="mt-1 text-white/90 font-medium">Flux de ventes et encaissements clients</p>
+          <h1 className="text-3xl font-black text-slate-900 uppercase tracking-tighter italic">Ventes</h1>
+          <p className="mt-1 text-slate-500 font-bold uppercase text-[10px] tracking-widest">Flux de ventes et encaissements clients</p>
         </div>
         <button
           onClick={() => setForm(true)}
@@ -779,12 +779,12 @@ export default function VentesPage() {
                 setFilterClientSearch(e.target.value)
                 if (!e.target.value) setFilterClientId('')
               }}
-              className="w-full min-w-[150px] rounded-lg border border-gray-200 py-1.5 pl-3 pr-8 text-sm focus:border-orange-500 focus:outline-none"
+              className="w-full min-w-[200px] rounded-xl border border-gray-200 bg-white py-2 pl-3 pr-8 text-sm font-bold text-slate-900 focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 outline-none transition-all shadow-sm placeholder:text-gray-300"
             />
             {filterClientSearch && !filterClientId && (
               <div className="absolute left-0 right-0 z-50 mt-1 max-h-48 overflow-auto rounded-lg border border-gray-200 bg-white shadow-lg">
                 <div 
-                  className="cursor-pointer px-3 py-2 text-sm hover:bg-orange-50 font-medium text-gray-500 border-b"
+                  className="cursor-pointer px-4 py-3 text-xs hover:bg-orange-50 font-black text-slate-900 border-b border-gray-100 uppercase tracking-tighter"
                   onClick={() => { setFilterClientId(''); setFilterClientSearch('') }}
                 >
                   Tous les clients
@@ -798,7 +798,7 @@ export default function VentesPage() {
                         setFilterClientId(String(c.id))
                         setFilterClientSearch(c.nom)
                       }}
-                      className="cursor-pointer px-3 py-2 text-sm hover:bg-orange-50"
+                      className="cursor-pointer px-4 py-3 text-sm hover:bg-orange-50 font-bold text-slate-900 border-b border-gray-50 last:border-0 transition-colors"
                     >
                       {c.nom}
                     </div>
@@ -944,7 +944,7 @@ export default function VentesPage() {
                       setAjoutProduit((a) => ({ ...a, recherche: e.target.value }))
                     }}
                     onFocus={refetchProduits}
-                    className="w-full rounded-lg border border-gray-200 py-3 pl-10 pr-4 text-sm focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500/20 transition-all shadow-sm"
+                    className="w-full rounded-xl border border-gray-200 bg-white py-4 pl-12 pr-4 text-sm font-bold text-slate-900 focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 transition-all shadow-sm placeholder:text-gray-300"
                   />
                   {ajoutProduit.recherche.length > 0 && !ajoutProduit.produitId && (
                     <div className="absolute z-10 mt-1 w-full max-h-60 overflow-y-auto rounded-lg border border-gray-200 bg-white shadow-lg animate-in fade-in zoom-in duration-200">
@@ -962,11 +962,11 @@ export default function VentesPage() {
                               onClick={() => {
                                 setAjoutProduit(a => ({ ...a, produitId: String(p.id), recherche: p.designation, prixUnitaire: String(p.prixVente || p.prixAchat || '') }))
                               }}
-                              className="flex w-full items-center justify-between px-4 py-3 text-left text-sm hover:bg-orange-50 transition-colors border-b last:border-0"
+                              className="flex w-full items-center justify-between px-5 py-4 text-left text-sm hover:bg-orange-50 transition-all border-b border-gray-50 last:border-0"
                             >
                               <div className="flex flex-col">
-                                <span className="font-semibold text-gray-900">{p.designation}</span>
-                                <span className="text-xs text-gray-400 font-mono">{p.code}</span>
+                                <span className="font-black text-slate-900 uppercase tracking-tighter">{p.designation}</span>
+                                <span className="text-[10px] text-gray-400 font-mono font-bold">{p.code}</span>
                               </div>
                               <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${s > 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
                                 Stock: {s}

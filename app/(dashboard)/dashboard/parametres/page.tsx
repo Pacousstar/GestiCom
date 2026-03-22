@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Settings, Save, Loader2, Store, Plus, Trash2, Camera, Mail, Info, Clock, Shield, Globe, MapPin, Phone, CreditCard, User, Upload, Download, RotateCcw, X, Printer, Edit2 } from 'lucide-react'
+import { Settings, Save, Loader2, Store, Plus, Trash2, Camera, Mail, Info, Clock, Shield, Globe, MapPin, Phone, CreditCard, User, Upload, Download, RotateCcw, X, Printer, Edit2, Building2, Zap, Database, ImagePlus } from 'lucide-react'
 import { useToast } from '@/hooks/useToast'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -28,6 +28,7 @@ export default function ParametresPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [userRole, setUserRole] = useState('')
+  const [userPermissions, setUserPermissions] = useState<string[]>([])
   const [err, setErr] = useState('')
 
   const [form, setForm] = useState({
@@ -87,6 +88,7 @@ export default function ParametresPage() {
       const a = await aRes.json()
       
       setUserRole(a.role)
+      setUserPermissions(a.permissions || [])
       setData(p)
       if (p) {
         setForm({
@@ -248,12 +250,17 @@ export default function ParametresPage() {
 
   if (loading) return <div className="flex h-64 items-center justify-center text-white"><Loader2 className="h-8 w-8 animate-spin" /></div>
 
-  if (userRole !== 'SUPER_ADMIN' && userRole !== 'ADMIN') {
+  const canAccess = userRole === 'SUPER_ADMIN' || userRole === 'ADMIN' || userPermissions.includes('parametres:view')
+
+  if (!canAccess) {
     return (
-      <div className="rounded-xl border border-amber-200 bg-amber-50 p-6 text-center">
-        <Shield className="mx-auto h-12 w-12 text-amber-500" />
-        <h2 className="mt-4 text-xl font-bold text-amber-900">Accès restreint</h2>
-        <p className="mt-2 text-sm text-amber-700">Cette section est réservée aux administrateurs.</p>
+      <div className="rounded-2xl border border-white/10 bg-gray-900/60 p-12 text-center backdrop-blur-xl shadow-2xl">
+        <Shield className="mx-auto h-16 w-16 text-orange-500 animate-pulse" />
+        <h2 className="mt-6 text-2xl font-black text-white uppercase tracking-tighter">Accès restreint</h2>
+        <p className="mt-2 text-sm text-gray-400 font-medium italic">Cette section est réservée à la direction générale et aux administrateurs système.</p>
+        <div className="mt-8">
+            <Link href="/dashboard" className="px-6 py-2 rounded-xl bg-orange-500 text-white font-black text-xs uppercase hover:bg-orange-600 transition-all">Retour au Tableau de Bord</Link>
+        </div>
       </div>
     )
   }
@@ -262,8 +269,8 @@ export default function ParametresPage() {
     <div className="mx-auto max-w-4xl space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-white">Paramètres</h1>
-          <p className="mt-1 text-white/90">Configuration globale de GestiCom</p>
+          <h1 className="text-4xl font-black text-white uppercase tracking-tighter drop-shadow-md">Paramètres du Système</h1>
+          <p className="mt-2 text-white/70 font-medium italic">Personnalisez l'identité de votre entreprise, configurez vos emails et gérez les sauvegardes.</p>
         </div>
         <Link href="/dashboard/parametres/impression" className="flex items-center gap-2 rounded-lg bg-white px-4 py-2 text-sm font-medium text-orange-600 hover:bg-orange-50">
           <Printer className="h-4 w-4" /> Modèles d'Impression
@@ -271,125 +278,260 @@ export default function ParametresPage() {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="rounded-xl border border-gray-200 bg-gray-50 p-6 shadow-sm space-y-6">
-          <h2 className="text-xl font-semibold text-gray-900">Informations Entreprise</h2>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Nom de l'entreprise</label>
-              <input value={form.nomEntreprise} onChange={(e) => setForm({ ...form, nomEntreprise: e.target.value })} className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/20" />
+        <div className="rounded-2xl border border-white/10 bg-gray-900/40 p-8 shadow-2xl backdrop-blur-xl">
+          <h2 className="text-xl font-black text-white uppercase tracking-tight flex items-center gap-3 mb-8">
+            <div className="p-2 bg-orange-500/20 rounded-lg"><Building2 className="h-5 w-5 text-orange-500" /></div>
+            Identité de l'Entreprise
+          </h2>
+          <div className="grid gap-6 md:grid-cols-2 text-left">
+            <div className="space-y-4">
+              <div>
+                <label className="block text-[10px] font-black text-orange-400 uppercase tracking-[0.2em] mb-1.5 ml-1">Nom commercial</label>
+                <input
+                  type="text"
+                  value={form.nomEntreprise}
+                  onChange={(e) => setForm({ ...form, nomEntreprise: e.target.value })}
+                  className="w-full rounded-xl border border-white/10 bg-gray-900/50 px-4 py-3 text-sm text-white focus:border-orange-500 outline-none transition-all placeholder:text-white/20"
+                  placeholder="Nom de votre structure..."
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-black text-orange-400 uppercase tracking-[0.2em] mb-1.5 ml-1">Slogan / Devise</label>
+                <input
+                  type="text"
+                  value={form.slogan || ''}
+                  onChange={(e) => setForm({ ...form, slogan: e.target.value })}
+                  className="w-full rounded-xl border border-white/10 bg-gray-900/50 px-4 py-3 text-sm text-white focus:border-orange-500 outline-none transition-all placeholder:text-white/20"
+                  placeholder="Votre slogan..."
+                />
+              </div>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Slogan</label>
-              <input value={form.slogan} onChange={(e) => setForm({ ...form, slogan: e.target.value })} className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/20" />
+            <div className="space-y-4">
+              <div>
+                <label className="block text-[10px] font-black text-indigo-400 uppercase tracking-[0.2em] mb-1.5 ml-1">Logo URL (obligatoire sur facture)</label>
+                <input 
+                  value={form.logo || ''} 
+                  onChange={(e) => setForm({ ...form, logo: e.target.value })} 
+                  placeholder="https://..." 
+                  className="w-full rounded-xl border border-white/10 bg-gray-900/50 px-4 py-3 text-sm text-white focus:border-indigo-500 outline-none transition-all" 
+                />
+                {form.logo && (
+                  <div className="mt-2 p-2 rounded-xl bg-white flex items-center justify-center overflow-hidden h-16 w-32 mx-auto ring-4 ring-indigo-500/20">
+                    <img src={form.logo} alt="Logo preview" className="h-full w-full object-contain" />
+                  </div>
+                )}
+              </div>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Contact</label>
-              <input value={form.contact} onChange={(e) => setForm({ ...form, contact: e.target.value })} className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/20" />
+          </div>
+
+          <div className="mt-8 grid gap-8 md:grid-cols-2 pt-8 border-t border-white/5 text-left">
+            <div className="space-y-4">
+              <h3 className="text-[11px] font-black text-white/40 uppercase tracking-[0.3em] mb-4">Coordonnées & Contact</h3>
+              <div>
+                <label className="block text-[10px] font-black text-emerald-400 uppercase tracking-[0.2em] mb-1.5 ml-1">Contact Téléphonique</label>
+                <input
+                  type="text"
+                  value={form.contact}
+                  onChange={(e) => setForm({ ...form, contact: e.target.value })}
+                  className="w-full rounded-xl border border-white/10 bg-gray-900/50 px-4 py-3 text-sm text-white focus:border-emerald-500 outline-none transition-all"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-black text-emerald-400 uppercase tracking-[0.2em] mb-1.5 ml-1">Adresse Email</label>
+                <input
+                  type="email"
+                  value={form.email || ''}
+                  onChange={(e) => setForm({ ...form, email: e.target.value })}
+                  className="w-full rounded-xl border border-white/10 bg-gray-900/50 px-4 py-3 text-sm text-white focus:border-emerald-500 outline-none transition-all"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-black text-blue-400 uppercase tracking-[0.2em] mb-1.5 ml-1">Localisation Physique (Siège)</label>
+                <input
+                  type="text"
+                  value={form.localisation || ''}
+                  onChange={(e) => setForm({ ...form, localisation: e.target.value })}
+                  className="w-full rounded-xl border border-white/10 bg-gray-900/50 px-4 py-3 text-sm text-white focus:border-blue-500 outline-none transition-all"
+                />
+              </div>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Email</label>
-              <input value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/20" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Localisation</label>
-              <input value={form.localisation} onChange={(e) => setForm({ ...form, localisation: e.target.value })} placeholder="Ex: Abidjan, Cocody..." className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/20" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Compte Contribuable (NCC)</label>
-              <input value={form.numNCC} onChange={(e) => setForm({ ...form, numNCC: e.target.value })} className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/20" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Registre de Commerce (RC)</label>
-              <input value={form.registreCommerce} onChange={(e) => setForm({ ...form, registreCommerce: e.target.value })} className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/20" />
-            </div>
-            <div className="sm:col-span-2">
-              <label className="block text-sm font-medium text-gray-700">URL du Logo</label>
-              <input value={form.logo} onChange={(e) => setForm({ ...form, logo: e.target.value })} placeholder="https://..." className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/20" />
-              {form.logo && <img src={form.logo} alt="Logo Entreprise" className="mt-2 h-16 object-contain" />}
+
+            <div className="space-y-4">
+              <h3 className="text-[11px] font-black text-white/40 uppercase tracking-[0.3em] mb-4">Identifiants Légaux</h3>
+              <div>
+                <label className="block text-[10px] font-black text-orange-400 uppercase tracking-[0.2em] mb-1.5 ml-1">N° NCC (Compte Contribuable)</label>
+                <input
+                  type="text"
+                  value={form.numNCC || ''}
+                  onChange={(e) => setForm({ ...form, numNCC: e.target.value })}
+                  className="w-full rounded-xl border border-white/10 bg-gray-900/50 px-4 py-3 text-sm text-white focus:border-orange-500 outline-none transition-all"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-black text-orange-400 uppercase tracking-[0.2em] mb-1.5 ml-1">Registre de Commerce (RC)</label>
+                <input
+                  type="text"
+                  value={form.registreCommerce || ''}
+                  onChange={(e) => setForm({ ...form, registreCommerce: e.target.value })}
+                  className="w-full rounded-xl border border-white/10 bg-gray-900/50 px-4 py-3 text-sm text-white focus:border-orange-500 outline-none transition-all"
+                />
+              </div>
             </div>
           </div>
         </div>
 
-        <div className="rounded-xl border border-gray-200 bg-gray-50 p-6 shadow-sm space-y-4">
-          <h2 className="text-xl font-semibold text-gray-900">Fidélisation Client (Pro)</h2>
-          <div className="rounded-lg border border-purple-200 bg-purple-50 p-4">
-            <label className="flex items-center gap-3 font-medium text-purple-900 cursor-pointer">
-              <input type="checkbox" checked={form.fideliteActive} onChange={(e) => setForm({ ...form, fideliteActive: e.target.checked })} className="h-5 w-5 rounded border-purple-300 text-purple-600" />
-              Activer le programme de fidélité
+        <div className="rounded-2xl border border-white/10 bg-gray-900/40 p-8 shadow-2xl backdrop-blur-xl">
+          <h2 className="text-xl font-black text-white uppercase tracking-tight flex items-center gap-3 mb-6">
+            <div className="p-2 bg-purple-500/20 rounded-lg"><Zap className="h-5 w-5 text-purple-400" /></div>
+            Fidélisation Client (PRO)
+          </h2>
+          <div className="rounded-xl border border-purple-500/20 bg-purple-500/5 p-6 backdrop-blur-md">
+            <label className="flex items-center gap-4 font-black text-white uppercase text-xs tracking-widest cursor-pointer group">
+              <input 
+                type="checkbox" 
+                checked={form.fideliteActive} 
+                onChange={(e) => setForm({ ...form, fideliteActive: e.target.checked })} 
+                className="h-6 w-6 rounded-lg border-white/20 bg-gray-900 text-purple-600 focus:ring-purple-500 transition-all cursor-pointer" 
+              />
+              Activer le programme de fidélité GestiCom
             </label>
             {form.fideliteActive && (
-              <div className="mt-4 grid gap-4 sm:grid-cols-2">
+              <div className="mt-8 grid gap-6 sm:grid-cols-2 animate-in fade-in slide-in-from-top-2">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Seuil de points pour remise</label>
-                  <input type="number" value={form.fideliteSeuilPoints} onChange={(e) => setForm({ ...form, fideliteSeuilPoints: e.target.value })} className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/20" />
+                  <label className="block text-[10px] font-black text-purple-400 uppercase tracking-widest mb-1.5 ml-1">Seuil de points (pour déclencher remise)</label>
+                  <input 
+                    type="number" 
+                    value={form.fideliteSeuilPoints} 
+                    onChange={(e) => setForm({ ...form, fideliteSeuilPoints: e.target.value })} 
+                    className="w-full rounded-xl border border-white/10 bg-gray-900 px-4 py-3 text-sm text-white focus:border-purple-500 outline-none transition-all" 
+                  />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Remise (%)</label>
-                  <input type="number" step="0.1" value={form.fideliteTauxRemise} onChange={(e) => setForm({ ...form, fideliteTauxRemise: e.target.value })} className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/20" />
+                  <label className="block text-[10px] font-black text-purple-400 uppercase tracking-widest mb-1.5 ml-1">Taux de remise (%)</label>
+                  <input 
+                    type="number" 
+                    step="0.1" 
+                    value={form.fideliteTauxRemise} 
+                    onChange={(e) => setForm({ ...form, fideliteTauxRemise: e.target.value })} 
+                    className="w-full rounded-xl border border-white/10 bg-gray-900 px-4 py-3 text-sm text-white focus:border-purple-500 outline-none transition-all" 
+                  />
                 </div>
               </div>
             )}
           </div>
         </div>
 
-        <div className="rounded-xl border border-gray-200 bg-gray-50 p-6 shadow-sm space-y-4">
-          <h2 className="text-xl font-semibold text-gray-900">Sauvegardes</h2>
-          <div className="rounded-lg border border-orange-200 bg-orange-50 p-4">
-            <label className="flex items-center gap-3 font-medium text-orange-900 cursor-pointer">
-              <input type="checkbox" checked={form.backupAuto} onChange={(e) => setForm({ ...form, backupAuto: e.target.checked })} className="h-5 w-5 rounded border-orange-300 text-orange-600" />
-              Sauvegarde automatique
+        <div className="rounded-2xl border border-white/10 bg-gray-900/40 p-8 shadow-2xl backdrop-blur-xl">
+          <h2 className="text-xl font-black text-white uppercase tracking-tight flex items-center gap-3 mb-6">
+            <div className="p-2 bg-orange-500/20 rounded-lg"><Database className="h-5 w-5 text-orange-400" /></div>
+            Sauvegardes & Sûreté
+          </h2>
+          <div className="rounded-xl border border-orange-500/20 bg-orange-500/5 p-6">
+            <label className="flex items-center gap-4 font-black text-white uppercase text-xs tracking-widest cursor-pointer">
+              <input 
+                type="checkbox" 
+                checked={form.backupAuto} 
+                onChange={(e) => setForm({ ...form, backupAuto: e.target.checked })} 
+                className="h-6 w-6 rounded-lg border-white/20 bg-gray-900 text-orange-600 focus:ring-orange-500 transition-all cursor-pointer" 
+              />
+              Automatiser les sauvegardes système
             </label>
             {form.backupAuto && (
-               <div className="mt-4 grid gap-4 sm:grid-cols-2">
-                  <select value={form.backupFrequence} onChange={(e) => setForm({ ...form, backupFrequence: e.target.value })} className="mt-1 rounded-lg border border-gray-200 px-3 py-2 text-sm">
-                    <option value="QUOTIDIEN">Quotidienne</option>
-                    <option value="HEBDOMADAIRE">Hebdomadaire</option>
-                  </select>
-                  <select value={form.backupDestination} onChange={(e) => setForm({ ...form, backupDestination: e.target.value })} className="mt-1 rounded-lg border border-gray-200 px-3 py-2 text-sm">
-                    <option value="LOCAL">Local uniquement</option>
-                    <option value="EMAIL">Email</option>
-                  </select>
+               <div className="mt-8 grid gap-6 sm:grid-cols-2 animate-in fade-in slide-in-from-top-2">
+                  <div>
+                    <label className="block text-[10px] font-black text-orange-400 uppercase tracking-widest mb-1.5 ml-1">Fréquence de sauvegarde</label>
+                    <select 
+                      value={form.backupFrequence} 
+                      onChange={(e) => setForm({ ...form, backupFrequence: e.target.value })} 
+                      className="w-full rounded-xl border border-white/10 bg-gray-900 px-4 py-3 text-sm text-white font-bold focus:border-orange-500 outline-none transition-all"
+                    >
+                      <option value="QUOTIDIEN">Quotidienne (Chaque jour)</option>
+                      <option value="HEBDOMADAIRE">Hebdomadaire (Chaque semaine)</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-black text-orange-400 uppercase tracking-widest mb-1.5 ml-1">Base de stockage</label>
+                    <select 
+                      value={form.backupDestination} 
+                      onChange={(e) => setForm({ ...form, backupDestination: e.target.value })} 
+                      className="w-full rounded-xl border border-white/10 bg-gray-900 px-4 py-3 text-sm text-white font-bold focus:border-orange-500 outline-none transition-all"
+                    >
+                      <option value="LOCAL">Disque Local (C:\gesticom\backups)</option>
+                      <option value="EMAIL">Cloud Externe / Email</option>
+                    </select>
+                  </div>
                </div>
             )}
           </div>
         </div>
 
-        {err && <p className="text-sm text-red-600">{err}</p>}
-        <button type="submit" disabled={saving} className="flex items-center gap-2 rounded-lg bg-orange-500 px-6 py-2.5 text-white hover:bg-orange-600 disabled:opacity-60">
-          {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} Enregistrer
-        </button>
+        {err && <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-xs font-black uppercase tracking-widest text-center">{err}</div>}
+        
+        <div className="flex justify-end pt-8">
+          <button
+            type="submit"
+            disabled={saving}
+            className="flex items-center gap-4 rounded-2xl bg-orange-600 px-12 py-5 font-black text-white hover:bg-orange-500 shadow-[0_15px_40px_rgba(249,115,22,0.4)] transition-all transform hover:-translate-y-1 active:scale-95 disabled:opacity-50 uppercase tracking-[0.2em] text-sm"
+          >
+            {saving ? <Loader2 className="h-6 w-6 animate-spin" /> : <Save className="h-6 w-6" />}
+            Enregistrer les modifications
+          </button>
+        </div>
       </form>
 
-      <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-        <h2 className="flex items-center gap-2 text-lg font-semibold text-gray-900"><Store className="h-5 w-5" /> Magasins</h2>
-        <form onSubmit={handleMagasinAdd} className="mt-4 flex gap-2">
-          <input value={magasinForm.code} onChange={(e) => setMagasinForm({ ...magasinForm, code: e.target.value.toUpperCase() })} placeholder="Code" className="rounded-lg border border-gray-200 px-3 py-2 text-sm" />
-          <input value={magasinForm.nom} onChange={(e) => setMagasinForm({ ...magasinForm, nom: e.target.value })} placeholder="Nom" className="rounded-lg border border-gray-200 px-3 py-2 text-sm flex-1" />
-          <button type="submit" disabled={magasinSaving} className="rounded-lg bg-orange-500 px-4 py-2 text-white hover:bg-orange-600">Ajouter</button>
+      <div className="rounded-2xl border border-white/10 bg-gray-900/40 p-8 shadow-2xl backdrop-blur-xl">
+        <h2 className="flex items-center gap-3 text-xl font-black text-white uppercase tracking-tight mb-6 text-left">
+            <div className="p-2 bg-blue-500/20 rounded-lg"><Store className="h-5 w-5 text-blue-400" /></div>
+            Gestion des Magasins & Entrepôts
+        </h2>
+        <form onSubmit={handleMagasinAdd} className="flex gap-3 mb-8">
+          <input 
+            value={magasinForm.code} 
+            onChange={(e) => setMagasinForm({ ...magasinForm, code: e.target.value.toUpperCase() })} 
+            placeholder="CODE" 
+            className="w-24 rounded-xl border border-white/10 bg-gray-900/50 px-4 py-3 text-sm text-white font-bold focus:border-blue-500 outline-none transition-all" 
+          />
+          <input 
+            value={magasinForm.nom} 
+            onChange={(e) => setMagasinForm({ ...magasinForm, nom: e.target.value })} 
+            placeholder="Nom du magasin ou dépôt..." 
+            className="flex-1 rounded-xl border border-white/10 bg-gray-900/50 px-4 py-3 text-sm text-white focus:border-blue-500 outline-none transition-all" 
+          />
+          <button 
+            type="submit" 
+            disabled={magasinSaving} 
+            className="rounded-xl bg-blue-600 px-6 py-3 font-black text-white hover:bg-blue-500 transition-all uppercase text-xs tracking-widest disabled:opacity-50 shadow-lg shadow-blue-500/20"
+          >
+            {magasinSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Ajouter'}
+          </button>
         </form>
-        <div className="mt-4 overflow-hidden rounded-xl border border-gray-200">
-          <table className="min-w-full divide-y divide-gray-200 text-sm">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-4 py-3 text-left font-semibold text-gray-700 uppercase tracking-wider text-xs">Code</th>
-                <th className="px-4 py-3 text-left font-semibold text-gray-700 uppercase tracking-wider text-xs">Nom</th>
-                <th className="px-4 py-3 text-left font-semibold text-gray-700 uppercase tracking-wider text-xs">Statut</th>
-                <th className="px-4 py-3 text-right font-semibold text-gray-700 uppercase tracking-wider text-xs">Actions</th>
+
+        <div className="overflow-hidden rounded-2xl border border-white/10 bg-gray-900/20">
+          <table className="min-w-full text-sm">
+            <thead>
+              <tr className="text-left text-[10px] font-black text-white uppercase tracking-[0.2em] border-b border-white/10 bg-white/5">
+                <th className="px-6 py-4">Code</th>
+                <th className="px-6 py-4">Désignation Magasin</th>
+                <th className="px-6 py-4">Statut</th>
+                <th className="px-6 py-4 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-200 bg-white">
+            <tbody className="divide-y divide-white/5">
               {magasins.map(m => (
-                <tr key={m.id} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-4 py-3 font-mono font-bold text-gray-700">{m.code}</td>
-                  <td className="px-4 py-3 font-medium text-gray-900">{m.nom}</td>
-                  <td className="px-4 py-3">
-                    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${m.actif ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                      {m.actif ? 'Actif' : 'Inactif'}
+                <tr key={m.id} className="hover:bg-white/5 transition-colors group">
+                  <td className="px-6 py-4 font-mono font-black text-blue-400">{m.code}</td>
+                  <td className="px-6 py-4 font-bold text-white uppercase text-xs tracking-tight">{m.nom}</td>
+                  <td className="px-6 py-4">
+                    <span className={`inline-flex items-center rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-widest ${m.actif ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'}`}>
+                      {m.actif ? 'En Service' : 'Hors Service'}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-right">
-                    <button onClick={() => { setMagasinEdit(m.id); setMagasinEditForm({ code: m.code, nom: m.nom, localisation: m.localisation, actif: m.actif }); }} className="text-orange-600 hover:text-orange-800 font-medium flex items-center justify-end gap-1 ml-auto">
-                      <Edit2 className="h-4 w-4" /> Modifier
+                  <td className="px-6 py-4 text-right">
+                    <button 
+                        onClick={() => { setMagasinEdit(m.id); setMagasinEditForm({ code: m.code, nom: m.nom, localisation: m.localisation, actif: m.actif }); }} 
+                        className="text-white/40 hover:text-white font-black uppercase text-[10px] tracking-widest flex items-center justify-end gap-2 ml-auto transition-all"
+                    >
+                      <Edit2 className="h-3 w-3" /> Modifier
                     </button>
                   </td>
                 </tr>
