@@ -1,62 +1,78 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
-import { getSession } from '@/lib/auth'
 
-export async function GET() {
-  const session = await getSession()
-  if (!session) return new NextResponse('Non autorisé', { status: 401 })
-
+export async function GET(req: Request) {
   try {
-    const archives = await prisma.archiveSoldeClient.findMany({
-      where: { entiteId: session.entiteId },
+    const userHeader = req.headers.get('x-user')
+    if (!userHeader) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+    const currentUser = JSON.parse(userHeader)
+
+    const soldes = await prisma.archiveSoldeClient.findMany({
+      where: { entiteId: currentUser.entiteId },
       include: {
         client: { select: { nom: true } },
         utilisateur: { select: { nom: true } }
       },
       orderBy: { dateArchive: 'desc' }
     })
-    return NextResponse.json(archives)
+    return NextResponse.json(soldes)
   } catch (error) {
-    console.error('Erreur GET Archives Soldes:', error)
-    return new NextResponse('Erreur serveur', { status: 500 })
+    console.error('Erreur GET /api/archives/clients:', error)
+    return NextResponse.json({ error: 'Erreur interne' }, { status: 500 })
   }
 }
 
 export async function POST(req: Request) {
-  const session = await getSession()
-  if (!session) return new NextResponse('Non autorisé', { status: 401 })
-
   try {
+    const userHeader = req.headers.get('x-user')
+    if (!userHeader) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+    const currentUser = JSON.parse(userHeader)
+
     const body = await req.json()
     const { clientId, clientLibre, montant, dateArchive, observation } = body
 
-    // Blindage numérique
-    const rawClientId = clientId ? Number(clientId) : null
-    const rawMontant = Number(montant)
-
-    if (isNaN(rawMontant)) {
-       return new NextResponse('Montant invalide', { status: 400 })
+    if (!montant || (!clientId && !clientLibre)) {
+      return NextResponse.json({ error: 'Montant et identifiant du client requis' }, { status: 400 })
     }
 
-    if (!rawMontant || (!rawClientId && !clientLibre)) {
-      return new NextResponse('Données manquantes', { status: 400 })
-    }
-
-    const archive = await prisma.archiveSoldeClient.create({
+    const solde = await prisma.archiveSoldeClient.create({
       data: {
-        entiteId: session.entiteId,
-        utilisateurId: session.userId,
-        clientId: (rawClientId && !isNaN(rawClientId)) ? rawClientId : null,
-        clientLibre,
-        montant: rawMontant,
+        entiteId: currentUser.entiteId,
+        utilisateurId: currentUser.id,
+        clientId: clientId ? Number(clientId) : null,
+        clientLibre: clientLibre || null,
+        montant: Number(montant),
         dateArchive: dateArchive ? new Date(dateArchive) : new Date(),
         observation
       }
     })
-
-    return NextResponse.json(archive)
+    return NextResponse.json(solde, { status: 201 })
   } catch (error) {
-    console.error('Erreur POST Archive Solde:', error)
-    return new NextResponse('Erreur serveur', { status: 500 })
+    console.error('Erreur POST /api/archives/clients:', error)
+    return NextResponse.json({ error: 'Erreur internet création archive solde' }, { status: 500 })
+  }
+}
+
+export async function DELETE(req: Request) {
+  try {
+    const userHeader = req.headers.get('x-user')
+    if (!userHeader) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+    const currentUser = JSON.parse(userHeader)
+
+    if (currentUser.role !== 'SUPER_ADMIN' && currentUser.role !== 'ADMIN') {
+       return NextResponse.json({ error: 'Permission refusée' }, { status: 403 })
+    }
+
+    const { searchParams } = new URL(req.url)
+    const id = searchParams.get('id')
+    if (!id) return NextResponse.json({ error: 'ID requis' }, { status: 400 })
+
+    await prisma.archiveSoldeClient.delete({
+      where: { id: Number(id) }
+    })
+    return NextResponse.json({ success: true })
+  } catch (error) {
+    console.error('Erreur DELETE /api/archives/clients:', error)
+    return NextResponse.json({ error: 'Erreur suppression archive' }, { status: 500 })
   }
 }

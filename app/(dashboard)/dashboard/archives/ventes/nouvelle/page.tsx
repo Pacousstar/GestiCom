@@ -1,496 +1,331 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
-import { useRouter } from 'next/navigation'
-import { 
-  History, ArrowLeft, Save, Loader2, Plus, Trash2, 
-  ShoppingCart, Calendar, User, FileText, Search, CreditCard,
-  AlertTriangle, Percent, Pencil, X
-} from 'lucide-react'
+import { useState, useEffect, useRef } from 'react'
+import { ShoppingCart, Trash2, Printer, X, Search, CreditCard, Plus, Minus, AlertTriangle, Loader2 } from 'lucide-react'
 import { useToast } from '@/hooks/useToast'
-import Link from 'next/link'
+import { formatApiError } from '@/lib/validation-helpers'
 
-type Produit = { 
-  id: number; 
-  code: string; 
-  designation: string; 
-  prixVente: number | null;
-  categorie?: string;
-}
+type Produit = { id: number; code: string; designation: string; prixVente: number | null; prixAchat?: number | null }
+type Ligne = { produitId: number; designation: string; quantite: number; prixUnitaire: number; montant: number }
 
-type Ligne = {
-  id: string
-  produitId: number | null
-  designation: string
-  quantite: number
-  prixUnitaire: number
-  tvaPerc: number
-  remise: number
-  montant: number
-}
-
-export default function NouvelleArchiveVentePage() {
-  const router = useRouter()
-  const { success, error } = useToast()
-  
-  const [loading, setLoading] = useState(false)
+export default function VenteHistoriqueArchivePage() {
   const [produits, setProduits] = useState<Produit[]>([])
-  const [magasins, setMagasins] = useState<Array<{id: number, nom: string}>>([])
-  const [clients, setClients] = useState<Array<{id: number, nom: string}>>([])
+  const [magasins, setMagasins] = useState<any[]>([])
+  const [clients, setClients] = useState<any[]>([])
+  const [magasinId, setMagasinId] = useState('')
+  const [clientId, setClientId] = useState('')
+  const [search, setSearch] = useState('')
+  const [cart, setCart] = useState<Ligne[]>([])
+  const [showPayment, setShowPayment] = useState(false)
+  const [modePaiement, setModePaiement] = useState('ESPECES')
+  const [submitting, setSubmitting] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [dateFacture, setDateFacture] = useState(new Date().toISOString().split('T')[0])
+  const [numeroFactureOrigine, setNumeroFactureOrigine] = useState('')
+  const { success: showSuccess, error: showError } = useToast()
   
-  const [formData, setFormData] = useState({
-    numeroFactureOrigine: '',
-    date: new Date().toISOString().split('T')[0],
-    magasinId: '',
-    clientId: '',
-    clientLibre: '',
-    observation: '',
-    lignes: [] as Ligne[]
-  })
+  const searchInputRef = useRef<HTMLInputElement>(null)
+  const paymentButtonRef = useRef<HTMLButtonElement>(null)
 
-  const [ajout, setAjout] = useState({
-    produitId: '',
-    recherche: '',
-    designation: '',
-    quantite: '1',
-    prixUnitaire: '',
-    tvaPerc: '0',
-    remise: '0',
-    remiseType: 'MONTANT' as 'MONTANT' | 'POURCENT'
-  })
-
+  // Chargement initial
   useEffect(() => {
-    fetchData()
+    Promise.all([
+      fetch('/api/produits?complet=1').then(r => r.ok ? r.json() : []),
+      fetch('/api/magasins').then(r => r.ok ? r.json() : []),
+      fetch('/api/clients').then(r => r.ok ? r.json() : [])
+    ]).then(([p, m, c]) => {
+      setProduits(Array.isArray(p) ? p : [])
+      setMagasins(Array.isArray(m) ? m : [])
+      const clientData = c.data && Array.isArray(c.data) ? c.data : (Array.isArray(c) ? c : [])
+      setClients(clientData)
+      
+      if (m.length > 0) setMagasinId(String(m[0].id))
+      setLoading(false)
+    })
   }, [])
 
-  const fetchData = async () => {
-    try {
-      const [pRes, mRes, cRes] = await Promise.all([
-        fetch('/api/produits?actif=true'),
-        fetch('/api/magasins'),
-        fetch('/api/clients?actif=true')
-      ])
-      const [pData, mData, cData] = await Promise.all([pRes.json(), mRes.json(), cRes.json()])
-      setProduits(Array.isArray(pData) ? pData : [])
-      setMagasins(Array.isArray(mData) ? mData : [])
-      setClients(Array.isArray(cData) ? cData : [])
-      if (Array.isArray(mData) && mData.length > 0) setFormData(prev => ({ ...prev, magasinId: String(mData[0].id) }))
-    } catch (e) {
-      console.error(e)
+  // Focus permanent sur la recherche
+  useEffect(() => {
+    if (!showPayment) {
+      searchInputRef.current?.focus()
+    }
+  }, [showPayment])
+
+  // Gestion des raccourcis clavier
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'F12') {
+        e.preventDefault()
+        if (cart.length > 0) setShowPayment(true)
+      }
+      if (e.key === 'F10' && showPayment) {
+        e.preventDefault()
+        handleValidate()
+      }
+      if (e.key === 'Escape') {
+        setShowPayment(false)
+        setSearch('')
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [cart, showPayment])
+
+  const total = cart.reduce((acc, l) => acc + l.montant, 0)
+
+  const handleSearch = (val: string) => {
+    setSearch(val)
+    const p = produits.find(p => p.code.toLowerCase() === val.toLowerCase() || (p as any).codeBarres === val)
+    if (p) {
+      addToCart(p)
+      setSearch('')
     }
   }
 
-  const ajouterLigne = () => {
-    const desig = ajout.designation || (ajout.produitId ? produits.find(p => p.id === Number(ajout.produitId))?.designation : '')
-    if (!desig || !ajout.quantite || !ajout.prixUnitaire) {
-      error('Veuillez remplir désignation, quantité et prix.')
+  const addToCart = (p: Produit) => {
+    setCart(prev => {
+      const existing = prev.find(l => l.produitId === p.id)
+      if (existing) {
+        return prev.map(l => l.produitId === p.id ? { ...l, quantite: l.quantite + 1, montant: (l.quantite + 1) * l.prixUnitaire } : l)
+      }
+      const pu = p.prixVente || p.prixAchat || 0
+      return [...prev, { produitId: p.id, designation: p.designation, quantite: 1, prixUnitaire: pu, montant: pu }]
+    })
+    showSuccess(`Ajouté : ${p.designation}`)
+  }
+
+  const updateQty = (id: number, delta: number) => {
+    setCart(prev => prev.map(l => l.produitId === id ? { ...l, quantite: Math.max(1, l.quantite + delta), montant: Math.max(1, l.quantite + delta) * l.prixUnitaire } : l))
+  }
+
+  const removeItem = (id: number) => {
+    setCart(prev => prev.filter(l => l.produitId !== id))
+  }
+
+  const handleValidate = async () => {
+    if (!magasinId || cart.length === 0 || !numeroFactureOrigine) {
+      showError("Veuillez renseigner le N° de facture d'origine.")
       return
     }
-
-    const q = Number(ajout.quantite)
-    const pu = Number(ajout.prixUnitaire)
-    const r = Number(ajout.remise)
-    const t = Number(ajout.tvaPerc)
-    const ht = q * pu
-    const rv = ajout.remiseType === 'MONTANT' ? r : ht * (r / 100)
-    const montantLigne = Math.round((ht - rv) * (1 + t / 100))
-
-    const nouvelleLigne: Ligne = {
-      id: Math.random().toString(36).substr(2, 9),
-      produitId: ajout.produitId ? Number(ajout.produitId) : null,
-      designation: desig || '',
-      quantite: q,
-      prixUnitaire: pu,
-      tvaPerc: t,
-      remise: rv,
-      montant: montantLigne
-    }
-
-    setFormData(prev => ({
-      ...prev,
-      lignes: [...prev.lignes, nouvelleLigne]
-    }))
-
-    setAjout({ produitId: '', recherche: '', designation: '', quantite: '1', prixUnitaire: '', tvaPerc: '0', remise: '0', remiseType: 'MONTANT' })
-  }
-
-  const supprimerLigne = (id: string) => {
-    setFormData(prev => ({
-      ...prev,
-      lignes: prev.lignes.filter(l => l.id !== id)
-    }))
-  }
-
-  // Calculs totaux
-  const totals = useMemo(() => {
-    const totalHT = formData.lignes.reduce((acc, l) => acc + (l.quantite * l.prixUnitaire), 0)
-    const totalRemise = formData.lignes.reduce((acc, l) => acc + l.remise, 0)
-    const totalTVA = formData.lignes.reduce((acc, l) => {
-      const htNet = (l.quantite * l.prixUnitaire) - l.remise
-      return acc + (htNet * (l.tvaPerc / 100))
-    }, 0)
-    const totalTTC = Math.round((totalHT - totalRemise) + totalTVA)
-    return { totalHT, totalRemise, totalTVA, totalTTC }
-  }, [formData.lignes])
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!formData.numeroFactureOrigine) return error('N° Facture original obligatoire')
-    if (formData.lignes.length === 0) return error('Veuillez ajouter au moins un article')
-
-    setLoading(true)
+    setSubmitting(true)
     try {
-      const res = await fetch('/api/archives/ventes', {
+      const payload = {
+          magasinId: Number(magasinId),
+          clientId: clientId ? Number(clientId) : null,
+          modePaiement,
+          numeroFactureOrigine,
+          dateFacture,
+          lignes: cart.map(l => ({
+            produitId: l.produitId,
+            quantite: l.quantite,
+            prixUnitaire: l.prixUnitaire
+          }))
+      }
+      const res = await fetch('/api/archives/ventes/nouvelle', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...formData, montantTotal: totals.totalTTC })
+        body: JSON.stringify(payload)
       })
 
       if (res.ok) {
-        success('Archive enregistrée avec succès !')
-        router.push('/dashboard/archives/ventes')
+        showSuccess('Vente archivée avec succès ! (Aucun impact comptable/stock)')
+        setCart([])
+        setShowPayment(false)
+        setSearch('')
+        setNumeroFactureOrigine('')
       } else {
         const d = await res.json()
-        error(d.error || 'Erreur lors de l\'enregistrement')
+        showError(formatApiError(d.error))
       }
     } catch (e) {
-      error('Erreur serveur')
+      showError('Erreur lors de la validation')
     } finally {
-      setLoading(false)
+      setSubmitting(false)
     }
   }
 
+  if (loading) return <div className="flex h-screen items-center justify-center bg-slate-900"><Loader2 className="h-10 w-10 animate-spin text-orange-500" /></div>
+
   return (
-    <div className="p-6 space-y-6 max-w-6xl mx-auto">
+    <div className="flex h-screen flex-col overflow-hidden bg-slate-900 p-4 text-white">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-6">
-          <Link href="/dashboard/archives/ventes" className="p-4 rounded-2xl bg-white/80 backdrop-blur-md hover:bg-orange-50 text-orange-900 transition-all shadow-lg border border-white">
-            <ArrowLeft className="h-6 w-6" />
-          </Link>
-          <div>
-            <h1 className="text-3xl font-black text-white uppercase tracking-tighter flex items-center gap-4">
-              <History className="h-10 w-10 text-orange-400 drop-shadow-glow" />
-              Archives d'Anciennes Ventes
-            </h1>
-            <p className="text-white/60 font-medium text-sm tracking-wide">Coffre-fort historique : pas d'impact sur vos stocks ou CA actuel</p>
+      <div className="mb-4 flex items-center justify-between">
+        <div className="flex flex-col gap-1">
+          <div className="flex items-center gap-4">
+            <ShoppingCart className="h-8 w-8 text-indigo-500" />
+            <h1 className="text-3xl font-black uppercase tracking-tighter italic">Ancienne Vente <span className="text-indigo-500 underline">ARCHIVE</span></h1>
           </div>
+          <p className="text-indigo-400 text-xs font-bold tracking-widest uppercase">Reproduction textuelle : aucun calcul de stock, saisie uniquement</p>
+        </div>
+        
+        <div className="flex gap-4">
+          <input 
+            type="text"
+            placeholder="N° Facture origine (Obligatoire)"
+            value={numeroFactureOrigine}
+            onChange={e => setNumeroFactureOrigine(e.target.value)}
+            className="rounded-lg bg-slate-800 border-2 border-indigo-500 px-4 py-2 text-sm font-bold focus:border-indigo-400 outline-none w-64 placeholder:text-slate-500 text-white"
+          />
+          <input 
+            type="date"
+            value={dateFacture}
+            onChange={e => setDateFacture(e.target.value)}
+            className="rounded-lg bg-slate-800 border-2 border-slate-700 px-4 py-2 text-sm font-bold focus:border-indigo-500 outline-none"
+          />
+          <select 
+            value={magasinId} 
+            onChange={e => setMagasinId(e.target.value)}
+            className="rounded-lg bg-slate-800 border-2 border-slate-700 px-4 py-2 text-sm font-bold focus:border-indigo-500 outline-none"
+          >
+            {magasins.map(m => <option key={m.id} value={m.id}>{m.nom}</option>)}
+          </select>
+          <select 
+            value={clientId} 
+            onChange={e => setClientId(e.target.value)}
+            className="rounded-lg bg-slate-800 border-2 border-slate-700 px-4 py-2 text-sm font-bold focus:border-indigo-500 outline-none"
+          >
+            <option value="">Client de passage</option>
+            {clients.map(c => <option key={c.id} value={c.id}>{c.nom}</option>)}
+          </select>
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Colonne Gauche : Infos Archive */}
-        <div className="lg:col-span-1 space-y-6">
-          <div className="bg-white/90 backdrop-blur-2xl rounded-[40px] p-8 shadow-2xl border border-white/50 space-y-6 relative overflow-hidden group">
-             <div className="absolute top-0 right-0 p-8 opacity-[0.03] group-hover:scale-110 transition-transform duration-700">
-                <FileText className="h-32 w-32" />
-             </div>
-             
-             <div className="space-y-2 relative z-10">
-                <label className="text-[10px] font-black uppercase text-gray-400 tracking-[0.2em] ml-1">N° Facture Originale</label>
+      {/* Main Content */}
+      <div className="flex flex-1 gap-6 overflow-hidden">
+        {/* Cart Side */}
+        <div className="flex flex-1 flex-col rounded-3xl bg-slate-800 p-6 shadow-2xl border border-slate-700">
+          <div className="mb-4 flex items-center gap-3">
+             <div className="relative flex-1">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 h-6 w-6" />
                 <input
-                  required
-                  type="text"
-                  placeholder="Ex: FAC-2023-001"
-                  className="w-full px-6 py-5 rounded-[24px] bg-gray-50 border-2 border-transparent focus:border-orange-500 focus:bg-white font-black transition-all text-gray-900 placeholder:text-gray-300 shadow-inner"
-                  value={formData.numeroFactureOrigine}
-                  onChange={e => setFormData(prev => ({ ...prev, numeroFactureOrigine: e.target.value }))}
+                    ref={searchInputRef}
+                    type="text"
+                    value={search}
+                    onChange={e => handleSearch(e.target.value)}
+                    placeholder="Scanner ou saisir code produit..."
+                    className="w-full rounded-2xl bg-slate-900 border-2 border-slate-700 py-4 pl-12 pr-4 text-xl font-bold placeholder:text-slate-600 focus:border-indigo-500 outline-none transition-all"
                 />
              </div>
-
-             <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase text-gray-400 tracking-widest ml-1">Date d'origine</label>
-                    <input
-                      required
-                      type="date"
-                      className="w-full px-5 py-3.5 rounded-2xl bg-white border-2 border-gray-100 font-bold text-gray-950"
-                      value={formData.date}
-                      onChange={e => setFormData(prev => ({ ...prev, date: e.target.value }))}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase text-gray-400 tracking-widest ml-1">Magasin</label>
-                    <select
-                      required
-                      className="w-full px-5 py-3.5 rounded-2xl bg-white border-2 border-gray-100 font-bold text-gray-950"
-                      value={formData.magasinId}
-                      onChange={e => setFormData(prev => ({ ...prev, magasinId: e.target.value }))}
-                    >
-                      {magasins.map(m => <option key={m.id} value={m.id}>{m.nom}</option>)}
-                    </select>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase text-gray-400 tracking-widest ml-1">Client (Réel ou Divers)</label>
-                  <select
-                    className="w-full px-6 py-4 rounded-[24px] bg-gray-50 border-2 border-transparent focus:border-orange-500 font-bold text-gray-900 appearance-none shadow-inner"
-                    value={formData.clientId}
-                    onChange={e => setFormData(prev => ({ ...prev, clientId: e.target.value, clientLibre: '' }))}
-                  >
-                    <option value="">-- Client Divers / Passager --</option>
-                    {clients.map(c => <option key={c.id} value={c.id}>{c.nom}</option>)}
-                  </select>
-                </div>
-
-                {!formData.clientId && (
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase text-gray-400 tracking-widest ml-1">Nom Client Libre</label>
-                    <input
-                      type="text"
-                      placeholder="Identité du client historique..."
-                      className="w-full px-5 py-3.5 rounded-2xl bg-white border-2 border-gray-100 font-bold text-gray-900 shadow-inner"
-                      value={formData.clientLibre}
-                      onChange={e => setFormData(prev => ({ ...prev, clientLibre: e.target.value }))}
-                    />
-                  </div>
-                )}
-
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase text-gray-400 tracking-widest ml-1">Observation</label>
-                  <textarea
-                    rows={3}
-                    className="w-full px-5 py-4 rounded-2xl bg-white border-2 border-gray-100 font-bold text-gray-900 resize-none shadow-inner"
-                    placeholder="Contexte de cette archive..."
-                    value={formData.observation}
-                    onChange={e => setFormData(prev => ({ ...prev, observation: e.target.value }))}
-                  />
-                </div>
-             </div>
           </div>
 
-          {/* Résumé Financier */}
-          <div className="bg-gray-900 rounded-[40px] p-8 text-white shadow-2xl relative overflow-hidden group">
-             <div className="relative z-10 space-y-4">
-                <div className="flex justify-between items-center opacity-60">
-                   <span className="text-[10px] font-black uppercase tracking-widest">Total HT</span>
-                   <span className="font-bold tabular-nums">{totals.totalHT.toLocaleString()} F</span>
+          <div className="flex-1 overflow-y-auto pr-2 space-y-2">
+            {cart.length === 0 ? (
+                <div className="flex h-full flex-col items-center justify-center opacity-20">
+                    <ShoppingCart className="h-32 w-32 filter grayscale" />
+                    <p className="mt-4 text-2xl font-bold uppercase tracking-widest text-indigo-200">Restauration d'Archive</p>
                 </div>
-                {totals.totalRemise > 0 && (
-                   <div className="flex justify-between items-center text-red-400">
-                      <span className="text-[10px] font-black uppercase tracking-widest">Total Remises</span>
-                      <span className="font-bold tabular-nums">-{totals.totalRemise.toLocaleString()} F</span>
-                   </div>
-                )}
-                <div className="flex justify-between items-center opacity-60">
-                   <span className="text-[10px] font-black uppercase tracking-widest">Total TVA</span>
-                   <span className="font-bold tabular-nums">{Math.round(totals.totalTVA).toLocaleString()} F</span>
-                </div>
-                <div className="pt-4 border-t border-white/10 mt-4">
-                   <p className="text-[10px] font-black uppercase tracking-[0.3em] opacity-40 mb-1">TOTAL ARCHIVÉ</p>
-                   <div className="text-4xl font-black flex items-baseline gap-2 text-emerald-400 tracking-tighter">
-                     {totals.totalTTC.toLocaleString()}
-                     <span className="text-sm font-bold opacity-50 text-white">FCFA</span>
-                   </div>
-                </div>
-             </div>
-             <div className="absolute -bottom-6 -right-6 opacity-[0.05]">
-                <CreditCard className="h-32 w-32" />
-             </div>
+            ) : (
+                cart.map(l => (
+                    <div key={l.produitId} className="flex items-center justify-between rounded-2xl bg-slate-900 p-4 border border-slate-700/50 hover:border-slate-500 transition-colors">
+                        <div className="flex-1">
+                            <p className="text-xl font-bold">{l.designation}</p>
+                            <p className="text-sm text-slate-400">{l.prixUnitaire.toLocaleString('fr-FR')} F / unité</p>
+                        </div>
+                        <div className="flex items-center gap-6">
+                            <div className="flex items-center gap-2">
+                                <button onClick={() => updateQty(l.produitId, -1)} className="rounded-xl bg-slate-800 p-2 hover:bg-slate-700 transition-colors"><Minus className="h-6 w-6" /></button>
+                                <span className="w-12 text-center text-3xl font-black">{l.quantite}</span>
+                                <button onClick={() => updateQty(l.produitId, 1)} className="rounded-xl bg-slate-800 p-2 hover:bg-slate-700 transition-colors"><Plus className="h-6 w-6" /></button>
+                            </div>
+                            <p className="w-32 text-right text-2xl font-black text-indigo-400">{l.montant.toLocaleString('fr-FR')} F</p>
+                            <button onClick={() => removeItem(l.produitId)} className="text-red-500 hover:text-red-400 p-2"><Trash2 className="h-6 w-6" /></button>
+                        </div>
+                    </div>
+                ))
+            )}
           </div>
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full flex items-center justify-center gap-4 bg-orange-500 hover:bg-orange-600 active:scale-95 disabled:bg-gray-200 text-white py-6 rounded-[32px] font-black shadow-2xl shadow-orange-500/40 transition-all uppercase tracking-[0.2em]"
-          >
-            {loading ? <Loader2 className="h-6 w-6 animate-spin" /> : <Save className="h-6 w-6" />}
-            Enregistrer l'Archive
-          </button>
         </div>
 
-        {/* Colonne Droite : Lignes de l'Archive */}
-        <div className="lg:col-span-2 space-y-6">
-          <div className="bg-white rounded-[40px] p-8 shadow-xl border border-gray-100 relative overflow-hidden">
-            <h3 className="text-xs font-black uppercase text-gray-500 tracking-[0.3em] mb-8 flex items-center gap-3">
-              <div className="p-2 bg-orange-50 rounded-xl">
-                <ShoppingCart className="h-5 w-5 text-orange-600" />
-              </div>
-              Contenu de la Facture d'Origine
-            </h3>
+        {/* Totals Side */}
+        <div className="w-96 flex flex-col gap-6">
+            <div className="rounded-3xl bg-indigo-600 p-8 shadow-2xl shadow-indigo-900/40 border-2 border-indigo-400">
+                <p className="text-lg font-bold uppercase opacity-80">Total de l'archive</p>
+                <p className="mt-2 text-5xl font-black tracking-tighter leading-none">{total.toLocaleString('fr-FR')} F</p>
+                <div className="mt-6 border-t border-white/20 pt-4">
+                    <p className="text-sm font-medium opacity-80">Articles : {cart.reduce((a, b) => a + b.quantite, 0)}</p>
+                </div>
+            </div>
 
-            {/* Zone d'ajout Miroir UX Ventes */}
-            <div className="bg-gray-50/50 p-8 rounded-[40px] border border-gray-100 mb-8 space-y-6">
-               {/* Recherche de produit réelle */}
-               <div className="relative group">
-                  <label className="text-[10px] font-black uppercase tracking-widest ml-1 text-gray-400 mb-2 block">Chercher un produit réel ou saisir une désignation libre</label>
-                  <div className="relative">
-                    <input
-                      type="text"
-                      placeholder="Commencez à taper le nom d'un produit..."
-                      className="w-full pl-14 pr-6 py-5 rounded-[24px] bg-white border-2 border-transparent focus:border-orange-500 font-bold transition-all shadow-sm placeholder:text-gray-300"
-                      value={ajout.recherche}
-                      onChange={e => setAjout(prev => ({ ...prev, recherche: e.target.value, designation: e.target.value }))}
-                    />
-                    <div className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-300">
-                      <Search className="h-6 w-6" />
+            <div className="flex-1 rounded-3xl bg-slate-800 p-6 border border-slate-700 space-y-4">
+                <h3 className="text-xl font-bold border-b border-slate-700 pb-2 mb-4">Raccourcis</h3>
+                <div className="space-y-3">
+                    <div className="flex justify-between items-center text-slate-400">
+                        <span className="font-medium text-sm">Archiver sans stock</span>
+                        <span className="rounded-lg bg-slate-900 px-2 py-1 text-xs font-bold border border-slate-700">F12</span>
                     </div>
-                  </div>
-                  
-                  {/* Suggestions de produits réels */}
-                  {ajout.recherche.length > 1 && !ajout.produitId && produits.filter(p => p.designation.toLowerCase().includes(ajout.recherche.toLowerCase())).length > 0 && (
-                     <div className="absolute z-50 top-full left-0 w-full bg-white mt-2 rounded-[24px] shadow-2xl border border-gray-100 max-h-60 overflow-y-auto p-2 scrollbar-thin">
-                        {produits.filter(p => p.designation.toLowerCase().includes(ajout.recherche.toLowerCase())).map(p => (
-                          <button
-                            key={p.id}
-                            type="button"
-                            className="w-full text-left p-4 hover:bg-orange-50 rounded-2xl transition-colors flex justify-between items-center group/item"
-                            onClick={() => setAjout({ 
-                              ...ajout, 
-                              produitId: String(p.id), 
-                              recherche: p.designation, 
-                              designation: p.designation, 
-                              prixUnitaire: String(p.prixVente || '') 
-                            })}
-                          >
-                            <div className="flex flex-col">
-                              <span className="font-black text-gray-900 group-hover/item:text-orange-900">{p.designation}</span>
-                              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{p.code}</span>
-                            </div>
-                            <div className="p-2 bg-gray-50 rounded-xl group-hover/item:bg-white text-orange-600">
-                               <Plus className="h-4 w-4" />
-                            </div>
-                          </button>
-                        ))}
-                     </div>
-                  )}
-                  {ajout.produitId && (
-                     <button 
-                       onClick={() => setAjout(a => ({ ...a, produitId: '', recherche: '', designation: '' }))}
-                       className="absolute right-5 top-[3.2rem] p-2 bg-gray-100 hover:bg-red-50 text-gray-400 hover:text-red-500 rounded-xl transition-all"
-                     >
-                       <X className="h-4 w-4" />
-                     </button>
-                  )}
-               </div>
+                    <div className="flex justify-between items-center text-slate-400">
+                        <span className="font-medium text-sm">Valider Vente</span>
+                        <span className="rounded-lg bg-slate-900 px-2 py-1 text-xs font-bold border border-slate-700">F10</span>
+                    </div>
+                    <div className="flex justify-between items-center text-slate-400">
+                        <span className="font-medium text-sm">Annuler</span>
+                        <span className="rounded-lg bg-slate-900 px-2 py-1 text-xs font-bold border border-slate-700">ESC</span>
+                    </div>
+                </div>
 
-               {/* Détails de la ligne */}
-               <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-black uppercase text-gray-400 ml-1">Quantité</label>
-                    <input
-                      type="number"
-                      min="1"
-                      className="w-full px-5 py-3.5 rounded-2xl bg-white border border-gray-100 font-black text-center tabular-nums"
-                      value={ajout.quantite}
-                      onChange={e => setAjout(prev => ({ ...prev, quantite: e.target.value }))}
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-black uppercase text-gray-400 ml-1">P.U Archive</label>
-                    <input
-                      type="number"
-                      className="w-full px-5 py-3.5 rounded-2xl bg-white border border-gray-100 font-black tabular-nums"
-                      value={ajout.prixUnitaire}
-                      onChange={e => setAjout(prev => ({ ...prev, prixUnitaire: e.target.value }))}
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-black uppercase text-gray-400 ml-1">Remise</label>
-                    <div className="flex">
-                      <input
-                        type="number"
-                        className="w-full px-4 py-3.5 rounded-l-2xl bg-white border border-gray-100 border-r-0 font-black tabular-nums"
-                        value={ajout.remise}
-                        onChange={e => setAjout(prev => ({ ...prev, remise: e.target.value }))}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setAjout(a => ({ ...a, remiseType: a.remiseType === 'MONTANT' ? 'POURCENT' : 'MONTANT' }))}
-                        className={`px-3 py-3.5 border-2 rounded-r-2xl font-black text-xs transition-colors ${
-                          ajout.remiseType === 'POURCENT' ? 'bg-orange-500 text-white border-orange-500' : 'bg-gray-100 text-gray-500 border-gray-100'
-                        }`}
-                      >
-                        {ajout.remiseType === 'MONTANT' ? 'F' : '%'}
-                      </button>
-                    </div>
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-black uppercase text-gray-400 ml-1">TVA %</label>
-                    <input
-                      type="number"
-                      className="w-full px-5 py-3.5 rounded-2xl bg-white border border-gray-100 font-black tabular-nums"
-                      value={ajout.tvaPerc}
-                      onChange={e => setAjout(prev => ({ ...prev, tvaPerc: e.target.value }))}
-                    />
-                  </div>
-                  <div className="col-span-2 md:col-span-1 flex items-end">
-                    <button
-                      type="button"
-                      onClick={ajouterLigne}
-                      className="w-full py-3.5 bg-gray-900 text-white rounded-2xl font-black hover:bg-orange-600 transition-all shadow-lg active:scale-95 flex items-center justify-center gap-2"
+                <div className="mt-auto pt-4 space-y-3">
+                    <button 
+                        onClick={() => cart.length > 0 && setShowPayment(true)}
+                        disabled={cart.length === 0}
+                        className="w-full flex items-center justify-center gap-3 rounded-2xl bg-indigo-600 py-6 text-2xl font-black hover:bg-indigo-500 active:scale-95 transition-all shadow-xl disabled:opacity-30"
                     >
-                      <Plus className="h-5 w-5" />
-                      Ajouter
+                        <CreditCard className="h-8 w-8" />
+                        ARCHIVER (F12)
                     </button>
-                  </div>
-               </div>
-            </div>
-
-            {/* Tableau des lignes Miroir UI Ventes */}
-            <div className="space-y-4">
-              {formData.lignes.length === 0 ? (
-                <div className="text-center py-20 opacity-10 flex flex-col items-center">
-                  <ShoppingCart className="h-20 w-20 mb-4" />
-                  <p className="font-black uppercase tracking-[0.3em] text-sm">Prêt pour l'archivage</p>
+                    <button 
+                        onClick={() => { if(confirm('Vider le panier de restauration ?')) setCart([]) }}
+                        className="w-full flex items-center justify-center gap-2 rounded-2xl border-2 border-slate-700 py-3 font-bold text-slate-400 hover:bg-slate-700 transition-colors"
+                    >
+                        <X className="h-5 w-5" />
+                        VIDER CARTE ARCHIVE
+                    </button>
                 </div>
-              ) : (
-                <div className="overflow-x-auto min-h-[300px]">
-                  <table className="w-full border-separate border-spacing-y-3">
-                    <thead>
-                       <tr className="text-[10px] font-black uppercase text-gray-400 tracking-widest text-left">
-                          <th className="px-6 pb-2">Description</th>
-                          <th className="px-4 pb-2 text-center">Qté</th>
-                          <th className="px-4 pb-2 text-right">P.U</th>
-                          <th className="px-4 pb-2 text-right">Remise/TVA</th>
-                          <th className="px-6 pb-2 text-right">Montant TTC</th>
-                          <th className="pb-2"></th>
-                       </tr>
-                    </thead>
-                    <tbody>
-                      {formData.lignes.map((l) => (
-                        <tr key={l.id} className="bg-gray-50/50 hover:bg-white hover:shadow-xl transition-all group">
-                          <td className="px-6 py-5 rounded-l-[24px] border-y border-l border-transparent group-hover:border-orange-100">
-                             <h4 className="font-black text-gray-900 uppercase text-xs tracking-tight">{l.designation}</h4>
-                             {l.produitId && <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Produit Réf: {l.produitId}</p>}
-                          </td>
-                          <td className="px-4 py-5 border-y border-transparent group-hover:border-orange-100 text-center">
-                             <span className="font-black text-gray-900 bg-white px-3 py-1.5 rounded-xl shadow-sm border border-gray-100">{l.quantite}</span>
-                          </td>
-                          <td className="px-4 py-5 border-y border-transparent group-hover:border-orange-100 text-right font-bold text-gray-600 tabular-nums">
-                             {l.prixUnitaire.toLocaleString()}
-                          </td>
-                          <td className="px-4 py-5 border-y border-transparent group-hover:border-orange-100 text-right">
-                             <div className="flex flex-col">
-                                {l.remise > 0 && <span className="text-[10px] font-black text-red-500">-{l.remise.toLocaleString()} R.</span>}
-                                {l.tvaPerc > 0 && <span className="text-[10px] font-black text-blue-500">+{l.tvaPerc}% TVA</span>}
-                                {l.remise === 0 && l.tvaPerc === 0 && <span className="text-[10px] font-bold text-gray-300">0% / 0F</span>}
-                             </div>
-                          </td>
-                          <td className="px-6 py-5 border-y border-transparent group-hover:border-orange-100 text-right font-black text-emerald-600 tabular-nums text-lg">
-                             {l.montant.toLocaleString()}
-                          </td>
-                          <td className="px-4 py-5 rounded-r-[24px] border-y border-r border-transparent group-hover:border-orange-100 text-right">
-                            <button
-                              type="button"
-                              onClick={() => supprimerLigne(l.id)}
-                              className="p-3 text-gray-200 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
-                            >
-                              <Trash2 className="h-5 w-5" />
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
             </div>
-          </div>
         </div>
-      </form>
+      </div>
+
+      {/* Payment Modal */}
+      {showPayment && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-md p-4">
+              <div className="w-full max-w-xl rounded-3xl bg-slate-900 p-8 shadow-2xl border-2 border-indigo-500 animate-in zoom-in-95">
+                  <div className="flex justify-between items-center mb-8">
+                      <h2 className="text-3xl font-black text-indigo-100">SAUVEGARDE ARCHIVE</h2>
+                      <button onClick={() => setShowPayment(false)} className="rounded-full bg-slate-800 p-2 hover:bg-slate-700 transition-colors"><X className="h-8 w-8" /></button>
+                  </div>
+
+                  <div className="mb-8 p-6 rounded-2xl bg-slate-800 border border-slate-700 text-center">
+                      <p className="text-slate-400 font-bold uppercase text-sm mb-1">Ancien Montant</p>
+                      <p className="text-5xl font-black text-indigo-400 tracking-tighter">{total.toLocaleString('fr-FR')} F</p>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4 mb-8">
+                      {['ESPECES', 'MOBILE_MONEY', 'CHEQUE', 'VIREMENT', 'CREDIT'].map(m => (
+                          <button 
+                            key={m}
+                            onClick={() => setModePaiement(m)}
+                            className={`rounded-2xl border-2 py-4 text-lg font-black transition-all ${modePaiement === m ? 'bg-indigo-600 border-indigo-400 shadow-lg shadow-indigo-900/40 text-white' : 'bg-slate-800 border-slate-700 hover:border-slate-500'}`}
+                          >
+                              {m.replace('_', ' ')}
+                          </button>
+                      ))}
+                  </div>
+
+                  <button 
+                    onClick={handleValidate}
+                    disabled={submitting}
+                    className="w-full flex items-center justify-center gap-4 rounded-2xl bg-indigo-600 py-8 text-3xl font-black shadow-2xl hover:bg-indigo-500 active:scale-95 transition-all disabled:opacity-50 text-white"
+                  >
+                      {submitting ? <Loader2 className="h-10 w-10 animate-spin" /> : (
+                          <>
+                            <Printer className="h-10 w-10" />
+                            VALIDER L'ARCHIVE (F10)
+                          </>
+                      )}
+                  </button>
+                  <p className="mt-4 text-center text-slate-500 text-sm font-bold">Cette opération n'engendre aucune sortie de stock.</p>
+              </div>
+          </div>
+      )}
     </div>
   )
 }
