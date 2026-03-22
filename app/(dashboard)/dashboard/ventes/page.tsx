@@ -366,6 +366,7 @@ export default function VentesPage() {
       prixUnitaire: String(l.prixUnitaire),
       tvaPerc: String(l.tvaPerc || '0'),
       remise: String(l.remise || '0'),
+      remiseType: 'MONTANT',
       recherche: l.designation
     })
     setFormData((f) => ({ ...f, lignes: f.lignes.filter((_, j) => j !== i) }))
@@ -1104,7 +1105,7 @@ export default function VentesPage() {
                             <td className="text-right">{l.quantite}</td>
                             <td className="text-right">{l.prixUnitaire.toLocaleString('fr-FR')} F</td>
                             <td className="text-right">{ht.toLocaleString('fr-FR')} F</td>
-                            <td className="text-right text-red-600">-{l.remise.toLocaleString('fr-FR')} F</td>
+                            <td className="text-right text-red-600">-{(l.remise || 0).toLocaleString('fr-FR')} F</td>
                             <td className="text-right">{l.tvaPerc}%</td>
                             <td className="text-right font-bold text-emerald-700">{Math.round(ttc).toLocaleString('fr-FR')} F</td>
                             <td className="w-16">

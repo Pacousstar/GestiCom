@@ -123,12 +123,12 @@ export async function GET(request: NextRequest) {
     // Grouper les données par jour ou mois
     const groupBy = periode === 'mois' ? 'mois' : 'jour'
     
-    const caParPeriode: Array<{ date: string; ca: number; achats: number }> = []
+    const caParPeriode: Array<{ date: string; ca: number; achats: number; count: number }> = []
     const evolutionStock: Array<{ date: string; entrees: number; sorties: number }> = []
 
     if (groupBy === 'mois') {
       // Grouper par mois
-      const caMap = new Map<string, { ca: number; achats: number }>()
+      const caMap = new Map<string, { ca: number; achats: number; count: number }>()
       const stockMap = new Map<string, { entrees: number; sorties: number }>()
 
       ventes.forEach((v) => {

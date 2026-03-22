@@ -16,11 +16,12 @@ function toNum(val: unknown): number {
 }
 
 export async function GET() {
-  try {
-    const session = await getSession()
-    if (!session) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-
-    const startTime = Date.now();
+    let startTime = 0;
+    try {
+      const session = await getSession()
+      if (!session) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+  
+      startTime = Date.now();
     console.log('[API] GET /api/dashboard - Début');
 
     const now = new Date()

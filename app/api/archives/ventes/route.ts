@@ -48,7 +48,7 @@ export async function POST(req: NextRequest) {
         date: new Date(date),
         magasinId: Number(magasinId),
         entiteId: session.entiteId,
-        utilisateurId: session.id,
+        utilisateurId: session.userId,
         clientId: clientId ? Number(clientId) : null,
         clientLibre,
         montantTotal: Number(montantTotal),
