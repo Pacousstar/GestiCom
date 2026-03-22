@@ -1494,7 +1494,7 @@ export default function VentesPage() {
               {totals && (
                 <tfoot className="bg-orange-50 font-bold text-gray-900 border-t-2 border-orange-200">
                   <tr>
-                    <td colSpan={4} className="px-4 py-3 uppercase text-xs tracking-wider text-orange-800 font-black">Total de la Période</td>
+                    <td colSpan={5} className="px-4 py-3 uppercase text-xs tracking-wider text-orange-800 font-black">Total de la Période</td>
                     <td className="px-4 py-3 text-right text-orange-700">{totals.montantTotal.toLocaleString('fr-FR')} F</td>
                     <td colSpan={2}></td>
                     <td className="px-4 py-3 text-right text-red-700">{totals.resteAPayer.toLocaleString('fr-FR')} F</td>

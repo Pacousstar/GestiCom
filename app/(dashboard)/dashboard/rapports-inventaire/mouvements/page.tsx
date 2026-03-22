@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { Search, Loader2, Download, Filter, Package, Warehouse, User, ArrowUpRight, ArrowDownLeft, RefreshCcw, AlertTriangle } from 'lucide-react'
 import { useToast } from '@/hooks/useToast'
+import Pagination from '@/components/ui/Pagination'
 
 interface Mouvement {
   id: number
@@ -28,6 +29,8 @@ export default function MouvementsStockPage() {
   const [selectedMagasin, setSelectedMagasin] = useState('TOUT')
   const [selectedType, setSelectedType] = useState('TOUT')
   const [search, setSearch] = useState('')
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 20
   const { error: showError } = useToast()
 
   useEffect(() => {
@@ -86,6 +89,7 @@ export default function MouvementsStockPage() {
 
   const handleFilter = (e: React.FormEvent) => {
     e.preventDefault()
+    setCurrentPage(1)
     fetchData(startDate, endDate, selectedProduct, selectedMagasin, selectedType)
   }
 
@@ -93,6 +97,9 @@ export default function MouvementsStockPage() {
     m.produit.toLowerCase().includes(search.toLowerCase()) || 
     (m.code && m.code.toLowerCase().includes(search.toLowerCase()))
   ) : []
+
+  const paginatedData = Array.isArray(filteredData) ? filteredData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage) : []
+  const totalPages = Math.ceil((Array.isArray(filteredData) ? filteredData.length : 0) / itemsPerPage)
 
   const getTypeIcon = (type: string) => {
     switch (type) {
@@ -197,7 +204,7 @@ export default function MouvementsStockPage() {
           type="text"
           placeholder="Rechercher par désignation ou code..."
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); }}
           className="w-full rounded-lg border border-gray-200 py-3 pl-10 pr-4 focus:border-blue-500 focus:outline-none shadow-sm"
         />
       </div>
@@ -224,7 +231,7 @@ export default function MouvementsStockPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 bg-white">
-                {filteredData.map((m) => (
+                {paginatedData.map((m) => (
                   <tr key={m.id} className="hover:bg-gray-50 transition-colors">
                     <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-600">
                       {m.date ? new Date(m.date).toLocaleString('fr-FR', {
@@ -261,6 +268,15 @@ export default function MouvementsStockPage() {
               </tbody>
             </table>
           </div>
+        )}
+        {totalPages > 1 && (
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={filteredData.length}
+            itemsPerPage={itemsPerPage}
+            onPageChange={setCurrentPage}
+          />
         )}
       </div>
     </div>

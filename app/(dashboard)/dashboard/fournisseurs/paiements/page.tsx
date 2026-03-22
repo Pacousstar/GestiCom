@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { Search, Loader2, Calendar, User, CreditCard, Hash, Coins, Download, Filter } from 'lucide-react'
 import { useToast } from '@/hooks/useToast'
+import Pagination from '@/components/ui/Pagination'
 
 interface PaiementFournisseur {
   id: number
@@ -21,6 +22,8 @@ export default function PaiementsFournisseursPage() {
   const [search, setSearch] = useState('')
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 20
   const { error: showError } = useToast()
 
   useEffect(() => {
@@ -52,6 +55,7 @@ export default function PaiementsFournisseursPage() {
 
   const handleFilter = (e: React.FormEvent) => {
     e.preventDefault()
+    setCurrentPage(1)
     fetchData(startDate, endDate)
   }
 
@@ -62,6 +66,9 @@ export default function PaiementsFournisseursPage() {
   )
 
   const total = filteredData.reduce((acc, p) => acc + p.montant, 0)
+  
+  const paginatedData = Array.isArray(filteredData) ? filteredData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage) : []
+  const totalPages = Math.ceil((Array.isArray(filteredData) ? filteredData.length : 0) / itemsPerPage)
   
   const totalsByMode = useMemo(() => {
     const modes: Record<string, number> = {}
@@ -117,7 +124,7 @@ export default function PaiementsFournisseursPage() {
             type="text"
             placeholder="Rechercher (fournisseur, réf)..."
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); }}
             className="w-full rounded-md border border-gray-300 py-1.5 pl-9 pr-3 text-sm focus:border-purple-500 focus:outline-none shadow-sm"
           />
         </div>
@@ -167,7 +174,7 @@ export default function PaiementsFournisseursPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 bg-white">
-                {filteredData.map((p) => (
+                {paginatedData.map((p) => (
                   <tr key={p.id} className="hover:bg-gray-50 transition-colors">
                     <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-600">
                       {new Date(p.date).toLocaleDateString('fr-FR', {
@@ -200,6 +207,15 @@ export default function PaiementsFournisseursPage() {
               </tbody>
             </table>
           </div>
+        )}
+        {totalPages > 1 && (
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={filteredData.length}
+            itemsPerPage={itemsPerPage}
+            onPageChange={setCurrentPage}
+          />
         )}
       </div>
     </div>

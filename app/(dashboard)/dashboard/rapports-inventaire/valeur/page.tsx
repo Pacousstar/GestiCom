@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { Search, Loader2, Download, Coins, Package, Warehouse, Calendar, ArrowRight } from 'lucide-react'
 import { useToast } from '@/hooks/useToast'
+import Pagination from '@/components/ui/Pagination'
 
 interface ProduitValo {
   id: number
@@ -22,6 +23,8 @@ export default function ValeurStockPage() {
   const [dateFin, setDateFin] = useState('')
   const [selectedMagasin, setSelectedMagasin] = useState('TOUT')
   const [search, setSearch] = useState('')
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 20
   const { error: showError } = useToast()
 
   useEffect(() => {
@@ -62,6 +65,7 @@ export default function ValeurStockPage() {
 
   const handleFilter = (e: React.FormEvent) => {
     e.preventDefault()
+    setCurrentPage(1)
     fetchData(dateFin, selectedMagasin)
   }
 
@@ -72,6 +76,9 @@ export default function ValeurStockPage() {
 
   const totalValeur = filteredData.reduce((acc, p) => acc + p.valeurTotal, 0)
   const totalQuantite = filteredData.reduce((acc, p) => acc + p.quantite, 0)
+
+  const paginatedData = Array.isArray(filteredData) ? filteredData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage) : []
+  const totalPages = Math.ceil((Array.isArray(filteredData) ? filteredData.length : 0) / itemsPerPage)
 
   return (
     <div className="space-y-6">
@@ -129,7 +136,7 @@ export default function ValeurStockPage() {
               type="text"
               placeholder="Rechercher un produit..."
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); }}
               className="w-full rounded-xl border border-gray-200 py-3 pl-10 pr-4 focus:border-emerald-500 shadow-sm focus:outline-none"
             />
           </div>
@@ -170,7 +177,7 @@ export default function ValeurStockPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 bg-white">
-                {filteredData.map((p) => (
+                {paginatedData.map((p) => (
                   <tr key={p.id} className="hover:bg-emerald-50/30 transition-colors group">
                     <td className="whitespace-nowrap px-6 py-4 text-sm font-mono text-gray-400 group-hover:text-emerald-600">
                       {p.code || '—'}
@@ -202,6 +209,15 @@ export default function ValeurStockPage() {
               </tbody>
             </table>
           </div>
+        )}
+        {totalPages > 1 && (
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={filteredData.length}
+            itemsPerPage={itemsPerPage}
+            onPageChange={setCurrentPage}
+          />
         )}
       </div>
     </div>

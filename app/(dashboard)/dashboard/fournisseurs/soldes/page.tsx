@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { Search, Loader2, Download, Filter, Wallet, FileText, ShoppingBag } from 'lucide-react'
 import { useToast } from '@/hooks/useToast'
+import Pagination from '@/components/ui/Pagination'
 
 interface SoldeFournisseur {
   id: number
@@ -23,6 +24,8 @@ export default function SoldesFournisseursPage() {
   const [search, setSearch] = useState('')
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 20
   const { error: showError } = useToast()
 
   useEffect(() => {
@@ -54,6 +57,7 @@ export default function SoldesFournisseursPage() {
 
   const handleFilter = (e: React.FormEvent) => {
     e.preventDefault()
+    setCurrentPage(1)
     fetchData(startDate, endDate)
   }
 
@@ -69,6 +73,9 @@ export default function SoldesFournisseursPage() {
     variationPeriode: acc.variationPeriode + f.variationPeriode,
     soldeGlobal: acc.soldeGlobal + f.soldeGlobal
   }), { achats: 0, paiements: 0, variationPeriode: 0, soldeGlobal: 0 })
+
+  const paginatedData = Array.isArray(filteredData) ? filteredData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage) : []
+  const totalPages = Math.ceil((Array.isArray(filteredData) ? filteredData.length : 0) / itemsPerPage)
 
   return (
     <div className="space-y-6">
@@ -164,15 +171,17 @@ export default function SoldesFournisseursPage() {
           </button>
         </form>
 
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-          <input
-            type="text"
-            placeholder="Rechercher par nom, code ou localisation..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full rounded-lg border border-gray-200 py-[9px] mt-auto h-[46px] md:h-auto pl-10 pr-4 focus:border-purple-500 focus:outline-none shadow-sm transition-all text-sm"
-          />
+        <div className="flex-1 flex items-end">
+          <div className="relative w-full">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Rechercher par nom, code ou localisation..."
+              value={search}
+              onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); }}
+              className="w-full rounded-lg border border-gray-200 py-1.5 pl-10 pr-4 mt-auto text-sm focus:border-purple-500 focus:outline-none shadow-sm transition-all h-[34px]"
+            />
+          </div>
         </div>
       </div>
 
@@ -200,7 +209,7 @@ export default function SoldesFournisseursPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 bg-white">
-                {filteredData.map((f) => (
+                {paginatedData.map((f) => (
                   <tr key={f.id} className="hover:bg-gray-50 transition-colors">
                     <td className="px-6 py-4 text-sm font-mono font-bold text-purple-600">
                       {f.derniereFacture || '—'}
@@ -236,6 +245,15 @@ export default function SoldesFournisseursPage() {
               </tbody>
             </table>
           </div>
+        )}
+        {totalPages > 1 && (
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={filteredData.length}
+            itemsPerPage={itemsPerPage}
+            onPageChange={setCurrentPage}
+          />
         )}
       </div>
     </div>
