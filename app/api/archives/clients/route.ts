@@ -30,7 +30,15 @@ export async function POST(req: Request) {
     const body = await req.json()
     const { clientId, clientLibre, montant, dateArchive, observation } = body
 
-    if (!montant || (!clientId && !clientLibre)) {
+    // Blindage numérique
+    const rawClientId = clientId ? Number(clientId) : null
+    const rawMontant = Number(montant)
+
+    if (isNaN(rawMontant)) {
+       return new NextResponse('Montant invalide', { status: 400 })
+    }
+
+    if (!rawMontant || (!rawClientId && !clientLibre)) {
       return new NextResponse('Données manquantes', { status: 400 })
     }
 
@@ -38,9 +46,9 @@ export async function POST(req: Request) {
       data: {
         entiteId: session.entiteId,
         utilisateurId: session.userId,
-        clientId: clientId ? Number(clientId) : null,
+        clientId: (rawClientId && !isNaN(rawClientId)) ? rawClientId : null,
         clientLibre,
-        montant: Number(montant),
+        montant: rawMontant,
         dateArchive: dateArchive ? new Date(dateArchive) : new Date(),
         observation
       }

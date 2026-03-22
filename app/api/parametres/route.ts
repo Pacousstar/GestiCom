@@ -27,8 +27,20 @@ export async function GET() {
     return NextResponse.json({ error: 'Droits insuffisants pour accéder aux paramètres.' }, { status: 403 })
   }
 
-  const p = await prisma.parametre.findFirst({ orderBy: { id: 'asc' } })
-  if (!p) return NextResponse.json({ error: 'Paramètres introuvables.' }, { status: 404 })
+  let p = await prisma.parametre.findFirst({ orderBy: { id: 'asc' } })
+  if (!p) {
+    // Création automatique au premier appel si vide
+    p = await prisma.parametre.create({
+      data: {
+        nomEntreprise: 'GestiCom Pro',
+        devise: 'FCFA',
+        typeCommerce: 'GENERAL',
+        tvaParDefaut: 18,
+        localisation: 'Côte d\'Ivoire',
+        contact: '+225 ...',
+      }
+    })
+  }
   return NextResponse.json(p)
 }
 

@@ -89,7 +89,7 @@ export async function POST(request: NextRequest) {
     const modePaiement = ['ESPECES', 'MOBILE_MONEY', 'CHEQUE', 'VIREMENT', 'CREDIT'].includes(String(body?.modePaiement || ''))
       ? String(body.modePaiement)
       : 'ESPECES'
-    const remiseGlobale = body?.remiseGlobale != null ? Math.max(0, Number(body.remiseGlobale) || 0) : 0
+    const remiseGlobale = Math.max(0, Number(body?.remiseGlobale) || 0)
     const montantPayeRaw = body?.montantPaye != null ? Math.max(0, Number(body.montantPaye) || 0) : null
     const observation = body?.observation != null ? String(body.observation).trim() || null : null
     const dateStr = body?.date != null ? String(body.date).trim() : null
@@ -120,6 +120,8 @@ export async function POST(request: NextRequest) {
       const prixUnitaire = Math.max(0, Number(l?.prixUnitaire) || 0)
       const tva = Math.max(0, Number(l?.tva) || 0)
       const remise = Math.max(0, Number(l?.remise) || 0)
+      
+      if (isNaN(produitId) || isNaN(quantite) || isNaN(prixUnitaire)) continue
       if (!produitId || !quantite) continue
 
       const produit = await prisma.produit.findUnique({ where: { id: produitId } })
@@ -139,8 +141,9 @@ export async function POST(request: NextRequest) {
     }
 
     const montantTotal = Math.max(0, Math.round(montantTotalAVantRemise - remiseGlobale))
-    const montantPaye = montantPayeRaw != null
-      ? Math.min(montantTotal, Math.max(0, montantPayeRaw))
+    const rawPaye = Number(montantPayeRaw)
+    const montantPaye = !isNaN(rawPaye) && montantPayeRaw != null
+      ? Math.min(montantTotal, Math.max(0, rawPaye))
       : (modePaiement === 'CREDIT' ? 0 : montantTotal)
     
     const statutPaiement = montantPaye >= montantTotal ? 'PAYE' : montantPaye > 0 ? 'PARTIEL' : 'CREDIT'

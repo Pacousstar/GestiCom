@@ -1,10 +1,11 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { 
   History, ArrowLeft, Save, Loader2, Plus, Trash2, 
-  ShoppingCart, Calendar, User, FileText, Search, CreditCard
+  ShoppingCart, Calendar, User, FileText, Search, CreditCard,
+  AlertTriangle, Percent, Pencil, X
 } from 'lucide-react'
 import { useToast } from '@/hooks/useToast'
 import Link from 'next/link'
@@ -13,14 +14,18 @@ type Produit = {
   id: number; 
   code: string; 
   designation: string; 
-  prixVente: number | null 
+  prixVente: number | null;
+  categorie?: string;
 }
 
 type Ligne = {
   id: string
+  produitId: number | null
   designation: string
   quantite: number
   prixUnitaire: number
+  tvaPerc: number
+  remise: number
   montant: number
 }
 
@@ -44,10 +49,14 @@ export default function NouvelleArchiveVentePage() {
   })
 
   const [ajout, setAjout] = useState({
+    produitId: '',
     recherche: '',
     designation: '',
     quantite: '1',
-    prixUnitaire: ''
+    prixUnitaire: '',
+    tvaPerc: '0',
+    remise: '0',
+    remiseType: 'MONTANT' as 'MONTANT' | 'POURCENT'
   })
 
   useEffect(() => {
@@ -72,17 +81,29 @@ export default function NouvelleArchiveVentePage() {
   }
 
   const ajouterLigne = () => {
-    if (!ajout.designation || !ajout.quantite || !ajout.prixUnitaire) {
+    const desig = ajout.designation || (ajout.produitId ? produits.find(p => p.id === Number(ajout.produitId))?.designation : '')
+    if (!desig || !ajout.quantite || !ajout.prixUnitaire) {
       error('Veuillez remplir désignation, quantité et prix.')
       return
     }
 
+    const q = Number(ajout.quantite)
+    const pu = Number(ajout.prixUnitaire)
+    const r = Number(ajout.remise)
+    const t = Number(ajout.tvaPerc)
+    const ht = q * pu
+    const rv = ajout.remiseType === 'MONTANT' ? r : ht * (r / 100)
+    const montantLigne = Math.round((ht - rv) * (1 + t / 100))
+
     const nouvelleLigne: Ligne = {
       id: Math.random().toString(36).substr(2, 9),
-      designation: ajout.designation,
-      quantite: Number(ajout.quantite),
-      prixUnitaire: Number(ajout.prixUnitaire),
-      montant: Number(ajout.quantite) * Number(ajout.prixUnitaire)
+      produitId: ajout.produitId ? Number(ajout.produitId) : null,
+      designation: desig || '',
+      quantite: q,
+      prixUnitaire: pu,
+      tvaPerc: t,
+      remise: rv,
+      montant: montantLigne
     }
 
     setFormData(prev => ({
@@ -90,7 +111,7 @@ export default function NouvelleArchiveVentePage() {
       lignes: [...prev.lignes, nouvelleLigne]
     }))
 
-    setAjout({ recherche: '', designation: '', quantite: '1', prixUnitaire: '' })
+    setAjout({ produitId: '', recherche: '', designation: '', quantite: '1', prixUnitaire: '', tvaPerc: '0', remise: '0', remiseType: 'MONTANT' })
   }
 
   const supprimerLigne = (id: string) => {
@@ -100,7 +121,17 @@ export default function NouvelleArchiveVentePage() {
     }))
   }
 
-  const montantTotal = formData.lignes.reduce((sum, l) => sum + l.montant, 0)
+  // Calculs totaux
+  const totals = useMemo(() => {
+    const totalHT = formData.lignes.reduce((acc, l) => acc + (l.quantite * l.prixUnitaire), 0)
+    const totalRemise = formData.lignes.reduce((acc, l) => acc + l.remise, 0)
+    const totalTVA = formData.lignes.reduce((acc, l) => {
+      const htNet = (l.quantite * l.prixUnitaire) - l.remise
+      return acc + (htNet * (l.tvaPerc / 100))
+    }, 0)
+    const totalTTC = Math.round((totalHT - totalRemise) + totalTVA)
+    return { totalHT, totalRemise, totalTVA, totalTTC }
+  }, [formData.lignes])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -112,14 +143,15 @@ export default function NouvelleArchiveVentePage() {
       const res = await fetch('/api/archives/ventes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...formData, montantTotal })
+        body: JSON.stringify({ ...formData, montantTotal: totals.totalTTC })
       })
 
       if (res.ok) {
         success('Archive enregistrée avec succès !')
         router.push('/dashboard/archives/ventes')
       } else {
-        error('Erreur lors de l\'enregistrement')
+        const d = await res.json()
+        error(d.error || 'Erreur lors de l\'enregistrement')
       }
     } catch (e) {
       error('Erreur serveur')
@@ -130,6 +162,7 @@ export default function NouvelleArchiveVentePage() {
 
   return (
     <div className="p-6 space-y-6 max-w-6xl mx-auto">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-6">
           <Link href="/dashboard/archives/ventes" className="p-4 rounded-2xl bg-white/80 backdrop-blur-md hover:bg-orange-50 text-orange-900 transition-all shadow-lg border border-white">
@@ -138,15 +171,15 @@ export default function NouvelleArchiveVentePage() {
           <div>
             <h1 className="text-3xl font-black text-white uppercase tracking-tighter flex items-center gap-4">
               <History className="h-10 w-10 text-orange-400 drop-shadow-glow" />
-              Saisie d'Archives
+              Archives d'Anciennes Ventes
             </h1>
-            <p className="text-white/60 font-medium text-sm tracking-wide">Importation des données historiques pré-GestiCom</p>
+            <p className="text-white/60 font-medium text-sm tracking-wide">Coffre-fort historique : pas d'impact sur vos stocks ou CA actuel</p>
           </div>
         </div>
       </div>
 
       <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Colonne Gauche : Infos Facture */}
+        {/* Colonne Gauche : Infos Archive */}
         <div className="lg:col-span-1 space-y-6">
           <div className="bg-white/90 backdrop-blur-2xl rounded-[40px] p-8 shadow-2xl border border-white/50 space-y-6 relative overflow-hidden group">
              <div className="absolute top-0 right-0 p-8 opacity-[0.03] group-hover:scale-110 transition-transform duration-700">
@@ -168,20 +201,20 @@ export default function NouvelleArchiveVentePage() {
              <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase text-emerald-900/40 tracking-widest ml-1">Date d'origine</label>
+                    <label className="text-[10px] font-black uppercase text-gray-400 tracking-widest ml-1">Date d'origine</label>
                     <input
                       required
                       type="date"
-                      className="w-full px-5 py-3.5 rounded-2xl bg-emerald-50/50 border-none font-bold text-emerald-950"
+                      className="w-full px-5 py-3.5 rounded-2xl bg-white border-2 border-gray-100 font-bold text-gray-950"
                       value={formData.date}
                       onChange={e => setFormData(prev => ({ ...prev, date: e.target.value }))}
                     />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase text-emerald-900/40 tracking-widest ml-1">Magasin</label>
+                    <label className="text-[10px] font-black uppercase text-gray-400 tracking-widest ml-1">Magasin</label>
                     <select
                       required
-                      className="w-full px-5 py-3.5 rounded-2xl bg-emerald-50/50 border-none font-bold text-emerald-950"
+                      className="w-full px-5 py-3.5 rounded-2xl bg-white border-2 border-gray-100 font-bold text-gray-950"
                       value={formData.magasinId}
                       onChange={e => setFormData(prev => ({ ...prev, magasinId: e.target.value }))}
                     >
@@ -191,7 +224,7 @@ export default function NouvelleArchiveVentePage() {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase text-gray-400 tracking-widest ml-1">Client (Archivé)</label>
+                  <label className="text-[10px] font-black uppercase text-gray-400 tracking-widest ml-1">Client (Réel ou Divers)</label>
                   <select
                     className="w-full px-6 py-4 rounded-[24px] bg-gray-50 border-2 border-transparent focus:border-orange-500 font-bold text-gray-900 appearance-none shadow-inner"
                     value={formData.clientId}
@@ -204,11 +237,11 @@ export default function NouvelleArchiveVentePage() {
 
                 {!formData.clientId && (
                   <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase text-emerald-900/40 tracking-widest ml-1">Nom Client Libre</label>
+                    <label className="text-[10px] font-black uppercase text-gray-400 tracking-widest ml-1">Nom Client Libre</label>
                     <input
                       type="text"
-                      placeholder="Nom du client de l'époque..."
-                      className="w-full px-5 py-3.5 rounded-2xl bg-emerald-50/50 border-none font-bold text-emerald-950"
+                      placeholder="Identité du client historique..."
+                      className="w-full px-5 py-3.5 rounded-2xl bg-white border-2 border-gray-100 font-bold text-gray-900 shadow-inner"
                       value={formData.clientLibre}
                       onChange={e => setFormData(prev => ({ ...prev, clientLibre: e.target.value }))}
                     />
@@ -216,11 +249,11 @@ export default function NouvelleArchiveVentePage() {
                 )}
 
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase text-emerald-900/40 tracking-widest ml-1">Observation</label>
+                  <label className="text-[10px] font-black uppercase text-gray-400 tracking-widest ml-1">Observation</label>
                   <textarea
                     rows={3}
-                    className="w-full px-5 py-4 rounded-2xl bg-emerald-50/50 border-none font-bold text-emerald-950 resize-none"
-                    placeholder="Notes historiques..."
+                    className="w-full px-5 py-4 rounded-2xl bg-white border-2 border-gray-100 font-bold text-gray-900 resize-none shadow-inner"
+                    placeholder="Contexte de cette archive..."
                     value={formData.observation}
                     onChange={e => setFormData(prev => ({ ...prev, observation: e.target.value }))}
                   />
@@ -228,15 +261,32 @@ export default function NouvelleArchiveVentePage() {
              </div>
           </div>
 
+          {/* Résumé Financier */}
           <div className="bg-gray-900 rounded-[40px] p-8 text-white shadow-2xl relative overflow-hidden group">
-             <div className="relative z-10">
-                <p className="text-[10px] font-black uppercase tracking-[0.3em] opacity-40 mb-2">Total de l'Archive</p>
-                <div className="text-4xl font-black flex items-baseline gap-2">
-                  {montantTotal.toLocaleString()}
-                  <span className="text-sm font-bold opacity-50">CFA</span>
+             <div className="relative z-10 space-y-4">
+                <div className="flex justify-between items-center opacity-60">
+                   <span className="text-[10px] font-black uppercase tracking-widest">Total HT</span>
+                   <span className="font-bold tabular-nums">{totals.totalHT.toLocaleString()} F</span>
+                </div>
+                {totals.totalRemise > 0 && (
+                   <div className="flex justify-between items-center text-red-400">
+                      <span className="text-[10px] font-black uppercase tracking-widest">Total Remises</span>
+                      <span className="font-bold tabular-nums">-{totals.totalRemise.toLocaleString()} F</span>
+                   </div>
+                )}
+                <div className="flex justify-between items-center opacity-60">
+                   <span className="text-[10px] font-black uppercase tracking-widest">Total TVA</span>
+                   <span className="font-bold tabular-nums">{Math.round(totals.totalTVA).toLocaleString()} F</span>
+                </div>
+                <div className="pt-4 border-t border-white/10 mt-4">
+                   <p className="text-[10px] font-black uppercase tracking-[0.3em] opacity-40 mb-1">TOTAL ARCHIVÉ</p>
+                   <div className="text-4xl font-black flex items-baseline gap-2 text-emerald-400 tracking-tighter">
+                     {totals.totalTTC.toLocaleString()}
+                     <span className="text-sm font-bold opacity-50 text-white">FCFA</span>
+                   </div>
                 </div>
              </div>
-             <div className="absolute -bottom-6 -right-6 opacity-10">
+             <div className="absolute -bottom-6 -right-6 opacity-[0.05]">
                 <CreditCard className="h-32 w-32" />
              </div>
           </div>
@@ -244,117 +294,198 @@ export default function NouvelleArchiveVentePage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full flex items-center justify-center gap-4 bg-orange-500 hover:bg-orange-600 active:scale-95 disabled:bg-gray-200 text-white py-6 rounded-[32px] font-black shadow-2xl shadow-orange-500/40 transition-all uppercase tracking-[0.2em] transform"
+            className="w-full flex items-center justify-center gap-4 bg-orange-500 hover:bg-orange-600 active:scale-95 disabled:bg-gray-200 text-white py-6 rounded-[32px] font-black shadow-2xl shadow-orange-500/40 transition-all uppercase tracking-[0.2em]"
           >
-            {loading ? <Loader2 className="h-6 w-6 animate-spin" /> : <Save className="h-6 w-6 group-hover:rotate-12 transition-transform" />}
-            Valider l'Archive
+            {loading ? <Loader2 className="h-6 w-6 animate-spin" /> : <Save className="h-6 w-6" />}
+            Enregistrer l'Archive
           </button>
         </div>
 
-        {/* Colonne Droite : Articles */}
+        {/* Colonne Droite : Lignes de l'Archive */}
         <div className="lg:col-span-2 space-y-6">
-          <div className="bg-white rounded-[40px] p-8 shadow-xl border border-emerald-100/50">
+          <div className="bg-white rounded-[40px] p-8 shadow-xl border border-gray-100 relative overflow-hidden">
             <h3 className="text-xs font-black uppercase text-gray-500 tracking-[0.3em] mb-8 flex items-center gap-3">
               <div className="p-2 bg-orange-50 rounded-xl">
                 <ShoppingCart className="h-5 w-5 text-orange-600" />
               </div>
-              Détails de la Facture d'Époque
+              Contenu de la Facture d'Origine
             </h3>
 
-            {/* Zone d'ajout */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8 bg-emerald-50/30 p-6 rounded-[32px] border border-emerald-50">
-              <div className="md:col-span-2 space-y-2">
-                <label className="text-[10px] font-black uppercase tracking-widest ml-1 text-emerald-900/30">Désignation de l'article</label>
-                <div className="relative">
-                  <input
-                    type="text"
-                    placeholder="Tapez le nom d'un produit (ex: Ciment...)"
-                    className="w-full pl-6 pr-12 py-5 rounded-[24px] bg-gray-50 border-2 border-transparent focus:border-orange-500 font-bold transition-all shadow-inner placeholder:text-gray-300"
-                    value={ajout.designation}
-                    onChange={e => setAjout(prev => ({ ...prev, designation: e.target.value }))}
-                  />
-                  <div className="absolute right-5 top-1/2 -translate-y-1/2">
-                    <Search className="h-6 w-6 text-gray-300" />
+            {/* Zone d'ajout Miroir UX Ventes */}
+            <div className="bg-gray-50/50 p-8 rounded-[40px] border border-gray-100 mb-8 space-y-6">
+               {/* Recherche de produit réelle */}
+               <div className="relative group">
+                  <label className="text-[10px] font-black uppercase tracking-widest ml-1 text-gray-400 mb-2 block">Chercher un produit réel ou saisir une désignation libre</label>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      placeholder="Commencez à taper le nom d'un produit..."
+                      className="w-full pl-14 pr-6 py-5 rounded-[24px] bg-white border-2 border-transparent focus:border-orange-500 font-bold transition-all shadow-sm placeholder:text-gray-300"
+                      value={ajout.recherche}
+                      onChange={e => setAjout(prev => ({ ...prev, recherche: e.target.value, designation: e.target.value }))}
+                    />
+                    <div className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-300">
+                      <Search className="h-6 w-6" />
+                    </div>
                   </div>
                   
-                  {/* Suggestions simples basées sur les produits actifs */}
-                  {ajout.designation.length > 2 && produits.filter(p => p.designation.toLowerCase().includes(ajout.designation.toLowerCase())).length > 0 && (
-                     <div className="absolute z-50 top-full left-0 w-full bg-white mt-1 rounded-2xl shadow-2xl border border-emerald-100 max-h-48 overflow-y-auto p-2">
-                        {produits.filter(p => p.designation.toLowerCase().includes(ajout.designation.toLowerCase())).slice(0, 5).map(p => (
+                  {/* Suggestions de produits réels */}
+                  {ajout.recherche.length > 1 && !ajout.produitId && produits.filter(p => p.designation.toLowerCase().includes(ajout.recherche.toLowerCase())).length > 0 && (
+                     <div className="absolute z-50 top-full left-0 w-full bg-white mt-2 rounded-[24px] shadow-2xl border border-gray-100 max-h-60 overflow-y-auto p-2 scrollbar-thin">
+                        {produits.filter(p => p.designation.toLowerCase().includes(ajout.recherche.toLowerCase())).map(p => (
                           <button
                             key={p.id}
                             type="button"
-                            className="w-full text-left p-3 hover:bg-emerald-50 rounded-xl font-bold text-sm text-emerald-900 transition-colors"
-                            onClick={() => setAjout({ ...ajout, designation: p.designation, prixUnitaire: String(p.prixVente || '') })}
+                            className="w-full text-left p-4 hover:bg-orange-50 rounded-2xl transition-colors flex justify-between items-center group/item"
+                            onClick={() => setAjout({ 
+                              ...ajout, 
+                              produitId: String(p.id), 
+                              recherche: p.designation, 
+                              designation: p.designation, 
+                              prixUnitaire: String(p.prixVente || '') 
+                            })}
                           >
-                            {p.designation}
+                            <div className="flex flex-col">
+                              <span className="font-black text-gray-900 group-hover/item:text-orange-900">{p.designation}</span>
+                              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{p.code}</span>
+                            </div>
+                            <div className="p-2 bg-gray-50 rounded-xl group-hover/item:bg-white text-orange-600">
+                               <Plus className="h-4 w-4" />
+                            </div>
                           </button>
                         ))}
                      </div>
                   )}
-                </div>
-              </div>
-              <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase tracking-widest ml-1 text-gray-400">Qté</label>
-                <input
-                  type="number"
-                  min="1"
-                  className="w-full px-6 py-5 rounded-[24px] bg-gray-50 border-2 border-transparent focus:border-orange-500 font-black shadow-inner"
-                  value={ajout.quantite}
-                  onChange={e => setAjout(prev => ({ ...prev, quantite: e.target.value }))}
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase tracking-widest ml-1 text-gray-400">Prix Archive</label>
-                <div className="flex gap-3">
-                  <input
-                    type="number"
-                    className="w-full px-6 py-5 rounded-[24px] bg-gray-50 border-2 border-transparent focus:border-orange-500 font-black shadow-inner"
-                    value={ajout.prixUnitaire}
-                    onChange={e => setAjout(prev => ({ ...prev, prixUnitaire: e.target.value }))}
-                  />
-                  <button
-                    type="button"
-                    onClick={ajouterLigne}
-                    className="p-5 bg-gray-900 text-white rounded-[24px] hover:bg-orange-600 active:scale-90 transition-all shadow-xl shadow-gray-900/10"
-                  >
-                    <Plus className="h-6 w-6" />
-                  </button>
-                </div>
-              </div>
-            </div>
+                  {ajout.produitId && (
+                     <button 
+                       onClick={() => setAjout(a => ({ ...a, produitId: '', recherche: '', designation: '' }))}
+                       className="absolute right-5 top-[3.2rem] p-2 bg-gray-100 hover:bg-red-50 text-gray-400 hover:text-red-500 rounded-xl transition-all"
+                     >
+                       <X className="h-4 w-4" />
+                     </button>
+                  )}
+               </div>
 
-            {/* Liste des lignes */}
-            <div className="space-y-3">
-              {formData.lignes.length === 0 ? (
-                <div className="text-center py-10 opacity-20 flex flex-col items-center">
-                  <ShoppingCart className="h-12 w-12 mb-2" />
-                  <p className="font-black uppercase tracking-widest text-xs">Aucun article dans cette archive</p>
-                </div>
-              ) : (
-                formData.lignes.map((l) => (
-                  <div key={l.id} className="flex items-center gap-6 bg-gray-50/50 p-6 rounded-[32px] border border-transparent transition-all group hover:bg-white hover:border-orange-100 hover:shadow-xl hover:scale-[1.01]">
-                    <div className="h-14 w-14 rounded-2xl bg-white shadow-sm flex items-center justify-center text-orange-600 font-black text-xl">
-                      {l.quantite}
+               {/* Détails de la ligne */}
+               <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black uppercase text-gray-400 ml-1">Quantité</label>
+                    <input
+                      type="number"
+                      min="1"
+                      className="w-full px-5 py-3.5 rounded-2xl bg-white border border-gray-100 font-black text-center tabular-nums"
+                      value={ajout.quantite}
+                      onChange={e => setAjout(prev => ({ ...prev, quantite: e.target.value }))}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black uppercase text-gray-400 ml-1">P.U Archive</label>
+                    <input
+                      type="number"
+                      className="w-full px-5 py-3.5 rounded-2xl bg-white border border-gray-100 font-black tabular-nums"
+                      value={ajout.prixUnitaire}
+                      onChange={e => setAjout(prev => ({ ...prev, prixUnitaire: e.target.value }))}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black uppercase text-gray-400 ml-1">Remise</label>
+                    <div className="flex">
+                      <input
+                        type="number"
+                        className="w-full px-4 py-3.5 rounded-l-2xl bg-white border border-gray-100 border-r-0 font-black tabular-nums"
+                        value={ajout.remise}
+                        onChange={e => setAjout(prev => ({ ...prev, remise: e.target.value }))}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setAjout(a => ({ ...a, remiseType: a.remiseType === 'MONTANT' ? 'POURCENT' : 'MONTANT' }))}
+                        className={`px-3 py-3.5 border-2 rounded-r-2xl font-black text-xs transition-colors ${
+                          ajout.remiseType === 'POURCENT' ? 'bg-orange-500 text-white border-orange-500' : 'bg-gray-100 text-gray-500 border-gray-100'
+                        }`}
+                      >
+                        {ajout.remiseType === 'MONTANT' ? 'F' : '%'}
+                      </button>
                     </div>
-                    <div className="flex-1">
-                      <h4 className="font-black text-gray-900 uppercase text-sm tracking-tight">{l.designation}</h4>
-                      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">
-                        {l.prixUnitaire.toLocaleString()} CFA / unité
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-black text-xl text-gray-900 tabular-nums">{l.montant.toLocaleString()} <span className="text-[10px] opacity-30">CFA</span></p>
-                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black uppercase text-gray-400 ml-1">TVA %</label>
+                    <input
+                      type="number"
+                      className="w-full px-5 py-3.5 rounded-2xl bg-white border border-gray-100 font-black tabular-nums"
+                      value={ajout.tvaPerc}
+                      onChange={e => setAjout(prev => ({ ...prev, tvaPerc: e.target.value }))}
+                    />
+                  </div>
+                  <div className="col-span-2 md:col-span-1 flex items-end">
                     <button
                       type="button"
-                      onClick={() => supprimerLigne(l.id)}
-                      className="p-3 text-gray-200 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
+                      onClick={ajouterLigne}
+                      className="w-full py-3.5 bg-gray-900 text-white rounded-2xl font-black hover:bg-orange-600 transition-all shadow-lg active:scale-95 flex items-center justify-center gap-2"
                     >
-                      <Trash2 className="h-6 w-6" />
+                      <Plus className="h-5 w-5" />
+                      Ajouter
                     </button>
                   </div>
-                ))
+               </div>
+            </div>
+
+            {/* Tableau des lignes Miroir UI Ventes */}
+            <div className="space-y-4">
+              {formData.lignes.length === 0 ? (
+                <div className="text-center py-20 opacity-10 flex flex-col items-center">
+                  <ShoppingCart className="h-20 w-20 mb-4" />
+                  <p className="font-black uppercase tracking-[0.3em] text-sm">Prêt pour l'archivage</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto min-h-[300px]">
+                  <table className="w-full border-separate border-spacing-y-3">
+                    <thead>
+                       <tr className="text-[10px] font-black uppercase text-gray-400 tracking-widest text-left">
+                          <th className="px-6 pb-2">Description</th>
+                          <th className="px-4 pb-2 text-center">Qté</th>
+                          <th className="px-4 pb-2 text-right">P.U</th>
+                          <th className="px-4 pb-2 text-right">Remise/TVA</th>
+                          <th className="px-6 pb-2 text-right">Montant TTC</th>
+                          <th className="pb-2"></th>
+                       </tr>
+                    </thead>
+                    <tbody>
+                      {formData.lignes.map((l) => (
+                        <tr key={l.id} className="bg-gray-50/50 hover:bg-white hover:shadow-xl transition-all group">
+                          <td className="px-6 py-5 rounded-l-[24px] border-y border-l border-transparent group-hover:border-orange-100">
+                             <h4 className="font-black text-gray-900 uppercase text-xs tracking-tight">{l.designation}</h4>
+                             {l.produitId && <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Produit Réf: {l.produitId}</p>}
+                          </td>
+                          <td className="px-4 py-5 border-y border-transparent group-hover:border-orange-100 text-center">
+                             <span className="font-black text-gray-900 bg-white px-3 py-1.5 rounded-xl shadow-sm border border-gray-100">{l.quantite}</span>
+                          </td>
+                          <td className="px-4 py-5 border-y border-transparent group-hover:border-orange-100 text-right font-bold text-gray-600 tabular-nums">
+                             {l.prixUnitaire.toLocaleString()}
+                          </td>
+                          <td className="px-4 py-5 border-y border-transparent group-hover:border-orange-100 text-right">
+                             <div className="flex flex-col">
+                                {l.remise > 0 && <span className="text-[10px] font-black text-red-500">-{l.remise.toLocaleString()} R.</span>}
+                                {l.tvaPerc > 0 && <span className="text-[10px] font-black text-blue-500">+{l.tvaPerc}% TVA</span>}
+                                {l.remise === 0 && l.tvaPerc === 0 && <span className="text-[10px] font-bold text-gray-300">0% / 0F</span>}
+                             </div>
+                          </td>
+                          <td className="px-6 py-5 border-y border-transparent group-hover:border-orange-100 text-right font-black text-emerald-600 tabular-nums text-lg">
+                             {l.montant.toLocaleString()}
+                          </td>
+                          <td className="px-4 py-5 rounded-r-[24px] border-y border-r border-transparent group-hover:border-orange-100 text-right">
+                            <button
+                              type="button"
+                              onClick={() => supprimerLigne(l.id)}
+                              className="p-3 text-gray-200 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
+                            >
+                              <Trash2 className="h-5 w-5" />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               )}
             </div>
           </div>

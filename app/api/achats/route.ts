@@ -145,8 +145,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Lignes invalides.' }, { status: 400 })
     }
 
-    const montantPaye = montantPayeRaw != null
-      ? Math.min(montantTotal, Math.max(0, montantPayeRaw))
+    const rawPaye = Number(montantPayeRaw)
+    const montantPaye = !isNaN(rawPaye) && montantPayeRaw != null
+      ? Math.min(montantTotal, Math.max(0, rawPaye))
       : (modePaiement === 'CREDIT' ? 0 : montantTotal)
     const statutPaiement = montantPaye >= montantTotal ? 'PAYE' : montantPaye > 0 ? 'PARTIEL' : 'CREDIT'
 
@@ -198,13 +199,23 @@ export async function POST(request: NextRequest) {
         
         // Formule PAMP : ((Stock_Actuel * PAMP_Actuel) + (Qte_Achetee * Prix_Achat_Nouveau)) / (Stock_Actuel + Qte_Achetee)
         const nouveauStockGlobal = stockGlobalActuel + l.quantite
-        const nouveauPamp = ((stockGlobalActuel * pampActuel) + (l.quantite * l.prixUnitaire)) / nouveauStockGlobal
+        let nouveauPamp = pampActuel
+        
+        if (nouveauStockGlobal > 0) {
+          nouveauPamp = ((stockGlobalActuel * pampActuel) + (l.quantite * l.prixUnitaire)) / nouveauStockGlobal
+        }
+        
+        // Sécurité ultime contre les valeurs invalides
+        if (isNaN(nouveauPamp) || !isFinite(nouveauPamp)) {
+          nouveauPamp = pampActuel
+        }
         
         await prisma.produit.update({
           where: { id: l.produitId },
           data: { pamp: nouveauPamp }
         })
       }
+
 
       // 2. Gérer le stock par magasin
       let st = await prisma.stock.findUnique({

@@ -41,25 +41,39 @@ export async function POST(req: NextRequest) {
       lignes 
     } = data
 
+    // Blindage numérique
+    const rawMagasinId = Number(magasinId)
+    const rawClientId = clientId ? Number(clientId) : null
+    const rawMontantTotal = Number(montantTotal)
+
+    if (isNaN(rawMagasinId)) {
+       return NextResponse.json({ error: 'ID Magasin invalide' }, { status: 400 })
+    }
+
     // Création de l'archive pure (aucune écriture de stock ou compte client)
     const archive = await prisma.archiveVente.create({
       data: {
         numeroFactureOrigine,
         date: new Date(date),
-        magasinId: Number(magasinId),
+        magasinId: rawMagasinId,
         entiteId: session.entiteId,
         utilisateurId: session.userId,
-        clientId: clientId ? Number(clientId) : null,
+        clientId: (rawClientId && !isNaN(rawClientId)) ? rawClientId : null,
         clientLibre,
-        montantTotal: Number(montantTotal),
+        montantTotal: isNaN(rawMontantTotal) ? 0 : rawMontantTotal,
         observation,
         lignes: {
-          create: lignes.map((l: any) => ({
-            designation: l.designation,
-            quantite: Number(l.quantite),
-            prixUnitaire: Number(l.prixUnitaire),
-            montant: Number(l.montant)
-          }))
+          create: (lignes || []).map((l: any) => {
+             const q = Number(l.quantite)
+             const pu = Number(l.prixUnitaire)
+             const m = Number(l.montant)
+             return {
+                designation: String(l.designation || 'Article sans nom'),
+                quantite: isNaN(q) ? 0 : q,
+                prixUnitaire: isNaN(pu) ? 0 : pu,
+                montant: isNaN(m) ? 0 : m
+             }
+          })
         }
       },
       include: { lignes: true }
