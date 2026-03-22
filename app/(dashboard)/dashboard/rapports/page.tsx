@@ -213,7 +213,7 @@ export default function RapportsPage() {
       // 4. Factures
       const resF = await fetch(`/api/rapports/ventes/factures?start=${dateDebut}&end=${dateFin}&page=${facturesPage}`)
       const dataF = await resF.json()
-      setFacturesVentes(dataF.data || [])
+      setFacturesVentes(Array.isArray(dataF.data) ? dataF.data : [])
       setPaginationFactures(dataF.pagination)
 
       // --- NEW RAPPORTS PHASE 2 ---
@@ -225,9 +225,12 @@ export default function RapportsPage() {
       setPaginationMov(dataMov.pagination || null)
 
       const resSC = await fetch(`/api/rapports/finances/soldes?type=CLIENT`)
-      setSoldesClients(await resSC.json())
+      const dataSC = await resSC.json()
+      setSoldesClients(Array.isArray(dataSC) ? dataSC : [])
+
       const resSF = await fetch(`/api/rapports/finances/soldes?type=FOURNISSEUR`)
-      setSoldesFournisseurs(await resSF.json())
+      const dataSF = await resSF.json()
+      setSoldesFournisseurs(Array.isArray(dataSF) ? dataSF : [])
 
       const resPM = await fetch(`/api/rapports/finances/paiements?type=CLIENT&dateDebut=${dateDebut}&dateFin=${dateFin}`)
       const dataPM = await resPM.json()
@@ -252,7 +255,8 @@ export default function RapportsPage() {
     setSelectedClientId(clientId)
     try {
       const res = await fetch(`/api/rapports/ventes/clients/produits?clientId=${clientId}&start=${dateDebut}&end=${dateFin}`)
-      setProduitsParClient(await res.json())
+      const data = await res.json()
+      setProduitsParClient(Array.isArray(data) ? data : [])
     } catch (e) {
       showError('Erreur chargement produits client')
     }
@@ -737,7 +741,7 @@ export default function RapportsPage() {
                         <span className="text-xs bg-red-50 text-red-600 px-3 py-1 rounded-full">{soldesClients.length} dossiers</span>
                     </h3>
                     <div className="space-y-3 overflow-y-auto max-h-[450px] pr-2 custom-scrollbar">
-                        {soldesClients.filter(s => s.nom.toLowerCase().includes(searchTerm.toLowerCase())).map(s => (
+                        {soldesClients.filter(s => (s.nom || '').toLowerCase().includes(searchTerm.toLowerCase())).map(s => (
                             <div key={s.id} className="flex items-center justify-between p-4 rounded-2xl border border-gray-50 bg-gray-50/30 hover:bg-white hover:shadow-lg transition-all border-l-4 border-l-red-500">
                                 <div>
                                     <div className="text-sm font-black text-gray-900 uppercase tracking-tighter">
@@ -763,7 +767,7 @@ export default function RapportsPage() {
                         <span className="text-xs bg-orange-50 text-orange-600 px-3 py-1 rounded-full">{soldesFournisseurs.length} dossiers</span>
                     </h3>
                     <div className="space-y-3 overflow-y-auto max-h-[450px] pr-2 custom-scrollbar">
-                        {soldesFournisseurs.filter(s => s.nom.toLowerCase().includes(searchTerm.toLowerCase())).map(s => (
+                        {soldesFournisseurs.filter(s => (s.nom || '').toLowerCase().includes(searchTerm.toLowerCase())).map(s => (
                             <div key={s.id} className="flex items-center justify-between p-4 rounded-2xl border border-gray-50 bg-gray-50/30 hover:bg-white hover:shadow-lg transition-all border-l-4 border-l-orange-500">
                                 <div>
                                     <div className="text-sm font-black text-gray-900 uppercase tracking-tighter">
@@ -788,7 +792,7 @@ export default function RapportsPage() {
                   Performance CA Clients
                 </h3>
                 <div className="space-y-2 overflow-y-auto max-h-[600px] pr-2 custom-scrollbar">
-                  {caClients.filter(c => c.client.toLowerCase().includes(searchTerm.toLowerCase())).map(c => (
+                  {caClients.filter(c => (c.client || '').toLowerCase().includes(searchTerm.toLowerCase())).map(c => (
                     <button
                       key={c.clientId || c.client}
                       onClick={() => c.clientId && fetchProduitsClient(c.clientId)}
@@ -828,7 +832,7 @@ export default function RapportsPage() {
                       <tbody className="divide-y divide-gray-50">
                         {produitsParClient.map((p, i) => (
                           <tr key={i} className="hover:bg-blue-50/30 transition-colors">
-                            <td className="px-6 py-4 text-sm font-black text-gray-900 italic">{p.produit}</td>
+                            <td className="px-6 py-4 text-sm font-black text-gray-900 italic">{p.produit || 'Article inconnu'}</td>
                             <td className="px-6 py-4 text-sm text-right font-black text-gray-500 tabular-nums">{p.quantiteVendue}</td>
                             <td className="px-6 py-4 text-right">
                                 <span className="text-lg font-black text-blue-600 tabular-nums">{p.chiffreAffaires.toLocaleString()}</span>
@@ -911,7 +915,7 @@ export default function RapportsPage() {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-50">
-                            {facturesVentes.filter(f => f.client.toLowerCase().includes(searchTerm.toLowerCase()) || f.numero.toLowerCase().includes(searchTerm.toLowerCase())).map(f => (
+                            {facturesVentes.filter(f => (f.client || '').toLowerCase().includes(searchTerm.toLowerCase()) || (f.numero || '').toLowerCase().includes(searchTerm.toLowerCase())).map(f => (
                                 <tr key={f.id} className="hover:bg-blue-50/20 transition-all duration-300 group">
                                     <td className="px-6 py-5 text-sm font-black text-blue-600 font-mono tracking-tighter group-hover:scale-110 origin-left transition-transform">{f.numero}</td>
                                     <td className="px-6 py-5 text-[10px] text-gray-400 font-bold uppercase">{new Date(f.date).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })}</td>

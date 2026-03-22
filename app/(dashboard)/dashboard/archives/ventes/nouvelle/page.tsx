@@ -62,10 +62,10 @@ export default function NouvelleArchiveVentePage() {
         fetch('/api/clients?actif=true')
       ])
       const [pData, mData, cData] = await Promise.all([pRes.json(), mRes.json(), cRes.json()])
-      setProduits(pData)
-      setMagasins(mData)
-      setClients(cData)
-      if (mData.length > 0) setFormData(prev => ({ ...prev, magasinId: String(mData[0].id) }))
+      setProduits(Array.isArray(pData) ? pData : [])
+      setMagasins(Array.isArray(mData) ? mData : [])
+      setClients(Array.isArray(cData) ? cData : [])
+      if (Array.isArray(mData) && mData.length > 0) setFormData(prev => ({ ...prev, magasinId: String(mData[0].id) }))
     } catch (e) {
       console.error(e)
     }

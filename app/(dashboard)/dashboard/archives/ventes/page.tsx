@@ -37,7 +37,7 @@ export default function ArchivesVentesPage() {
     try {
       const res = await fetch('/api/archives/ventes')
       const data = await res.json()
-      setArchives(data)
+      setArchives(Array.isArray(data) ? data : [])
     } catch (e) {
       console.error(e)
     } finally {
@@ -46,7 +46,7 @@ export default function ArchivesVentesPage() {
   }
 
   const filteredArchives = archives.filter(a => {
-    const matchSearch = a.numeroFactureOrigine.toLowerCase().includes(search.toLowerCase()) ||
+    const matchSearch = (a.numeroFactureOrigine || '').toLowerCase().includes(search.toLowerCase()) ||
       (a.client?.nom || a.clientLibre || '').toLowerCase().includes(search.toLowerCase())
     
     const matchDate = (!filterDateDebut || a.date >= filterDateDebut) && 

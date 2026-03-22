@@ -48,7 +48,7 @@ export default function ArchivesClientsPage() {
     try {
       const res = await fetch('/api/archives/clients')
       const data = await res.json()
-      setArchives(data)
+      setArchives(Array.isArray(data) ? data : [])
     } catch (e) {
       console.error(e)
     } finally {
@@ -60,7 +60,7 @@ export default function ArchivesClientsPage() {
     try {
       const res = await fetch('/api/clients?actif=true')
       const data = await res.json()
-      setClients(data)
+      setClients(Array.isArray(data) ? data : [])
     } catch (e) {
       console.error(e)
     }
