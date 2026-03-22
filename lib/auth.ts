@@ -14,7 +14,7 @@ export type Session = {
 }
 
 function getSecret(): Uint8Array {
-  let s = process.env.SESSION_SECRET?.trim()
+  let s = (process.env.SESSION_SECRET || process.env.NEXTAUTH_SECRET)?.trim()
   if (!s || s.length < 32) {
     if (process.env.NODE_ENV === 'development') {
       s = 'GestiCom-Dev-Default-Secret-32chars-Minimum!!'
