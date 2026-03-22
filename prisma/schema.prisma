@@ -215,6 +215,7 @@ model Fournisseur {
   localisation String?
   ncc          String?
   soldeInitial Float            @default(0)
+  avoirInitial Float            @default(0)
   actif        Boolean          @default(true)
   createdAt    DateTime         @default(now())
   updatedAt    DateTime         @updatedAt

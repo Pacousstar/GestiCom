@@ -41,6 +41,7 @@ export async function PATCH(
     if (body?.ncc !== undefined) data.ncc = String(body.ncc).trim() || null
     if (body?.localisation !== undefined) data.localisation = String(body.localisation).trim() || null
     if (body?.soldeInitial !== undefined) data.soldeInitial = Number(body.soldeInitial)
+    if (body?.avoirInitial !== undefined) data.avoirInitial = Number(body.avoirInitial)
     if (body?.actif !== undefined) data.actif = Boolean(body.actif)
 
     const f = await prisma.fournisseur.update({ where: { id }, data: data as object })

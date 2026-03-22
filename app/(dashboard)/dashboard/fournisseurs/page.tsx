@@ -20,6 +20,7 @@ type Fournisseur = {
   ncc: string | null
   localisation: string | null
   soldeInitial: number
+  avoirInitial: number
   dette?: number
 }
 
@@ -35,7 +36,7 @@ export default function FournisseursPage() {
   const { success: showSuccess, error: showError } = useToast()
   const [currentPage, setCurrentPage] = useState(1)
   const [pagination, setPagination] = useState<{ page: number; limit: number; total: number; totalPages: number } | null>(null)
-  const [formData, setFormData] = useState({ code: '', nom: '', telephone: '', email: '', ncc: '', localisation: '', soldeInitial: '0' })
+  const [formData, setFormData] = useState({ code: '', nom: '', telephone: '', email: '', ncc: '', localisation: '', soldeInitial: '0', avoirInitial: '0' })
   const [userRole, setUserRole] = useState<string>('')
   const [selectedHistory, setSelectedHistory] = useState<{ id: number; nom: string } | null>(null)
   const [historyData, setHistoryData] = useState<any[]>([])
@@ -124,10 +125,11 @@ export default function FournisseursPage() {
         ncc: f.ncc || '',
         localisation: f.localisation || '',
         soldeInitial: String(f.soldeInitial || 0),
+        avoirInitial: String(f.avoirInitial || 0),
       })
     } else {
       setEditing(null)
-      setFormData({ code: '', nom: '', telephone: '', email: '', ncc: '', localisation: '', soldeInitial: '0' })
+      setFormData({ code: '', nom: '', telephone: '', email: '', ncc: '', localisation: '', soldeInitial: '0', avoirInitial: '0' })
     }
     setForm(true)
     setErr('')
@@ -147,6 +149,7 @@ export default function FournisseursPage() {
       ncc: formData.ncc.trim() || null,
       localisation: formData.localisation.trim() || null,
       soldeInitial: Number(formData.soldeInitial) || 0,
+      avoirInitial: Number(formData.avoirInitial) || 0,
     }
 
     const validation = validateForm(fournisseurSchema, validationData)
@@ -360,7 +363,18 @@ export default function FournisseursPage() {
                 value={formData.soldeInitial}
                 onChange={(e) => setFormData((f) => ({ ...f, soldeInitial: e.target.value }))}
                 placeholder="0"
-                className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 focus:border-orange-500 focus:outline-none bg-orange-100"
+                className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 focus:border-orange-500 focus:outline-none bg-red-50"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Avoir / Avance Initial (F)</label>
+              <input
+                type="number"
+                min="0"
+                value={formData.avoirInitial}
+                onChange={(e) => setFormData((f) => ({ ...f, avoirInitial: e.target.value }))}
+                placeholder="0"
+                className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 focus:border-orange-500 focus:outline-none bg-green-50"
               />
             </div>
             <div className="flex gap-2 sm:col-span-2">
