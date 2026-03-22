@@ -28,6 +28,7 @@ import {
   AlertTriangle,
   ShoppingBag as ShoppingBagIcon,
   Building2,
+  History,
   ChevronDown,
   ChevronRight,
   Loader2,
@@ -98,8 +99,8 @@ const navigation = [
   {
     section: '📂 ARCHIVES',
     items: [
-      { name: 'Anciennes Ventes', href: '/dashboard/archives/ventes', icon: History, permission: 'archives:view' },
-      { name: 'Soldes Clients', href: '/dashboard/archives/clients', icon: Wallet, permission: 'archives:view' },
+      { name: 'Anciennes Ventes', href: '/dashboard/archives/ventes', icon: History, roles: ['SUPER_ADMIN', 'ADMIN'], permission: 'archives:view' },
+      { name: 'Soldes Clients', href: '/dashboard/archives/clients', icon: Wallet, roles: ['SUPER_ADMIN', 'ADMIN'], permission: 'archives:view' },
     ]
   },
   {
