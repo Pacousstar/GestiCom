@@ -25,6 +25,9 @@ export default function ArchivesVentesPage() {
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [selectedArchive, setSelectedArchive] = useState<Archive | null>(null)
+  const [filterDateDebut, setFilterDateDebut] = useState('')
+  const [filterDateFin, setFilterDateFin] = useState('')
+  const [filterMontantMin, setFilterMontantMin] = useState('')
 
   useEffect(() => {
     fetchArchives()
@@ -42,10 +45,17 @@ export default function ArchivesVentesPage() {
     }
   }
 
-  const filteredArchives = archives.filter(a => 
-    a.numeroFactureOrigine.toLowerCase().includes(search.toLowerCase()) ||
-    (a.client?.nom || a.clientLibre || '').toLowerCase().includes(search.toLowerCase())
-  )
+  const filteredArchives = archives.filter(a => {
+    const matchSearch = a.numeroFactureOrigine.toLowerCase().includes(search.toLowerCase()) ||
+      (a.client?.nom || a.clientLibre || '').toLowerCase().includes(search.toLowerCase())
+    
+    const matchDate = (!filterDateDebut || a.date >= filterDateDebut) && 
+                      (!filterDateFin || a.date <= filterDateFin)
+    
+    const matchMontant = (!filterMontantMin || a.montantTotal >= Number(filterMontantMin))
+
+    return matchSearch && matchDate && matchMontant
+  })
 
   return (
     <div className="p-6 space-y-6">
@@ -76,6 +86,48 @@ export default function ArchivesVentesPage() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <div className="flex items-center gap-2 bg-emerald-50/50 p-2 rounded-2xl border border-emerald-100/50">
+            <Calendar className="h-4 w-4 text-emerald-400 ml-2" />
+            <input 
+              type="date" 
+              className="bg-transparent border-none text-xs font-bold text-emerald-950 focus:ring-0 w-full"
+              value={filterDateDebut}
+              onChange={e => setFilterDateDebut(e.target.value)}
+              placeholder="Date début"
+            />
+            <span className="text-emerald-300">→</span>
+            <input 
+              type="date" 
+              className="bg-transparent border-none text-xs font-bold text-emerald-950 focus:ring-0 w-full"
+              value={filterDateFin}
+              onChange={e => setFilterDateFin(e.target.value)}
+              placeholder="Date fin"
+            />
+          </div>
+          <div className="flex items-center gap-2 bg-emerald-50/50 p-2 rounded-2xl border border-emerald-100/50">
+            <ShoppingCart className="h-4 w-4 text-emerald-400 ml-2" />
+            <input 
+              type="number" 
+              placeholder="Montant Min (CFA)"
+              className="bg-transparent border-none text-xs font-bold text-emerald-950 focus:ring-0 w-full"
+              value={filterMontantMin}
+              onChange={e => setFilterMontantMin(e.target.value)}
+            />
+          </div>
+          <button 
+            onClick={() => {
+              setSearch('')
+              setFilterDateDebut('')
+              setFilterDateFin('')
+              setFilterMontantMin('')
+            }}
+            className="text-[10px] font-black uppercase tracking-widest text-emerald-900/40 hover:text-orange-600 transition-colors"
+          >
+            Réinitialiser les filtres
+          </button>
         </div>
 
         {loading ? (

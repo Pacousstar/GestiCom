@@ -25,6 +25,8 @@ model Entite {
   transferts   Transfert[]
   utilisateurs Utilisateur[]
   ventes       Vente[]
+  archiveVentes ArchiveVente[]
+  archiveSoldes ArchiveSoldeClient[]
 }
 
 model Utilisateur {
@@ -53,6 +55,8 @@ model Utilisateur {
   transferts                Transfert[]
   entite                    Entite               @relation(fields: [entiteId], references: [id])
   ventes                    Vente[]
+  archiveVentes             ArchiveVente[]
+  archiveSoldes             ArchiveSoldeClient[]
 }
 
 model Magasin {
@@ -74,6 +78,7 @@ model Magasin {
   transfertsDest    Transfert[] @relation("TransfertDest")
   transfertsOrigine Transfert[] @relation("TransfertOrigine")
   ventes            Vente[]
+  archiveVentes     ArchiveVente[]
 }
 
 model Produit {
@@ -195,6 +200,8 @@ model Client {
   updatedAt      DateTime         @updatedAt
   reglements     ReglementVente[]
   ventes         Vente[]
+  archiveVentes  ArchiveVente[]
+  archiveSoldes  ArchiveSoldeClient[]
 
   @@index([actif])
 }
@@ -598,4 +605,22 @@ model ArchiveVenteLigne {
   prixUnitaire Float
   montant      Float
   vente        ArchiveVente @relation(fields: [venteId], references: [id], onDelete: Cascade)
+}
+
+model ArchiveSoldeClient {
+  id            Int      @id @default(autoincrement())
+  entiteId      Int
+  utilisateurId Int
+  clientId      Int?
+  clientLibre   String?
+  montant       Float
+  dateArchive   DateTime @default(now())
+  observation   String?
+  createdAt     DateTime @default(now())
+
+  entite        Entite      @relation(fields: [entiteId], references: [id])
+  utilisateur   Utilisateur @relation(fields: [utilisateurId], references: [id])
+  client        Client?     @relation(fields: [clientId], references: [id], onDelete: SetNull)
+
+  @@index([dateArchive])
 }
