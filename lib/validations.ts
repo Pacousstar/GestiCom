@@ -37,6 +37,7 @@ export const parametresPatchSchema = z.object({
   siteWeb: z.string().url('URL invalide').max(MAX_STRING).nullable().optional().or(z.literal('')),
   localisation: z.string().max(MAX_STRING).optional(),
   numNCC: z.string().max(100).nullable().optional(),
+  registreCommerce: z.string().max(100).nullable().optional(),
   devise: z.string().max(20).optional(),
   tvaParDefaut: z.coerce.number().min(0).max(100).optional(),
   typeCommerce: z.string().max(50).optional(),

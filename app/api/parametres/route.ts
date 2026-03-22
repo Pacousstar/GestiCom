@@ -82,6 +82,7 @@ export async function PATCH(request: NextRequest) {
           siteWeb: data.siteWeb ?? null,
           localisation: data.localisation ?? '',
           numNCC: data.numNCC ?? null,
+          registreCommerce: data.registreCommerce ?? null,
           devise: data.devise ?? 'FCFA',
           tvaParDefaut: data.tvaParDefaut ?? 0,
           typeCommerce: data.typeCommerce ?? 'GENERAL',
