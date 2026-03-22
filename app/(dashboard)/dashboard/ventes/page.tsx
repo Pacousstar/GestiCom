@@ -78,7 +78,7 @@ export default function VentesPage() {
   const [pagination, setPagination] = useState<{ page: number; limit: number; total: number; totalPages: number } | null>(null)
   const [totals, setTotals] = useState<{ montantTotal: number; montantPaye: number; resteAPayer: number } | null>(null)
   const [formData, setFormData] = useState({
-    date: new Date().toISOString().split('T')[0],
+    date: new Date().toLocaleDateString('en-CA'), // YYYY-MM-DD local
     magasinId: '',
     clientId: '',
     clientLibre: '',
@@ -159,12 +159,23 @@ export default function VentesPage() {
   const imprimerVente = async () => {
     if (!detailVente) return
     const d = detailVente
-    const date = new Date(d.date)
+    const dateDoc = new Date(d.date)
     // Toutes les lignes (articles) de la vente sont affichées sur une même facture
     const lignes = Array.isArray(d.lignes) ? d.lignes : []
-    const totalHT = lignes.reduce((acc, l) => acc + (l.quantite * l.prixUnitaire), 0)
-    const totalTVA = lignes.reduce((acc, l: any) => acc + (l.quantite * l.prixUnitaire * ((l.tvaPerc || 0) / 100)), 0)
-    const totalLinesRemise = lignes.reduce((acc, l) => acc + (Number(l.remise) || 0), 0)
+    // Calculs conformes (TTC = HT Net + TVA sur Net)
+    const totalCalc = lignes.reduce((acc, l: any) => {
+      const q = l.quantite
+      const pu = l.prixUnitaire
+      const r = Number(l.remise) || 0
+      const t = l.tvaPerc || 0
+      const ht = q * pu
+      const htNet = ht - r
+      const tva = htNet * (t / 100)
+      acc.ht += ht
+      acc.remise += r
+      acc.tva += tva
+      return acc
+    }, { ht: 0, remise: 0, tva: 0 })
     
     const lignesHtml = generateLignesHTML(lignes.map((l) => ({
       designation: l.designation,
@@ -176,8 +187,8 @@ export default function VentesPage() {
 
     const templateData: TemplateData = {
       NUMERO: d.numero,
-      DATE: date.toLocaleDateString('fr-FR'),
-      HEURE: date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
+      DATE: formatDate(d.date),
+      HEURE: dateDoc.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
       MAGASIN_CODE: d.magasin.code,
       MAGASIN_NOM: d.magasin.nom,
       CLIENT_NOM: d.client?.nom || d.clientLibre || undefined,
@@ -185,9 +196,9 @@ export default function VentesPage() {
       CLIENT_LOCALISATION: d.client?.adresse || undefined,
       CLIENT_NCC: d.client?.ncc || undefined,
       LIGNES: lignesHtml,
-      TOTAL_HT: `${totalHT.toLocaleString('fr-FR')} FCFA`,
-      TOTAL_TVA: totalTVA > 0 ? `${totalTVA.toLocaleString('fr-FR')} FCFA` : undefined,
-      TOTAL_REMISE: totalLinesRemise > 0 ? `${totalLinesRemise.toLocaleString('fr-FR')} FCFA` : undefined,
+      TOTAL_HT: `${totalCalc.ht.toLocaleString('fr-FR')} FCFA`,
+      TOTAL_TVA: totalCalc.tva > 0 ? `${Math.round(totalCalc.tva).toLocaleString('fr-FR')} FCFA` : undefined,
+      TOTAL_REMISE: totalCalc.remise > 0 ? `${totalCalc.remise.toLocaleString('fr-FR')} FCFA` : undefined,
       REMISE_GLOBALE: d.remiseGlobale > 0 ? `${Number(d.remiseGlobale).toLocaleString('fr-FR')} FCFA` : undefined,
       TOTAL: `${Number(d.montantTotal).toLocaleString('fr-FR')} FCFA`,
       MONTANT_PAYE: d.montantPaye ? `${Number(d.montantPaye).toLocaleString('fr-FR')} FCFA` : undefined,
@@ -439,7 +450,7 @@ export default function VentesPage() {
         setPopupLignes([])
         setPopupAjoutProduit({ produitId: '', quantite: '1', prixUnitaire: '', tvaPerc: '0', remise: '0', recherche: '' })
         setFormData({
-          date: new Date().toISOString().split('T')[0],
+          date: new Date().toLocaleDateString('en-CA'),
           magasinId: '',
           clientId: '',
           clientLibre: '',

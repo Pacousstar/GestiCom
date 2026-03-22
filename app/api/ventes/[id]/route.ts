@@ -67,21 +67,21 @@ export async function DELETE(
 
     await deleteEcrituresByReference('VENTE', id)
 
+    // Nettoyage des mouvements de stocks originaux
+    // L'observation lors de la création est "Vente ${v.numero}" ou "Vente Rapide ${v.numero}"
+    await prisma.mouvement.deleteMany({
+      where: {
+        entiteId: v.entiteId,
+        magasinId: v.magasinId,
+        observation: { contains: v.numero }
+      }
+    })
+
+    // Retour des produits au stock (incrément)
     for (const l of v.lignes) {
       await prisma.stock.updateMany({
         where: { produitId: l.produitId, magasinId: v.magasinId },
         data: { quantite: { increment: l.quantite } },
-      })
-      await prisma.mouvement.create({
-        data: {
-          type: 'ENTREE',
-          produitId: l.produitId,
-          magasinId: v.magasinId,
-          entiteId: v.entiteId,
-          utilisateurId: session.userId,
-          quantite: l.quantite,
-          observation: `Suppression vente ${v.numero}`,
-        },
       })
     }
 

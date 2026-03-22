@@ -57,7 +57,7 @@ export default function AchatsPage() {
     observation: string | null
     magasin: { code: string; nom: string }
     fournisseur: { nom: string; telephone?: string | null; email?: string | null } | null
-    lignes: Array<{ designation: string; quantite: number; prixUnitaire: number; montant: number }>
+    lignes: Array<{ designation: string; quantite: number; prixUnitaire: number; montant: number; remise?: number; tvaPerc?: number }>
   } | null>(null)
   const [loadingDetail, setLoadingDetail] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
@@ -68,7 +68,7 @@ export default function AchatsPage() {
   const [pagination, setPagination] = useState<{ page: number; limit: number; total: number; totalPages: number } | null>(null)
   const [totals, setTotals] = useState<{ montantTotal: number; montantPaye: number; resteAPayer: number } | null>(null)
   const [formData, setFormData] = useState({
-    date: new Date().toISOString().split('T')[0],
+    date: new Date().toLocaleDateString('en-CA'), // YYYY-MM-DD local
     magasinId: '',
     fournisseurId: '',
     fournisseurLibre: '',
@@ -98,6 +98,7 @@ export default function AchatsPage() {
   const [supprimant, setSupprimant] = useState<number | null>(null)
   const [showReglement, setShowReglement] = useState<{ id: number; numero: string; reste: number } | null>(null)
   const [reglementData, setReglementData] = useState({ montant: '', modePaiement: 'ESPECES' })
+  const [submitting, setSubmitting] = useState(false)
   const [savingReglement, setSavingReglement] = useState(false)
 
   useEffect(() => {
@@ -327,26 +328,45 @@ export default function AchatsPage() {
   const imprimerAchat = async () => {
     if (!detailAchat) return
     const d = detailAchat
-    const date = new Date(d.date)
+    const dateDoc = new Date(d.date)
+
+    // Calculs conformes (TTC = HT Net + TVA sur Net)
+    const totalCalc = d.lignes.reduce((acc, l: any) => {
+      const q = l.quantite
+      const pu = l.prixUnitaire
+      const r = Number(l.remise) || 0
+      const t = l.tvaPerc || 0
+      const ht = q * pu
+      const htNet = ht - r
+      const tva = htNet * (t / 100)
+      acc.ht += ht
+      acc.remise += r
+      acc.tva += tva
+      return acc
+    }, { ht: 0, remise: 0, tva: 0 })
 
     // Préparer les données pour le template
     const lignesHtml = generateLignesHTML(d.lignes.map((l) => ({
       designation: l.designation,
       quantite: l.quantite,
       prixUnitaire: l.prixUnitaire,
+      remise: l.remise,
       montant: l.montant,
     })))
 
     const templateData: TemplateData = {
       NUMERO: d.numero,
-      DATE: date.toLocaleDateString('fr-FR'),
-      HEURE: date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
+      DATE: dateDoc.toLocaleDateString('fr-FR'),
+      HEURE: dateDoc.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
       MAGASIN_CODE: d.magasin.code,
       MAGASIN_NOM: d.magasin.nom,
       FOURNISSEUR_NOM: d.fournisseur?.nom || d.fournisseurLibre || undefined,
-      CLIENT_NOM: d.fournisseur?.nom || d.fournisseurLibre || undefined, // Pour compatibilité template
+      CLIENT_NOM: d.fournisseur?.nom || d.fournisseurLibre || undefined,
       CLIENT_CONTACT: d.fournisseur?.telephone || undefined,
       LIGNES: lignesHtml,
+      TOTAL_HT: `${totalCalc.ht.toLocaleString('fr-FR')} FCFA`,
+      TOTAL_REMISE: totalCalc.remise > 0 ? `${totalCalc.remise.toLocaleString('fr-FR')} FCFA` : undefined,
+      TOTAL_TVA: totalCalc.tva > 0 ? `${Math.round(totalCalc.tva).toLocaleString('fr-FR')} FCFA` : undefined,
       TOTAL: `${Number(d.montantTotal).toLocaleString('fr-FR')} FCFA`,
       MONTANT_PAYE: d.montantPaye ? `${Number(d.montantPaye).toLocaleString('fr-FR')} FCFA` : undefined,
       RESTE: d.statutPaiement !== 'PAYE' ? `${(Number(d.montantTotal) - (Number(d.montantPaye) || 0)).toLocaleString('fr-FR')} FCFA` : undefined,
@@ -362,6 +382,8 @@ export default function AchatsPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (submitting) return
+    setSubmitting(true)
     setErr('')
     const magasinId = Number(formData.magasinId)
     if (!magasinId) { setErr('Choisissez un magasin.'); return }
@@ -395,7 +417,7 @@ export default function AchatsPage() {
       if (res.ok) {
         setForm(false)
         setFormData({
-          date: new Date().toISOString().split('T')[0],
+          date: new Date().toLocaleDateString('en-CA'),
           magasinId: '',
           fournisseurId: '',
           fournisseurLibre: '',
@@ -415,6 +437,8 @@ export default function AchatsPage() {
       const errorMsg = formatApiError(e)
       setErr(errorMsg)
       showError(errorMsg)
+    } finally {
+      setSubmitting(false)
     }
   }
 
@@ -869,7 +893,12 @@ export default function AchatsPage() {
             </div>
 
             <div className="flex gap-2">
-              <button type="submit" className="rounded-lg bg-orange-500 px-4 py-2 text-white hover:bg-orange-600">
+              <button 
+                type="submit" 
+                disabled={submitting}
+                className="flex items-center gap-2 rounded-lg bg-orange-500 px-4 py-2 text-white hover:bg-orange-600 disabled:bg-gray-400"
+              >
+                {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
                 Enregistrer l&apos;achat
               </button>
               <button

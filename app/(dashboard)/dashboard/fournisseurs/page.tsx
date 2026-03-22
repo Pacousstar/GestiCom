@@ -41,6 +41,7 @@ export default function FournisseursPage() {
   const [historyData, setHistoryData] = useState<any[]>([])
   const [loadingHistory, setLoadingHistory] = useState(false)
   const [paymentModal, setPaymentModal] = useState<{ fournisseur: Fournisseur; invoices: any[] } | null>(null)
+  const [submitting, setSubmitting] = useState(false)
 
   useEffect(() => {
     fetch('/api/auth/check').then((r) => r.ok && r.json()).then((d) => d && setUserRole(d.role)).catch(() => { })
@@ -134,6 +135,8 @@ export default function FournisseursPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (submitting) return
+    setSubmitting(true)
     setErr('')
 
     const validationData = {
@@ -194,10 +197,8 @@ export default function FournisseursPage() {
           showError(errorMsg)
         }
       }
-    } catch (e) {
-      const errorMsg = formatApiError(e)
-      setErr(errorMsg)
-      showError(errorMsg)
+    } finally {
+      setSubmitting(false)
     }
   }
 
@@ -363,7 +364,12 @@ export default function FournisseursPage() {
               />
             </div>
             <div className="flex gap-2 sm:col-span-2">
-              <button type="submit" className="rounded-lg bg-orange-500 px-4 py-2 text-white hover:bg-orange-600">
+              <button 
+                type="submit" 
+                disabled={submitting}
+                className="flex items-center gap-2 rounded-lg bg-orange-500 px-4 py-2 text-white hover:bg-orange-600 disabled:bg-gray-400"
+              >
+                {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
                 {editing ? 'Enregistrer' : 'Créer'}
               </button>
               <button
@@ -410,6 +416,7 @@ export default function FournisseursPage() {
                     <td className="px-4 py-3 text-sm text-gray-600">{f.telephone || '—'}</td>
                     <td className="px-4 py-3 text-sm text-gray-600">{f.email || '—'}</td>
                     <td className="px-4 py-3 text-sm text-gray-600">{f.ncc || '—'}</td>
+                    <td className="px-4 py-3 text-sm text-gray-600">{f.localisation || '—'}</td>
                     <td className="px-4 py-3 text-sm text-gray-600 font-medium text-right">{Number(f.soldeInitial || 0).toLocaleString('fr-FR')} F</td>
                     <td className={`px-4 py-3 text-right text-sm font-bold ${f.dette && f.dette > 0 ? 'text-red-600' : 'text-green-600'}`}>
                       {Number(f.dette ?? 0).toLocaleString('fr-FR')} F

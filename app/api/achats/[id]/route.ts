@@ -67,28 +67,22 @@ export async function DELETE(
 
     await deleteEcrituresByReference('ACHAT', id)
 
-    for (const l of a.lignes) {
-      const st = await prisma.stock.findUnique({
-        where: { produitId_magasinId: { produitId: l.produitId, magasinId: a.magasinId } },
-      })
-      if (st) {
-        const newQty = Math.max(0, st.quantite - l.quantite)
-        await prisma.stock.update({
-          where: { id: st.id },
-          data: { quantite: newQty },
-        })
-        await prisma.mouvement.create({
-          data: {
-            type: 'SORTIE',
-            produitId: l.produitId,
-            magasinId: a.magasinId,
-            entiteId: a.entiteId,
-            utilisateurId: session.userId,
-            quantite: l.quantite,
-            observation: `Suppression achat ${a.numero}`,
-          },
-        })
+    // Nettoyage des mouvements de stocks
+    // L'observation lors de la création est "Achat ${a.numero}"
+    await prisma.mouvement.deleteMany({
+      where: {
+        entiteId: a.entiteId,
+        magasinId: a.magasinId,
+        observation: { startsWith: `Achat ${a.numero}` }
       }
+    })
+
+    // Remise à jour des stocks (retrait des quantités achetées)
+    for (const l of a.lignes) {
+      await prisma.stock.updateMany({
+        where: { produitId: l.produitId, magasinId: a.magasinId },
+        data: { quantite: { decrement: l.quantite } }
+      })
     }
 
     await prisma.achat.delete({ where: { id } })
