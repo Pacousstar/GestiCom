@@ -304,8 +304,9 @@ export default function DashboardLayoutClient({
     )
 
     if (targetRoute) {
-      const authorized = !targetRoute.permission || (user.permissions && user.permissions.includes(targetRoute.permission))
-      const roleAuthorized = !targetRoute.roles || targetRoute.roles.includes(user.role)
+      const isSuperAdmin = user.role === 'SUPER_ADMIN'
+      const authorized = isSuperAdmin || !targetRoute.permission || (user.permissions && user.permissions.includes(targetRoute.permission))
+      const roleAuthorized = isSuperAdmin || !targetRoute.roles || targetRoute.roles.includes(user.role)
 
       if (!authorized || !roleAuthorized) {
         showError("Vous n'avez pas l'autorisation d'accéder à cette page.")
