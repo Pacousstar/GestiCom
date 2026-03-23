@@ -146,11 +146,11 @@ export default function AuditPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-white">Journal d'audit</h1>
-          <p className="text-white/90 mt-1">Traçabilité des actions des utilisateurs</p>
+          <h1 className="text-3xl font-black text-white uppercase tracking-tighter italic">Journal d'audit</h1>
+          <p className="text-white/80 mt-1 text-[10px] font-bold uppercase tracking-widest">Traçabilité des actions des utilisateurs</p>
           {totalLogs > 0 && (
-            <p className="text-white/80 mt-1 text-sm">
-              {totalLogs} log{totalLogs > 1 ? 's' : ''} trouvé{totalLogs > 1 ? 's' : ''}
+            <p className="text-white/60 mt-1 text-[9px] font-black uppercase tracking-tighter">
+              {totalLogs} TRANSACTION{totalLogs > 1 ? 'S' : ''} RÉPERTORIÉE{totalLogs > 1 ? 'S' : ''}
             </p>
           )}
         </div>

@@ -93,6 +93,8 @@ export default function AchatsPage() {
     nom: '',
     telephone: '',
     email: '',
+    soldeInitial: '',
+    avoirInitial: ''
   })
   const [savingFournisseur, setSavingFournisseur] = useState(false)
   const [userRole, setUserRole] = useState<string>('')
@@ -262,7 +264,11 @@ export default function AchatsPage() {
       const res = await fetch('/api/fournisseurs', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(validationData),
+        body: JSON.stringify({
+          ...validationData,
+          soldeInitial: Number(fournisseurForm.soldeInitial) || 0,
+          avoirInitial: Number(fournisseurForm.avoirInitial) || 0,
+        }),
       })
       const data = await res.json()
       if (res.ok) {
@@ -273,6 +279,8 @@ export default function AchatsPage() {
           nom: '',
           telephone: '',
           email: '',
+          soldeInitial: '',
+          avoirInitial: ''
         })
         showSuccess('Fournisseur créé avec succès.')
       } else {
@@ -1141,6 +1149,28 @@ export default function AchatsPage() {
                   onChange={(e) => setFournisseurForm((f) => ({ ...f, email: e.target.value }))}
                   className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 focus:border-orange-500 focus:outline-none"
                 />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-black text-rose-600 uppercase tracking-tighter">Solde Initial (Dette)</label>
+                  <input
+                    type="number"
+                    value={fournisseurForm.soldeInitial}
+                    onChange={(e) => setFournisseurForm((f) => ({ ...f, soldeInitial: e.target.value }))}
+                    placeholder="Dette envers lui"
+                    className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 focus:border-orange-500 focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-black text-emerald-600 uppercase tracking-tighter">Avoir Initial (Crédit)</label>
+                  <input
+                    type="number"
+                    value={fournisseurForm.avoirInitial}
+                    onChange={(e) => setFournisseurForm((f) => ({ ...f, avoirInitial: e.target.value }))}
+                    placeholder="Avance faite"
+                    className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 focus:border-orange-500 focus:outline-none"
+                  />
+                </div>
               </div>
               <div className="flex gap-2">
                 <button

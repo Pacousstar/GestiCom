@@ -193,6 +193,7 @@ model Client {
   type           String
   plafondCredit  Float?
   soldeInitial   Float            @default(0)
+  avoirInitial   Float            @default(0)
   pointsFidelite Int              @default(0)
   ncc            String?
   actif          Boolean          @default(true)
@@ -290,6 +291,7 @@ model Parametre {
   tvaParDefaut        Float    @default(0)
   typeCommerce        String   @default("GENERAL")
   logo                String?
+  logoLocal           String?
   piedDePage          String?
   smtpHost            String?
   smtpPort            Int?

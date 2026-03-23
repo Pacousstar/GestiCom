@@ -158,6 +158,7 @@ export async function POST(request: NextRequest) {
           libelle,
           modePaiement,
           utilisateurId: session.userId,
+          magasinId,
         })
       } catch (comptaError) {
         console.error('Erreur comptabilisation dépense:', comptaError)

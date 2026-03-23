@@ -6,7 +6,7 @@ import { useSearchParams } from 'next/navigation'
 import { 
   ShoppingBag, Plus, Loader2, Trash2, Eye, FileSpreadsheet, Printer, X, 
   Search, Scan, Camera, Edit2, Pencil, Trash, CreditCard, Wallet, UserPlus, 
-  AlertTriangle, Calculator, FileText, ChevronRight, HelpCircle, XCircle, ShoppingCart, Percent
+  AlertTriangle, Calculator, FileText, ChevronRight, HelpCircle, XCircle, ShoppingCart, Percent, DollarSign
 } from 'lucide-react'
 import { printDocument, generateLignesHTML, type TemplateData } from '@/lib/print-templates'
 import PrintPreview from '@/components/print/PrintPreview'
@@ -727,8 +727,8 @@ export default function VentesPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-black text-slate-900 uppercase tracking-tighter italic">Ventes</h1>
-          <p className="mt-1 text-slate-500 font-bold uppercase text-[10px] tracking-widest">Flux de ventes et encaissements clients</p>
+          <h1 className="text-3xl font-black text-white uppercase tracking-tighter italic">Ventes</h1>
+          <p className="mt-1 text-white/80 font-bold uppercase text-[10px] tracking-widest">Flux de ventes et encaissements clients</p>
         </div>
         <button
           onClick={() => setForm(true)}
@@ -1428,7 +1428,16 @@ export default function VentesPage() {
                       <td className="px-4 py-3 text-right font-medium text-gray-900">
                         {Number(v.montantTotal).toLocaleString('fr-FR')} F
                       </td>
-                      <td className="px-4 py-3 text-sm text-gray-600">{v.modePaiement}</td>
+                      <td className="px-4 py-3 text-sm text-gray-600">
+                        <div className="flex items-center gap-1.5" title={v.modePaiement === 'ESPECES' ? "Espèces" : v.modePaiement}>
+                          {v.modePaiement === 'ESPECES' ? (
+                            <DollarSign className="h-3.5 w-3.5 text-emerald-500" />
+                          ) : (
+                            <Wallet className="h-3.5 w-3.5 text-blue-500" />
+                          )}
+                          {v.modePaiement.replace('_', ' ')}
+                        </div>
+                      </td>
                       <td className="px-4 py-3">
                         <span className={`rounded px-2 py-0.5 text-xs font-medium ${v.statutPaiement === 'PAYE' ? 'bg-green-100 text-green-800' :
                           v.statutPaiement === 'PARTIEL' ? 'bg-yellow-100 text-yellow-800' :

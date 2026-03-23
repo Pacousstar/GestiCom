@@ -47,6 +47,7 @@ export async function PATCH(
     const ncc = body?.ncc !== undefined ? (String(body.ncc).trim() || null) : undefined
     const localisation = body?.localisation !== undefined ? (String(body.localisation).trim() || null) : undefined
     const soldeInitial = body?.soldeInitial !== undefined ? Number(body.soldeInitial) || 0 : undefined
+    const avoirInitial = body?.avoirInitial !== undefined ? Number(body.avoirInitial) || 0 : undefined
     const actif = body?.actif !== undefined ? Boolean(body.actif) : undefined
 
     const data: Record<string, unknown> = {}
@@ -58,6 +59,7 @@ export async function PATCH(
     if (ncc !== undefined) data.ncc = ncc
     if (localisation !== undefined) data.localisation = localisation
     if (soldeInitial !== undefined) data.soldeInitial = soldeInitial
+    if (avoirInitial !== undefined) data.avoirInitial = avoirInitial
     if (actif !== undefined) data.actif = actif
 
     const c = await prisma.client.update({ where: { id }, data: data as any })

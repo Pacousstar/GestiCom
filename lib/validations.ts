@@ -41,7 +41,8 @@ export const parametresPatchSchema = z.object({
   devise: z.string().max(20).optional(),
   tvaParDefaut: z.coerce.number().min(0).max(100).optional(),
   typeCommerce: z.string().max(50).optional(),
-  logo: z.string().nullable().optional(), // Base64 ou URL du logo
+  logo: z.string().nullable().optional(), // URL du logo (fichiers ou web)
+  logoLocal: z.string().nullable().optional(), // Image en Base64 ou chemin local
   piedDePage: z.string().max(MAX_TEXT).nullable().optional(),
 
   // Envoi d'emails (SMTP)

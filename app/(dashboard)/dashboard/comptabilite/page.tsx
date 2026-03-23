@@ -8,6 +8,7 @@ import {
   Users,
   ArrowUp,
   ArrowDown,
+  ArrowDownCircle,
   TrendingUp,
   FileText,
   DollarSign,
@@ -166,31 +167,35 @@ export default async function ComptabilitePage({
       sub: 'Ce mois',
       change: evolCa,
       icon: Banknote,
-      color: 'from-emerald-500 to-emerald-600',
+      color: 'bg-emerald-50 text-emerald-600 border-emerald-100',
+      iconBg: 'bg-emerald-100/50',
     },
     {
-      title: 'Ventes',
+      title: 'Transactions',
       value: String(nbVentesMois),
-      sub: 'Transactions ce mois',
+      sub: 'Ventes ce mois',
       change: evolVentes,
       icon: ShoppingCart,
-      color: 'from-blue-500 to-blue-600',
+      color: 'bg-blue-50 text-blue-600 border-blue-100',
+      iconBg: 'bg-blue-100/50',
     },
     {
-      title: 'Clients',
+      title: 'Clients Actifs',
       value: String(totalClients),
-      sub: 'Fiches actives',
+      sub: 'Base clients',
       change: evolClients,
       icon: Users,
-      color: 'from-violet-500 to-violet-600',
+      color: 'bg-indigo-50 text-indigo-600 border-indigo-100',
+      iconBg: 'bg-indigo-100/50',
     },
     {
-      title: 'Achats',
+      title: 'Achats Fournisseurs',
       value: formatFcfa(totalAchats),
       sub: 'Total ce mois',
       change: evolAchats,
       icon: ShoppingBag,
-      color: 'from-amber-500 to-orange-600',
+      color: 'bg-orange-50 text-orange-600 border-orange-100',
+      iconBg: 'bg-orange-100/50',
     },
   ]
 
@@ -198,11 +203,12 @@ export default async function ComptabilitePage({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-white">Comptabilité</h1>
-          <p className="mt-2 text-white/90">
-            Chiffres de GestiCom — CA, ventes, clients et évolution. Accès réservé au Super Administrateur et au Comptable.
+          <h1 className="text-3xl font-black text-white uppercase tracking-tighter italic">Comptabilité</h1>
+          <p className="mt-2 text-white/80 font-medium">
+            Chiffres de GestiCom — CA, ventes, clients et évolution. <br />
+            <span className="inline-block mt-1 text-[10px] font-black uppercase tracking-widest bg-white/20 px-2 py-0.5 rounded backdrop-blur-sm">Accès réservé au Super Administrateur et au Comptable.</span>
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -304,29 +310,26 @@ export default async function ComptabilitePage({
           return (
             <div
               key={i}
-              className={`overflow-hidden rounded-xl bg-gradient-to-br ${c.color} p-6 shadow-lg transition-all hover:shadow-xl hover:scale-105`}
+              className={`group overflow-hidden rounded-[2rem] border ${c.color} bg-white/95 p-6 shadow-xl transition-all hover:shadow-2xl hover:scale-[1.02] backdrop-blur-md`}
             >
               <div className="flex items-start justify-between">
                 <div className="flex-1">
-                  <p className="text-sm font-medium text-white/90">{c.title}</p>
-                  <p className="mt-2 text-2xl font-bold text-white">{c.value}</p>
-                  <p className="text-xs text-white/80">{c.sub}</p>
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-60">{c.title}</p>
+                  <p className="mt-2 text-2xl font-black tracking-tighter tabular-nums">{c.value}</p>
+                  <p className="text-[10px] font-bold uppercase opacity-40 mt-1">{c.sub}</p>
+                  
                   {!isZero && (
-                    <div className="mt-2 flex items-center gap-1">
-                      {isPos ? (
-                        <ArrowUp className="h-4 w-4 text-white/90" />
-                      ) : (
-                        <ArrowDown className="h-4 w-4 text-white/90" />
-                      )}
-                      <span className="text-sm font-medium text-white/90">
+                    <div className="mt-4 flex items-center gap-2">
+                       <span className={`flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-black uppercase tracking-tighter ${isPos ? 'bg-emerald-100 text-emerald-600' : 'bg-red-100 text-red-600'}`}>
+                        {isPos ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />}
                         {Math.abs(c.change).toFixed(1)}%
                       </span>
-                      <span className="text-sm text-white/70">vs mois dernier</span>
+                      <span className="text-[9px] font-bold uppercase opacity-30 italic">vs mois dernier</span>
                     </div>
                   )}
                 </div>
-                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/20 backdrop-blur-sm shadow-lg">
-                  <Icon className="h-7 w-7 text-white" />
+                <div className={`flex h-12 w-12 items-center justify-center rounded-2xl ${c.iconBg} shadow-inner transition-transform group-hover:rotate-12`}>
+                  <Icon className="h-6 w-6" />
                 </div>
               </div>
             </div>
@@ -335,110 +338,36 @@ export default async function ComptabilitePage({
       </div>
 
       <div className="space-y-4">
-        <div className="flex items-center gap-2">
-          <TrendingUp className="h-6 w-6 text-white" />
-          <h2 className="text-2xl font-bold text-white">Synthèse du mois</h2>
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-white/10 rounded-lg backdrop-blur-md">
+            <TrendingUp className="h-6 w-6 text-white" />
+          </div>
+          <h2 className="text-2xl font-black text-white uppercase tracking-tighter italic">Équilibre Financier</h2>
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {/* CA */}
-          <div className="rounded-xl bg-gradient-to-br from-green-500 to-emerald-600 p-6 text-white shadow-lg hover:shadow-xl transition-shadow">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-green-100 mb-1">CA</p>
-                <p className="text-2xl font-bold">{formatFcfa(ca)}</p>
-                <p className="text-xs text-green-100 mt-1">Ventes validées</p>
+        
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+          {[
+            { label: 'Recettes (CA)', val: ca, icon: Banknote, color: 'emerald' },
+            { label: 'Achats', val: totalAchats, icon: ShoppingCart, color: 'blue' },
+            { label: 'Dépenses', val: totalDepenses, icon: ArrowDownCircle, color: 'rose' },
+            { label: 'Marge Brute', val: Math.max(0, ca - totalAchats), icon: TrendingUp, color: 'indigo' },
+            { label: 'Résultat Net', val: ca - totalAchats - totalDepenses, icon: FileText, color: 'amber' },
+          ].map((item, idx) => {
+            const Icon = item.icon
+            const isNegative = typeof item.val === 'number' && item.val < 0
+            return (
+              <div key={idx} className="group relative overflow-hidden rounded-2xl border border-white/5 bg-white/5 p-5 backdrop-blur-sm transition-all hover:bg-white/10">
+                <p className="text-[10px] font-black uppercase tracking-widest text-white/40">{item.label}</p>
+                <div className="mt-2 flex items-center justify-between">
+                  <p className={`text-xl font-black tracking-tighter ${isNegative ? 'text-rose-400' : 'text-white'}`}>
+                    {formatFcfa(item.val as number)}
+                  </p>
+                  <Icon className={`h-5 w-5 opacity-20 group-hover:opacity-60 transition-opacity text-${item.color}-400`} />
+                </div>
+                <div className={`absolute bottom-0 left-0 h-1 w-full bg-${item.color}-500/30 group-hover:bg-${item.color}-500/60 transition-all`} />
               </div>
-              <Banknote className="h-10 w-10 text-green-200" />
-            </div>
-          </div>
-
-          {/* Achats */}
-          <div className="rounded-xl bg-gradient-to-br from-blue-500 to-cyan-600 p-6 text-white shadow-lg hover:shadow-xl transition-shadow">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-blue-100 mb-1">Achats</p>
-                <p className="text-2xl font-bold">{formatFcfa(totalAchats)}</p>
-                <p className="text-xs text-blue-100 mt-1">Total des achats</p>
-              </div>
-              <ShoppingCart className="h-10 w-10 text-blue-200" />
-            </div>
-          </div>
-
-          {/* Dépenses */}
-          <div className="rounded-xl bg-gradient-to-br from-red-500 to-pink-600 p-6 text-white shadow-lg hover:shadow-xl transition-shadow">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-red-100 mb-1">Dépenses</p>
-                <p className="text-2xl font-bold">{formatFcfa(totalDepenses)}</p>
-                <p className="text-xs text-red-100 mt-1">Total des dépenses</p>
-              </div>
-              <DollarSign className="h-10 w-10 text-red-200" />
-            </div>
-          </div>
-
-          {/* Marge brute */}
-          <div className="rounded-xl bg-gradient-to-br from-purple-500 to-indigo-600 p-6 text-white shadow-lg hover:shadow-xl transition-shadow">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-purple-100 mb-1">Marge brute</p>
-                <p className="text-2xl font-bold">{formatFcfa(Math.max(0, ca - totalAchats))}</p>
-                <p className="text-xs text-purple-100 mt-1">CA - Achats</p>
-              </div>
-              <TrendingUp className="h-10 w-10 text-purple-200" />
-            </div>
-          </div>
-
-          {/* Résultat net */}
-          <div className="rounded-xl bg-gradient-to-br from-orange-500 to-amber-600 p-6 text-white shadow-lg hover:shadow-xl transition-shadow">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-orange-100 mb-1">Résultat net</p>
-                <p className="text-2xl font-bold">{formatFcfa(Math.max(0, ca - totalAchats - totalDepenses))}</p>
-                <p className="text-xs text-orange-100 mt-1">CA - Achats - Dépenses</p>
-              </div>
-              <FileText className="h-10 w-10 text-orange-200" />
-            </div>
-          </div>
-
-          {/* Nombre de ventes */}
-          <div className="rounded-xl bg-gradient-to-br from-teal-500 to-green-600 p-6 text-white shadow-lg hover:shadow-xl transition-shadow">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-teal-100 mb-1">Nombre de ventes</p>
-                <p className="text-2xl font-bold">{nbVentesMois}</p>
-                <p className="text-xs text-teal-100 mt-1">Ventes ce mois</p>
-              </div>
-              <ShoppingCart className="h-10 w-10 text-teal-200" />
-            </div>
-          </div>
-
-          {/* Clients actifs */}
-          <div className="rounded-xl bg-gradient-to-br from-pink-500 to-rose-600 p-6 text-white shadow-lg hover:shadow-xl transition-shadow">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-pink-100 mb-1">Clients actifs</p>
-                <p className="text-2xl font-bold">{totalClients}</p>
-                <p className="text-xs text-pink-100 mt-1">Clients ayant acheté</p>
-              </div>
-              <Users className="h-10 w-10 text-pink-200" />
-            </div>
-          </div>
-
-          {/* Évolution CA */}
-          <div className={`rounded-xl bg-gradient-to-br ${evolCa >= 0 ? 'from-blue-500 to-indigo-600' : 'from-red-500 to-orange-600'} p-6 text-white shadow-lg hover:shadow-xl transition-shadow`}>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium mb-1" style={{ color: evolCa >= 0 ? 'rgb(219 234 254)' : 'rgb(254 226 226)' }}>Évolution CA</p>
-                <p className="text-2xl font-bold">{evolCa >= 0 ? '+' : ''}{evolCa.toFixed(1)} %</p>
-                <p className="text-xs mt-1" style={{ color: evolCa >= 0 ? 'rgb(219 234 254)' : 'rgb(254 226 226)' }}>Vs mois dernier</p>
-              </div>
-              {evolCa >= 0 ? (
-                <ArrowUp className="h-10 w-10" style={{ color: 'rgb(191 219 254)' }} />
-              ) : (
-                <ArrowDown className="h-10 w-10" style={{ color: 'rgb(254 202 202)' }} />
-              )}
-            </div>
-          </div>
+            )
+          })}
         </div>
       </div>
 

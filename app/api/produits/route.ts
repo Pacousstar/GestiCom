@@ -117,6 +117,34 @@ export async function POST(request: NextRequest) {
 
     const existing = await prisma.produit.findUnique({ where: { code } })
     if (existing) {
+      if (!existing.actif) {
+        // Le produit existe mais est archivé : on le réactive avec les nouvelles infos
+        const updated = await prisma.produit.update({
+          where: { id: existing.id },
+          data: {
+            designation,
+            categorie,
+            prixAchat,
+            prixVente,
+            pamp: prixAchat,
+            seuilMin,
+            actif: true,
+          },
+        })
+        
+        // On s'assure aussi qu'il y a une ligne de stock pour le magasin spécifié
+        const magasinIdRaw = body?.magasinId != null ? Number(body.magasinId) : null
+        if (magasinIdRaw) {
+          await prisma.stock.upsert({
+            where: { produitId_magasinId: { produitId: updated.id, magasinId: magasinIdRaw } },
+            create: { produitId: updated.id, magasinId: magasinIdRaw, quantite: Math.max(0, Number(body?.quantiteInitiale) || 0) },
+            update: { quantite: { increment: Math.max(0, Number(body?.quantiteInitiale) || 0) } }
+          })
+        }
+
+        revalidatePath('/dashboard/produits')
+        return NextResponse.json(updated)
+      }
       return NextResponse.json({ error: 'Un produit avec ce code existe déjà.' }, { status: 400 })
     }
 
@@ -138,7 +166,7 @@ export async function POST(request: NextRequest) {
     }
 
     const p = await prisma.produit.create({
-      data: { code, designation, categorie, prixAchat, prixVente, seuilMin, actif: true },
+      data: { code, designation, categorie, prixAchat, prixVente, pamp: prixAchat, seuilMin, actif: true },
     })
 
     await prisma.stock.create({

@@ -478,7 +478,7 @@ export default function RapportsPage() {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-50">
-                            {mouvementsDetailles.filter(m => m.produit.designation.toLowerCase().includes(searchTerm.toLowerCase())).map(m => (
+                            {mouvementsDetailles.filter(m => (m.produit?.designation || '').toLowerCase().includes(searchTerm.toLowerCase())).map(m => (
                                 <tr key={m.id} className="hover:bg-orange-50/30 transition-all duration-300 group">
                                     <td className="px-8 py-7">
                                         <div className="text-[10px] text-slate-400 font-bold uppercase tracking-tight">
@@ -497,8 +497,8 @@ export default function RapportsPage() {
                                         </span>
                                     </td>
                                     <td className="px-8 py-7">
-                                        <div className="text-sm font-black text-slate-900 uppercase tracking-tighter truncate max-w-[200px] group-hover:text-orange-600 transition-colors uppercase italic">{m.produit.designation}</div>
-                                        <div className="text-[10px] text-slate-400 font-bold uppercase tracking-widest opacity-60">REF: {m.produit.code}</div>
+                                        <div className="text-sm font-black text-slate-900 uppercase tracking-tighter truncate max-w-[200px] group-hover:text-orange-600 transition-colors uppercase italic">{m.produit?.designation || 'Produit inconnu'}</div>
+                                        <div className="text-[10px] text-slate-400 font-bold uppercase tracking-widest opacity-60">REF: {m.produit?.code || '---'}</div>
                                     </td>
                                     <td className="px-8 py-7">
                                         <div className="flex items-center gap-2">
@@ -1150,7 +1150,7 @@ function LogistiqueAlertes({ alertes, searchTerm }: any) {
         {alertes.filter((a: any) => !searchTerm || a.produit.designation.toLowerCase().includes(searchTerm.toLowerCase())).map((a: any) => (
           <div key={a.id} className="flex items-center justify-between p-4 rounded-2xl border border-gray-100 bg-gray-50 hover:bg-orange-50 transition-all">
             <div>
-              <p className="font-black text-slate-900 text-sm uppercase tracking-tighter">{a.produit.designation}</p>
+              <p className="font-black text-slate-900 text-sm uppercase tracking-tighter">{a.produit?.designation || 'Produit inconnu'}</p>
               <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{a.magasin.nom}</p>
             </div>
             <div className="text-right">
@@ -1184,8 +1184,8 @@ function LogistiqueTop({ top, searchTerm }: { top: any[], searchTerm: string }) 
                                 <div className="text-[10px] font-black text-blue-600">#{i+1}</div>
                             </div>
                             <div>
-                                <div className="text-sm font-black text-slate-900 group-hover:text-blue-600 transition-colors uppercase italic">{t.designation}</div>
-                                <div className="text-[10px] text-slate-400 font-bold uppercase tracking-widest opacity-60">Référence: {t.code}</div>
+                                <div className="text-sm font-black text-slate-900 group-hover:text-blue-600 transition-colors uppercase italic">{t.designation || 'Produit inconnu'}</div>
+                                <div className="text-[10px] text-slate-400 font-bold uppercase tracking-widest opacity-60">Référence: {t.code || '---'}</div>
                             </div>
                         </div>
                         <div className="text-right">

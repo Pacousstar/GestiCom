@@ -91,6 +91,7 @@ export default function ChargesPage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [userRole, setUserRole] = useState<string>('')
   const [currentPage, setCurrentPage] = useState(1)
+  const [pagination, setPagination] = useState({ totalPages: 1, total: 0 })
   const itemsPerPage = 20
 
   useEffect(() => {
@@ -107,17 +108,20 @@ export default function ChargesPage() {
       .then(setMagasins)
   }, [])
 
-  const fetchCharges = () => {
+  const fetchCharges = (page = currentPage) => {
     setLoading(true)
-    const params = new URLSearchParams({ limit: '200' })
+    const params = new URLSearchParams({ limit: String(itemsPerPage), page: String(page) })
     if (dateDebut) params.set('dateDebut', dateDebut)
     if (dateFin) params.set('dateFin', dateFin)
     if (filtreType) params.set('type', filtreType)
     if (filtreRubrique) params.set('rubrique', filtreRubrique)
     if (filtreMagasin) params.set('magasinId', filtreMagasin)
     fetch('/api/charges?' + params.toString())
-      .then((r) => (r.ok ? r.json() : []))
-      .then(setCharges)
+      .then((r) => (r.ok ? r.json() : { charges: [], pagination: { totalPages: 1, total: 0 } }))
+      .then((data) => {
+        setCharges(data.charges || [])
+        setPagination(data.pagination || { totalPages: 1, total: 0 })
+      })
       .finally(() => setLoading(false))
   }
 
@@ -427,18 +431,7 @@ export default function ChargesPage() {
               </thead>
               <tbody className="divide-y divide-gray-200 bg-white">
                 {(() => {
-                  const filtered = charges.filter((c) => {
-                    if (!searchTerm) return true
-                    const search = searchTerm.toLowerCase()
-                    return (
-                      c.rubrique.toLowerCase().includes(search) ||
-                      (c.observation && c.observation.toLowerCase().includes(search)) ||
-                      (c.magasin && c.magasin.nom.toLowerCase().includes(search)) ||
-                      c.utilisateur.nom.toLowerCase().includes(search)
-                    )
-                  })
-                  const totalPages = Math.ceil(filtered.length / itemsPerPage)
-                  const paginated = filtered.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+                  const paginated = charges // Déjà paginé par le serveur
 
                   return (
                     <>
@@ -486,32 +479,17 @@ export default function ChargesPage() {
                       </td>
                     </tr>
                   ))}
-                  {Math.ceil(charges.filter((c) => {
-                    if (!searchTerm) return true
-                    const search = searchTerm.toLowerCase()
-                    return (
-                      c.rubrique.toLowerCase().includes(search) ||
-                      (c.observation && c.observation.toLowerCase().includes(search)) ||
-                      (c.magasin && c.magasin.nom.toLowerCase().includes(search)) ||
-                      c.utilisateur.nom.toLowerCase().includes(search)
-                    )
-                  }).length / itemsPerPage) > 1 && (
+                  {pagination.totalPages > 1 && (
                     <tr>
                       <td colSpan={8} className="px-0 py-0 border-t border-gray-200">
                         <div className="bg-white px-4 py-3">
                           <Pagination
                             currentPage={currentPage}
-                            totalPages={Math.ceil(charges.filter((c) => {
-                              if (!searchTerm) return true
-                              const search = searchTerm.toLowerCase()
-                              return (
-                                c.rubrique.toLowerCase().includes(search) ||
-                                (c.observation && c.observation.toLowerCase().includes(search)) ||
-                                (c.magasin && c.magasin.nom.toLowerCase().includes(search)) ||
-                                c.utilisateur.nom.toLowerCase().includes(search)
-                              )
-                            }).length / itemsPerPage)}
-                            onPageChange={setCurrentPage}
+                            totalPages={pagination.totalPages}
+                            onPageChange={(p) => {
+                              setCurrentPage(p)
+                              fetchCharges(p)
+                            }}
                           />
                         </div>
                       </td>

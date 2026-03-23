@@ -9,7 +9,9 @@ export async function GET(request: NextRequest) {
   const session = await getSession()
   if (!session) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
 
-  const limit = Math.min(200, Math.max(1, Number(request.nextUrl.searchParams.get('limit')) || 100))
+  const page = Math.max(1, Number(request.nextUrl.searchParams.get('page')) || 1)
+  const limit = Math.min(200, Math.max(1, Number(request.nextUrl.searchParams.get('limit')) || 20))
+  const skip = (page - 1) * limit
   const dateDebut = request.nextUrl.searchParams.get('dateDebut')?.trim()
   const dateFin = request.nextUrl.searchParams.get('dateFin')?.trim()
   const typeParam = request.nextUrl.searchParams.get('type')?.trim()
@@ -51,18 +53,30 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  const charges = await prisma.charge.findMany({
-    where,
-    take: limit,
-    orderBy: { date: 'desc' },
-    include: {
-      magasin: { select: { id: true, code: true, nom: true } },
-      entite: { select: { id: true, code: true, nom: true } },
-      utilisateur: { select: { nom: true, login: true } },
-    },
-  })
+  const [charges, total] = await Promise.all([
+    prisma.charge.findMany({
+      where,
+      skip,
+      take: limit,
+      orderBy: { date: 'desc' },
+      include: {
+        magasin: { select: { id: true, code: true, nom: true } },
+        entite: { select: { id: true, code: true, nom: true } },
+        utilisateur: { select: { nom: true, login: true } },
+      },
+    }),
+    prisma.charge.count({ where })
+  ])
 
-  return NextResponse.json(charges, {
+  return NextResponse.json({
+    charges,
+    pagination: {
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit),
+    }
+  }, {
     headers: {
       'Cache-Control': 'no-store, max-age=0',
     },
@@ -137,6 +151,7 @@ export async function POST(request: NextRequest) {
         rubrique,
         libelle: observation,
         utilisateurId: session.userId,
+        magasinId,
       })
     } catch (comptaError) {
       console.error('Erreur comptabilisation charge:', comptaError)

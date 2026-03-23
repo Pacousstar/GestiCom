@@ -19,12 +19,17 @@ export async function GET(request: NextRequest) {
           nom: true,
           type: true,
           soldeInitial: true,
+          avoirInitial: true,
           ventes: {
             where: {
               statut: 'VALIDEE',
               ...(entiteId && session.role !== 'SUPER_ADMIN' ? { entiteId } : {}),
             },
             select: { montantTotal: true, montantPaye: true }
+          },
+          reglements: {
+            where: { venteId: null },
+            select: { montant: true }
           }
         }
       })
@@ -32,8 +37,9 @@ export async function GET(request: NextRequest) {
       const report = clients.map(c => {
         const totalDu = c.ventes.reduce((acc, v) => acc + v.montantTotal, 0)
         const totalPaye = c.ventes.reduce((acc, v) => acc + v.montantPaye, 0)
-        // Le soldeInitial est soustrait car il est considéré comme un "dépôt/acompte" par défaut (Avoir)
-        const solde = (totalDu - totalPaye) - (c.soldeInitial || 0)
+        const totalAcomptes = c.reglements.reduce((acc, r) => acc + r.montant, 0)
+        // Solde = (Dette Factures) + (Dette Initiale) - (Avoir Initial) - (Acomptes libres)
+        const solde = (totalDu - totalPaye) + (c.soldeInitial || 0) - (c.avoirInitial || 0) - totalAcomptes
         return {
           id: c.id,
           code: c.code,
@@ -54,11 +60,16 @@ export async function GET(request: NextRequest) {
           code: true,
           nom: true,
           soldeInitial: true,
+          avoirInitial: true,
           achats: {
             where: {
               ...(entiteId && session.role !== 'SUPER_ADMIN' ? { entiteId } : {}),
             },
             select: { montantTotal: true, montantPaye: true }
+          },
+          reglements: {
+            where: { achatId: null },
+            select: { montant: true }
           }
         }
       })
@@ -66,8 +77,9 @@ export async function GET(request: NextRequest) {
       const report = fournisseurs.map(f => {
         const totalDu = f.achats.reduce((acc, a) => acc + a.montantTotal, 0)
         const totalPaye = f.achats.reduce((acc, a) => acc + a.montantPaye, 0)
-        // Solde initial fournisseur (souvent un acompte versé = Crédit pour nous, donc à soustraire de ce qu'on doit)
-        const solde = (totalDu - totalPaye) - (f.soldeInitial || 0)
+        const totalAcomptes = f.reglements.reduce((acc, r) => acc + r.montant, 0)
+        // Solde = (Dette Factures) + (Dette Initiale) - (Avoir Initial) - (Acomptes libres)
+        const solde = (totalDu - totalPaye) + (f.soldeInitial || 0) - (f.avoirInitial || 0) - totalAcomptes
         return {
           id: f.id,
           code: f.code,

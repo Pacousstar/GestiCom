@@ -59,10 +59,11 @@ export async function GET(request: NextRequest) {
 
       const q = l.quantite
       const pu = l.prixUnitaire
-      const cu = (l as any).coutUnitaire || 0 // Utiliser coutUnitaire capturé
+      const remiseLigne = l.remise || 0
+      const cu = (l as any).coutUnitaire || 0 
       
       rentabilite[pId].quantiteVendue += q
-      rentabilite[pId].chiffreAffairesHT += q * pu
+      rentabilite[pId].chiffreAffairesHT += (q * pu) - remiseLigne
       rentabilite[pId].coutTotalHT += q * cu
     })
 

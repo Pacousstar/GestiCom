@@ -18,6 +18,8 @@ export default function VenteRapidePage() {
   const [cart, setCart] = useState<Ligne[]>([])
   const [showPayment, setShowPayment] = useState(false)
   const [modePaiement, setModePaiement] = useState('ESPECES')
+  const [remise, setRemise] = useState('0')
+  const [montantPaye, setMontantPaye] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [loading, setLoading] = useState(true)
   const { success: showSuccess, error: showError } = useToast()
@@ -54,7 +56,10 @@ export default function VenteRapidePage() {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'F12') {
         e.preventDefault()
-        if (cart.length > 0) setShowPayment(true)
+        if (cart.length > 0) {
+          setShowPayment(true)
+          setMontantPaye('')
+        }
       }
       if (e.key === 'F10' && showPayment) {
         e.preventDefault()
@@ -69,7 +74,9 @@ export default function VenteRapidePage() {
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [cart, showPayment])
 
-  const total = cart.reduce((acc, l) => acc + l.montant, 0)
+  const totalBrut = cart.reduce((acc, l) => acc + l.montant, 0)
+  const remiseVal = Number(remise) || 0
+  const total = Math.max(0, totalBrut - remiseVal)
 
   const handleSearch = (val: string) => {
     setSearch(val)
@@ -111,6 +118,8 @@ export default function VenteRapidePage() {
           magasinId: Number(magasinId),
           clientId: clientId ? Number(clientId) : null,
           modePaiement,
+          montantPaye: modePaiement === 'CREDIT' ? (montantPaye !== '' ? Number(montantPaye) : 0) : Number(montantPaye) || total,
+          remiseGlobale: remiseVal,
           lignes: cart.map(l => ({
             produitId: l.produitId,
             quantite: l.quantite,
@@ -124,6 +133,8 @@ export default function VenteRapidePage() {
         setCart([])
         setShowPayment(false)
         setSearch('')
+        setRemise('0')
+        setMontantPaye('')
       } else {
         const d = await res.json()
         showError(formatApiError(d.error))
@@ -221,19 +232,43 @@ export default function VenteRapidePage() {
             </div>
 
             <div className="flex-1 rounded-3xl bg-slate-800 p-6 border border-slate-700 space-y-4">
-                <h3 className="text-xl font-bold border-b border-slate-700 pb-2 mb-4">Raccourcis</h3>
-                <div className="space-y-3">
-                    <div className="flex justify-between items-center text-slate-400">
-                        <span className="font-medium text-sm">Règlement</span>
-                        <span className="rounded-lg bg-slate-900 px-2 py-1 text-xs font-bold border border-slate-700">F12</span>
+                <h3 className="text-xl font-bold border-b border-slate-700 pb-2 mb-4">Détails & Raccourcis</h3>
+                
+                <div className="space-y-4">
+                    <div>
+                        <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Remise Globale (F)</label>
+                        <input 
+                            type="number"
+                            value={remise}
+                            onChange={e => setRemise(e.target.value)}
+                            className="w-full rounded-xl bg-slate-900 border-2 border-slate-700 p-3 text-lg font-black text-orange-400 focus:border-orange-500 outline-none transition-all"
+                        />
                     </div>
-                    <div className="flex justify-between items-center text-slate-400">
-                        <span className="font-medium text-sm">Valider la vente</span>
-                        <span className="rounded-lg bg-slate-900 px-2 py-1 text-xs font-bold border border-slate-700">F10</span>
+
+                    <div className="space-y-3 pt-2">
+                        <div className="flex justify-between items-center text-slate-400">
+                            <span className="font-medium text-sm">Sous-total</span>
+                            <span className="font-bold text-slate-200">{totalBrut.toLocaleString('fr-FR')} F</span>
+                        </div>
+                        <div className="flex justify-between items-center text-slate-400">
+                            <span className="font-medium text-sm">Remise</span>
+                            <span className="font-bold text-red-400">-{remiseVal.toLocaleString('fr-FR')} F</span>
+                        </div>
+                        <div className="flex justify-between items-center text-slate-400 border-t border-slate-700 pt-2">
+                            <span className="font-black text-sm text-white uppercase">Net à payer</span>
+                            <span className="font-black text-xl text-orange-500">{total.toLocaleString('fr-FR')} F</span>
+                        </div>
                     </div>
-                    <div className="flex justify-between items-center text-slate-400">
-                        <span className="font-medium text-sm">Annuler</span>
-                        <span className="rounded-lg bg-slate-900 px-2 py-1 text-xs font-bold border border-slate-700">ESC</span>
+                </div>
+
+                <div className="mt-8 space-y-3">
+                    <div className="flex justify-between items-center text-slate-500">
+                        <span className="font-medium text-xs uppercase tracking-widest">Règlement</span>
+                        <span className="rounded-lg bg-slate-900 px-2 py-1 text-[10px] font-bold border border-slate-700">F12</span>
+                    </div>
+                    <div className="flex justify-between items-center text-slate-500">
+                        <span className="font-medium text-xs uppercase tracking-widest">Valider</span>
+                        <span className="rounded-lg bg-slate-900 px-2 py-1 text-[10px] font-bold border border-slate-700">F10</span>
                     </div>
                 </div>
 
@@ -260,43 +295,81 @@ export default function VenteRapidePage() {
 
       {/* Payment Modal */}
       {showPayment && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-md p-4">
-              <div className="w-full max-w-xl rounded-3xl bg-slate-900 p-8 shadow-2xl border-2 border-slate-700 animate-in zoom-in-95">
-                  <div className="flex justify-between items-center mb-8">
-                      <h2 className="text-3xl font-black">RÈGLEMENT FINAL</h2>
-                      <button onClick={() => setShowPayment(false)} className="rounded-full bg-slate-800 p-2 hover:bg-slate-700 transition-colors"><X className="h-8 w-8" /></button>
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/90 backdrop-blur-xl p-4">
+              <div className="w-full max-w-2xl rounded-[40px] bg-slate-900 p-10 shadow-3xl border-2 border-slate-800 animate-in zoom-in-95 duration-200">
+                  <div className="flex justify-between items-center mb-10">
+                      <div>
+                        <h2 className="text-4xl font-black italic tracking-tighter">RÈGLEMENT <span className="text-orange-500">PRO</span></h2>
+                        <p className="text-slate-500 font-bold uppercase text-[10px] tracking-widest mt-1">Finalisation de la transaction</p>
+                      </div>
+                      <button onClick={() => setShowPayment(false)} className="rounded-2xl bg-slate-800 p-3 hover:bg-red-500 transition-all group">
+                        <X className="h-8 w-8 text-slate-400 group-hover:text-white" />
+                      </button>
                   </div>
 
-                  <div className="mb-8 p-6 rounded-2xl bg-slate-800 border border-slate-700 text-center">
-                      <p className="text-slate-400 font-bold uppercase text-sm mb-1">Montant total</p>
-                      <p className="text-5xl font-black text-orange-400 tracking-tighter">{total.toLocaleString('fr-FR')} F</p>
+                  <div className="grid grid-cols-2 gap-8 mb-10">
+                      <div className="p-8 rounded-3xl bg-slate-800/50 border border-slate-700 text-center">
+                          <p className="text-slate-500 font-bold uppercase text-xs mb-2 tracking-widest">Net à payer</p>
+                          <p className="text-5xl font-black text-white tracking-tighter italic">{total.toLocaleString('fr-FR')} F</p>
+                      </div>
+                      <div className="p-8 rounded-3xl bg-orange-500 text-white text-center shadow-xl shadow-orange-900/20">
+                          <p className="text-orange-100 font-bold uppercase text-xs mb-2 tracking-widest">Reste à payer</p>
+                          <p className="text-5xl font-black tracking-tighter italic">
+                            {(total - (Number(montantPaye) || (modePaiement === 'CREDIT' ? 0 : total))).toLocaleString('fr-FR')} F
+                          </p>
+                      </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4 mb-8">
-                      {['ESPECES', 'MOBILE_MONEY', 'CHEQUE', 'VIREMENT', 'CREDIT'].map(m => (
-                          <button 
-                            key={m}
-                            onClick={() => setModePaiement(m)}
-                            className={`rounded-2xl border-2 py-4 text-lg font-black transition-all ${modePaiement === m ? 'bg-orange-600 border-orange-400 shadow-lg shadow-orange-900/40' : 'bg-slate-800 border-slate-700 hover:border-slate-500'}`}
-                          >
-                              {m.replace('_', ' ')}
-                          </button>
-                      ))}
+                  <div className="space-y-6 mb-10">
+                    <div>
+                        <label className="block text-sm font-black text-slate-400 uppercase mb-3 tracking-widest">Mode de règlement</label>
+                        <div className="grid grid-cols-3 gap-3">
+                            {['ESPECES', 'MOBILE_MONEY', 'CHEQUE', 'VIREMENT', 'CREDIT'].map(m => (
+                                <button 
+                                    key={m}
+                                    onClick={() => setModePaiement(m)}
+                                    className={`rounded-2xl border-2 py-4 px-2 text-sm font-black transition-all ${modePaiement === m ? 'bg-orange-600 border-orange-400 shadow-lg shadow-orange-900/40 text-white' : 'bg-slate-800 border-slate-700 text-slate-400 hover:border-slate-500'}`}
+                                >
+                                    {m.replace('_', ' ')}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-6">
+                        <div>
+                            <label className="block text-sm font-black text-slate-400 uppercase mb-2 tracking-widest">Montant Encaissé (F)</label>
+                            <input 
+                                type="number"
+                                autoFocus
+                                value={montantPaye}
+                                onChange={e => setMontantPaye(e.target.value)}
+                                placeholder={modePaiement === 'CREDIT' ? '0' : String(total)}
+                                className="w-full rounded-2xl bg-slate-800 border-2 border-slate-700 p-5 text-3xl font-black text-emerald-400 focus:border-emerald-500 outline-none transition-all placeholder:text-slate-700"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-black text-slate-400 uppercase mb-2 tracking-widest">Rendu / Trop perçu</label>
+                            <div className="w-full rounded-2xl bg-slate-950 border-2 border-slate-800 p-5 text-3xl font-black text-slate-600 italic">
+                                {Math.max(0, (Number(montantPaye) || 0) - total).toLocaleString('fr-FR')} F
+                            </div>
+                        </div>
+                    </div>
                   </div>
 
                   <button 
                     onClick={handleValidate}
                     disabled={submitting}
-                    className="w-full flex items-center justify-center gap-4 rounded-2xl bg-emerald-600 py-8 text-3xl font-black shadow-2xl hover:bg-emerald-700 active:scale-95 transition-all disabled:opacity-50"
+                    className="w-full flex items-center justify-center gap-4 rounded-[30px] bg-emerald-600 py-8 text-4xl font-black shadow-2xl hover:bg-emerald-700 active:scale-95 transition-all disabled:opacity-50"
                   >
-                      {submitting ? <Loader2 className="h-10 w-10 animate-spin" /> : (
+                      {submitting ? <Loader2 className="h-12 w-12 animate-spin" /> : (
                           <>
-                            <Printer className="h-10 w-10" />
+                            <Printer className="h-10 w-10 text-emerald-200" />
                             VALIDER (F10)
                           </>
                       )}
                   </button>
-                  <p className="mt-4 text-center text-slate-500 text-sm font-bold">Appuyez sur ESC pour annuler</p>
+                  <p className="mt-6 text-center text-slate-500 text-xs font-bold uppercase tracking-[0.2em]">Appuyez sur <span className="text-slate-300 bg-slate-800 px-2 py-1 rounded mx-1 italic">ESC</span> pour revenir au panier</p>
               </div>
           </div>
       )}

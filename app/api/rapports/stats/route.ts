@@ -38,6 +38,9 @@ export async function GET(request: NextRequest) {
     const whereMouvements: { date: { gte: Date; lte: Date }; entiteId?: number } = {
       date: { gte: dateDebut, lte: dateFin },
     }
+    const whereFinance: { date: { gte: Date; lte: Date }; entiteId?: number } = {
+      date: { gte: dateDebut, lte: dateFin },
+    }
 
     if (entiteId) {
       whereVentes.entiteId = entiteId
@@ -65,6 +68,20 @@ export async function GET(request: NextRequest) {
         montantTotal: true,
       },
       orderBy: { date: 'asc' },
+      take: maxRows,
+    })
+
+    // Charges par période
+    const charges = await prisma.charge.findMany({
+      where: whereFinance,
+      select: { date: true, montant: true },
+      take: maxRows,
+    })
+
+    // Dépenses par période
+    const depenses = await prisma.depense.findMany({
+      where: whereFinance,
+      select: { date: true, montant: true },
       take: maxRows,
     })
 
@@ -123,17 +140,17 @@ export async function GET(request: NextRequest) {
     // Grouper les données par jour ou mois
     const groupBy = periode === 'mois' ? 'mois' : 'jour'
     
-    const caParPeriode: Array<{ date: string; ca: number; achats: number; count: number }> = []
-    const evolutionStock: Array<{ date: string; entrees: number; sorties: number }> = []
+    const caParPeriode: any[] = []
+    const evolutionStock: any[] = []
+
+    const caMap = new Map<string, { ca: number; achats: number; charges: number; count: number }>()
+    const stockMap = new Map<string, { entrees: number; sorties: number }>()
 
     if (groupBy === 'mois') {
-      // Grouper par mois
-      const caMap = new Map<string, { ca: number; achats: number; count: number }>()
-      const stockMap = new Map<string, { entrees: number; sorties: number }>()
 
       ventes.forEach((v) => {
         const key = `${v.date.getFullYear()}-${String(v.date.getMonth() + 1).padStart(2, '0')}`
-        const existing = caMap.get(key) || { ca: 0, achats: 0, count: 0 }
+        const existing = caMap.get(key) || { ca: 0, achats: 0, charges: 0, count: 0 }
         existing.ca += Number(v.montantTotal)
         existing.count += 1
         caMap.set(key, existing)
@@ -141,8 +158,22 @@ export async function GET(request: NextRequest) {
 
       achats.forEach((a) => {
         const key = `${a.date.getFullYear()}-${String(a.date.getMonth() + 1).padStart(2, '0')}`
-        const existing = caMap.get(key) || { ca: 0, achats: 0, count: 0 }
+        const existing = caMap.get(key) || { ca: 0, achats: 0, charges: 0, count: 0 }
         existing.achats += Number(a.montantTotal)
+        caMap.set(key, existing)
+      })
+
+      charges.forEach((c) => {
+        const key = `${c.date.getFullYear()}-${String(c.date.getMonth() + 1).padStart(2, '0')}`
+        const existing = caMap.get(key) || { ca: 0, achats: 0, charges: 0, count: 0 }
+        existing.charges += Number(c.montant)
+        caMap.set(key, existing)
+      })
+
+      depenses.forEach((d) => {
+        const key = `${d.date.getFullYear()}-${String(d.date.getMonth() + 1).padStart(2, '0')}`
+        const existing = caMap.get(key) || { ca: 0, achats: 0, charges: 0, count: 0 }
+        existing.charges += Number(d.montant)
         caMap.set(key, existing)
       })
 
@@ -159,12 +190,13 @@ export async function GET(request: NextRequest) {
 
       // Convertir en array trié
       Array.from(caMap.entries())
-        .sort((a, b) => a[0].localeCompare(b[0]))
-        .forEach(([key, value]) => {
+        .sort((a: [string, any], b: [string, any]) => a[0].localeCompare(b[0]))
+        .forEach(([key, value]: [string, any]) => {
           caParPeriode.push({
             date: key,
             ca: value.ca,
             achats: value.achats,
+            charges: value.charges,
             count: value.count || 0,
           })
         })
@@ -179,13 +211,9 @@ export async function GET(request: NextRequest) {
           })
         })
     } else {
-      // Grouper par jour
-      const caMap = new Map<string, { ca: number; achats: number; count: number }>()
-      const stockMap = new Map<string, { entrees: number; sorties: number }>()
-
       ventes.forEach((v) => {
         const key = v.date.toISOString().split('T')[0]
-        const existing = caMap.get(key) || { ca: 0, achats: 0, count: 0 }
+        const existing = caMap.get(key) || { ca: 0, achats: 0, charges: 0, count: 0 }
         existing.ca += Number(v.montantTotal)
         existing.count += 1
         caMap.set(key, existing)
@@ -193,8 +221,22 @@ export async function GET(request: NextRequest) {
 
       achats.forEach((a) => {
         const key = a.date.toISOString().split('T')[0]
-        const existing = caMap.get(key) || { ca: 0, achats: 0, count: 0 }
+        const existing = caMap.get(key) || { ca: 0, achats: 0, charges: 0, count: 0 }
         existing.achats += Number(a.montantTotal)
+        caMap.set(key, existing)
+      })
+
+      charges.forEach((c) => {
+        const key = c.date.toISOString().split('T')[0]
+        const existing = caMap.get(key) || { ca: 0, achats: 0, charges: 0, count: 0 }
+        existing.charges += Number(c.montant)
+        caMap.set(key, existing)
+      })
+
+      depenses.forEach((d) => {
+        const key = d.date.toISOString().split('T')[0]
+        const existing = caMap.get(key) || { ca: 0, achats: 0, charges: 0, count: 0 }
+        existing.charges += Number(d.montant)
         caMap.set(key, existing)
       })
 
@@ -211,19 +253,20 @@ export async function GET(request: NextRequest) {
 
       // Convertir en array trié
       Array.from(caMap.entries())
-        .sort((a, b) => a[0].localeCompare(b[0]))
-        .forEach(([key, value]) => {
+        .sort((a: [string, any], b: [string, any]) => a[0].localeCompare(b[0]))
+        .forEach(([key, value]: [string, any]) => {
           caParPeriode.push({
             date: key,
             ca: value.ca,
             achats: value.achats,
+            charges: value.charges,
             count: value.count || 0,
           })
         })
 
       Array.from(stockMap.entries())
-        .sort((a, b) => a[0].localeCompare(b[0]))
-        .forEach(([key, value]) => {
+        .sort((a: [string, any], b: [string, any]) => a[0].localeCompare(b[0]))
+        .forEach(([key, value]: [string, any]) => {
           evolutionStock.push({
             date: key,
             entrees: value.entrees,

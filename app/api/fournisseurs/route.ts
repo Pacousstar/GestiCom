@@ -50,6 +50,17 @@ export async function GET(request: NextRequest) {
         detteByFournisseur[r.fournisseurId] = totalA - payeA
       }
     }
+    // Inclure aussi les règlements LIBRES (non liés à un achat spécifique)
+    const reglementsLibres = await prisma.reglementAchat.groupBy({
+      by: ['fournisseurId'],
+      where: { fournisseurId: { in: fournisseurIds }, achatId: null },
+      _sum: { montant: true }
+    })
+    for (const rl of reglementsLibres) {
+      if (rl.fournisseurId != null) {
+        detteByFournisseur[rl.fournisseurId] = (detteByFournisseur[rl.fournisseurId] || 0) - (rl._sum?.montant || 0)
+      }
+    }
   }
 
   const result = paginated.map((f) => ({

@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
         utilisateur: { select: { nom: true } },
         magasin: { select: { nom: true } },
       },
-      orderBy: { date: 'desc' },
+      orderBy: [{ date: 'desc' }, { id: 'desc' }],
     })
 
     const formatted = achats.map(a => ({

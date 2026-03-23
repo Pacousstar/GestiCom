@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
   const categorie = String(request.nextUrl.searchParams.get('categorie') || '').trim() || 'DIVERS'
 
   const produits = await prisma.produit.findMany({
-    where: { categorie, actif: true },
+    where: { categorie },
     select: { code: true },
     orderBy: { code: 'asc' },
   })

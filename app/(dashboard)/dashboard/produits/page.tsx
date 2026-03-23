@@ -398,9 +398,9 @@ export default function ProduitsPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-white">Produits</h1>
-          <p className="mt-1 text-white/90">Catalogue et gestion des articles</p>
-          <p className="mt-1 text-sm font-medium text-white/80">
+          <h1 className="text-3xl font-black text-white uppercase tracking-tighter italic">Produits</h1>
+          <p className="mt-1 text-white/80 font-bold uppercase text-[10px] tracking-widest">Catalogue et gestion des articles</p>
+          <p className="mt-1 text-sm font-medium text-white/60">
             Total : <span className="text-amber-300 font-bold">{stats?.total ?? '—'}</span>
             {' · '}En stock : <span className="text-emerald-300 font-bold">{stats?.enStock ?? '—'}</span>
           </p>

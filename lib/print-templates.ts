@@ -295,7 +295,7 @@ export async function printDocument(templateId: number | null, type: 'VENTE' | '
   try {
     // Récupérer les paramètres de l'entreprise
     const paramsRes = await fetch('/api/parametres')
-    let entrepriseData: { nomEntreprise?: string; contact?: string; localisation?: string; logo?: string | null; piedDePage?: string | null } = {}
+    let entrepriseData: { nomEntreprise?: string; contact?: string; localisation?: string; logo?: string | null; logoLocal?: string | null; piedDePage?: string | null; numNCC?: string | null; registreCommerce?: string | null } = {}
     if (paramsRes.ok) {
       entrepriseData = await paramsRes.json()
     }
@@ -322,15 +322,19 @@ export async function printDocument(templateId: number | null, type: 'VENTE' | '
     data.ENTREPRISE_NOM = entrepriseData.nomEntreprise || data.ENTREPRISE_NOM || ''
     data.ENTREPRISE_CONTACT = entrepriseData.contact || data.ENTREPRISE_CONTACT || ''
     data.ENTREPRISE_LOCALISATION = entrepriseData.localisation || data.ENTREPRISE_LOCALISATION || ''
-    data.ENTREPRISE_NCC = (entrepriseData as any).numNCC || ''
-    data.ENTREPRISE_RC = (entrepriseData as any).registreCommerce || ''
+    data.ENTREPRISE_NCC = entrepriseData.numNCC || ''
+    data.ENTREPRISE_RC = entrepriseData.registreCommerce || ''
     data.ENTREPRISE_PIED_DE_PAGE = entrepriseData.piedDePage || data.ENTREPRISE_PIED_DE_PAGE || ''
 
-    // Ajouter le logo si disponible (priorité au logo du template, sinon logo des paramètres)
-    if (logo) {
-      data.ENTREPRISE_LOGO = logo.startsWith('data:') ? `<img src="${logo}" alt="Logo" style="max-width: 150px; height: auto; display: block; margin: 0 auto;" />` : logo
-    } else if (entrepriseData.logo) {
-      data.ENTREPRISE_LOGO = entrepriseData.logo.startsWith('data:') ? `<img src="${entrepriseData.logo}" alt="Logo" style="max-width: 150px; height: auto; display: block; margin: 0 auto;" />` : entrepriseData.logo
+    // Ajouter le logo si disponible (priorité au local, puis template, puis URL paramètres)
+    let logoFinal = logo || entrepriseData.logoLocal || entrepriseData.logo
+    
+    if (logoFinal) {
+      if (logoFinal.startsWith('data:') || logoFinal.startsWith('http') || logoFinal.startsWith('/') || logoFinal.length > 500) {
+        data.ENTREPRISE_LOGO = `<img src="${logoFinal}" alt="Logo" style="max-width: 150px; height: auto; display: block; margin: 0 auto;" />`
+      } else {
+        data.ENTREPRISE_LOGO = logoFinal // Texte ou HTML direct si pas URL/Base64
+      }
     } else {
       data.ENTREPRISE_LOGO = ''
     }
@@ -431,26 +435,32 @@ export function getDefaultTemplate(type: 'VENTE' | 'ACHAT'): string {
 export function getDefaultA4Template(type: 'VENTE' | 'ACHAT'): string {
     const isVente = type === 'VENTE'
     return `
-<div class="a4-grid">
+<div class="a4-grid" style="align-items: center;">
   <div class="a4-company-info">
     <div style="margin-bottom: 20px;">{ENTREPRISE_LOGO}</div>
-    <h1>{ENTREPRISE_NOM}</h1>
-    <p> {ENTREPRISE_LOCALISATION}</p>
-    <p> {ENTREPRISE_CONTACT}</p>
-    {ENTREPRISE_NCC ? '<p style="font-size: 11px; color: #64748b;"><strong>NCC:</strong> {ENTREPRISE_NCC}</p>' : ''}
-    {ENTREPRISE_RC ? '<p style="font-size: 11px; color: #64748b;"><strong>RC:</strong> {ENTREPRISE_RC}</p>' : ''}
+    <h1 style="border-left: 4px solid #1e40af; padding-left: 15px;">{ENTREPRISE_NOM}</h1>
+    <p style="padding-left: 19px; color: #475569;">📍 {ENTREPRISE_LOCALISATION}</p>
+    <p style="padding-left: 19px; color: #475569;">📞 {ENTREPRISE_CONTACT}</p>
+    <div style="margin-top: 10px; padding-left: 19px;">
+       {ENTREPRISE_NCC ? '<span style="font-size: 11px; background: #f1f5f9; padding: 2px 8px; border-radius: 4px; margin-right: 10px;"><strong>NCC:</strong> {ENTREPRISE_NCC}</span>' : ''}
+       {ENTREPRISE_RC ? '<span style="font-size: 11px; background: #f1f5f9; padding: 2px 8px; border-radius: 4px;"><strong>RC:</strong> {ENTREPRISE_RC}</span>' : ''}
+    </div>
   </div>
   <div class="a4-invoice-meta">
-    <h2>FACTURE</h2>
-    <p><strong>N° :</strong> {NUMERO}</p>
-    <p><strong>Date :</strong> {DATE}</p>
-    <p><strong>Heure :</strong> {HEURE}</p>
+    <div style="background: #1e40af; color: white; padding: 10px 20px; border-radius: 8px 8px 0 0; display: inline-block;">
+        <h2 style="color: white; font-size: 24px;">FACTURE</h2>
+    </div>
+    <div style="border: 1px solid #e2e8f0; border-top: none; padding: 15px; border-radius: 0 0 8px 8px;">
+        <p><strong>N° :</strong> <span style="color: #1e40af; font-weight: bold;">{NUMERO}</span></p>
+        <p><strong>Date :</strong> {DATE}</p>
+        <p><strong>Heure :</strong> {HEURE}</p>
+    </div>
     <div style="margin-top: 20px;" class="a4-client-info">
       <h3>Destinataire</h3>
-      <p>{CLIENT_CODE ? '['+CLIENT_CODE+'] ' : ''}{CLIENT_NOM}</p>
-      {CLIENT_CONTACT ? '<p>{CLIENT_CONTACT}</p>' : ''}
-      {CLIENT_LOCALISATION ? '<p>{CLIENT_LOCALISATION}</p>' : ''}
-      {CLIENT_NCC ? '<p style="font-size: 12px; color: #64748b; margin-top: 8px;">NCC: {CLIENT_NCC}</p>' : ''}
+      <p style="font-size: 17px; color: #1e40af;">{CLIENT_CODE ? '['+CLIENT_CODE+'] ' : ''}{CLIENT_NOM}</p>
+      {CLIENT_CONTACT ? '<p>📞 {CLIENT_CONTACT}</p>' : ''}
+      {CLIENT_LOCALISATION ? '<p>📍 {CLIENT_LOCALISATION}</p>' : ''}
+      {CLIENT_NCC ? '<p style="font-size: 11px; color: #64748b; border-top: 1px solid #e2e8f0; margin-top: 8px; padding-top: 8px;">NCC: {CLIENT_NCC}</p>' : ''}
     </div>
   </div>
 </div>

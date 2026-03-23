@@ -254,10 +254,9 @@ export default function ClientsPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-white">Clients</h1>
-          <p className="mt-1 text-white/90 italic">
-            <strong>Gestion des soldes :</strong> Le "Solde Initial (Déposé)" est traité comme un <strong>Avoir</strong> (crédit) pour le client. 
-            La "Dette" inclut les factures impayées moins cet avoir et vos éventuels règlements libres.
+          <h1 className="text-3xl font-black text-white uppercase tracking-tighter italic">Clients</h1>
+          <p className="mt-1 text-white/80 font-bold uppercase text-[10px] tracking-widest">
+            Gestion du portefeuille clients et des soldes
           </p>
         </div>
         <button

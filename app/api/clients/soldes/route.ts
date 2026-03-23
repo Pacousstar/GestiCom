@@ -24,6 +24,7 @@ export async function GET(request: NextRequest) {
         ncc: true,
         localisation: true,
         soldeInitial: true,
+        avoirInitial: true,
       },
       orderBy: { nom: 'asc' },
     })
@@ -95,9 +96,8 @@ export async function GET(request: NextRequest) {
       const soldeInitial = c.soldeInitial || 0
       
       const variationPeriode = factures - paiements
-      // ✅ FORMULE UNIFIÉE : SoldeGlobal = Dettes(factures-paiements) - DépôtDépart
-      // Le soldeInitial est ici un dépôt (Avoir), donc il réduit la dette.
-      const soldeClient = facturesGlobal - paiementsGlobal - (c.soldeInitial || 0)
+      // ✅ FORMULE UNIFIÉE : SoldeGlobal = Dettes(factures-paiements) + DetteDépart - AvoirDépart
+      const soldeClient = facturesGlobal - paiementsGlobal + (c.soldeInitial || 0) - (c.avoirInitial || 0)
 
       const statut = soldeClient > 0.01 ? 'DOIT' : soldeClient < -0.01 ? 'CREDIT' : 'SOLDE'
 

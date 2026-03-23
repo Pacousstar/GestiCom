@@ -118,7 +118,7 @@ export async function comptabiliserVente(data: {
       COMPTES_DEFAUT.CLIENTS,
       'Clients',
       '4',
-      'PASSIF'
+      'ACTIF'
     )
   } else {
     // Paiement immédiat → compte Caisse
@@ -158,6 +158,31 @@ export async function comptabiliserVente(data: {
     referenceId: data.venteId,
     utilisateurId: data.utilisateurId,
   })
+
+  // === AJOUT : Enregistrement automatique en Caisse/Banque si paiement immédiat ===
+  if (data.modePaiement !== 'CREDIT') {
+    const motif = `Encaissement Vente ${data.numeroVente}`
+    const date = data.date || new Date()
+    const utilisateurId = data.utilisateurId
+    
+    // Récupérer le magasinId de la vente
+    const vente = await prisma.vente.findUnique({ where: { id: data.venteId }, select: { magasinId: true } })
+    const magasinId = vente?.magasinId
+
+    if (data.modePaiement === 'ESPECES' && magasinId) {
+      await prisma.caisse.create({
+        data: { date, magasinId, type: 'ENTREE', motif, montant: data.montantTotal, utilisateurId }
+      })
+    } else if (['CHEQUE', 'VIREMENT', 'MOBILE_MONEY'].includes(data.modePaiement)) {
+      const banque = await prisma.banque.findFirst({ where: { actif: true } })
+      if (banque) {
+        await prisma.banque.update({
+          where: { id: banque.id },
+          data: { soldeActuel: { increment: data.montantTotal } }
+        })
+      }
+    }
+  }
 }
 
 /**
@@ -176,7 +201,7 @@ export async function comptabiliserReglementVente(data: {
     COMPTES_DEFAUT.CLIENTS,
     'Clients',
     '4',
-    'PASSIF'
+    'ACTIF'
   )
   
   // Déterminer le compte de trésorerie
@@ -216,24 +241,23 @@ export async function comptabiliserReglementVente(data: {
     utilisateurId: data.utilisateurId,
   })
 
-  // === AJOUT : Enregistrement dans ReglementVente ===
-  const vente = await prisma.vente.findUnique({
-    where: { id: data.venteId },
-    select: { clientId: true }
-  })
+  // === AJOUT : Enregistrement automatique en Caisse/Banque ===
+  // Récupérer le magasinId de la vente
+  const v = await prisma.vente.findUnique({ where: { id: data.venteId }, select: { magasinId: true } })
+  const magasinId = v?.magasinId
 
-  if (vente?.clientId) {
-    await prisma.reglementVente.create({
-      data: {
-        date: data.date,
-        montant: data.montant,
-        modePaiement: data.modePaiement,
-        venteId: data.venteId,
-        clientId: vente.clientId,
-        utilisateurId: data.utilisateurId,
-        observation: `Règlement facture ${data.numeroVente}`,
-      }
+  if (data.modePaiement === 'ESPECES' && magasinId) {
+    await prisma.caisse.create({
+      data: { date: data.date, magasinId, type: 'ENTREE', motif: `Règlement Vente ${data.numeroVente}`, montant: data.montant, utilisateurId: data.utilisateurId }
     })
+  } else if (['CHEQUE', 'VIREMENT', 'MOBILE_MONEY'].includes(data.modePaiement)) {
+    const banque = await prisma.banque.findFirst({ where: { actif: true } })
+    if (banque) {
+      await prisma.banque.update({
+        where: { id: banque.id },
+        data: { soldeActuel: { increment: data.montant } }
+      })
+    }
   }
 }
 
@@ -248,6 +272,7 @@ export async function comptabiliserAchat(data: {
   modePaiement: string
   fournisseurId?: number | null
   utilisateurId: number
+  magasinId?: number | null
 }) {
   const journal = await getOrCreateJournal('AC', 'Journal des Achats', 'ACHATS')
   const compteAchats = await getOrCreateCompte(
@@ -305,6 +330,28 @@ export async function comptabiliserAchat(data: {
     referenceId: data.achatId,
     utilisateurId: data.utilisateurId,
   })
+
+  // === AJOUT : Enregistrement automatique en Caisse/Banque si paiement immédiat ===
+  if (data.modePaiement !== 'CREDIT') {
+    const motif = `Paiement Achat ${data.numeroAchat}`
+    const date = data.date || new Date()
+    const utilisateurId = data.utilisateurId
+    const magasinId = data.magasinId // Assumer que magasinId est dans data ou le fetcher
+
+    if (data.modePaiement === 'ESPECES' && magasinId) {
+      await prisma.caisse.create({
+        data: { date, magasinId: Number(magasinId), type: 'SORTIE', motif, montant: data.montantTotal, utilisateurId }
+      })
+    } else if (['CHEQUE', 'VIREMENT', 'MOBILE_MONEY'].includes(data.modePaiement)) {
+      const banque = await prisma.banque.findFirst({ where: { actif: true } })
+      if (banque) {
+        await prisma.banque.update({
+          where: { id: banque.id },
+          data: { soldeActuel: { decrement: data.montantTotal } }
+        })
+      }
+    }
+  }
 }
 
 /**
@@ -317,6 +364,7 @@ export async function comptabiliserReglementAchat(data: {
   montant: number
   modePaiement: string
   utilisateurId: number
+  magasinId?: number | null
 }) {
   const journal = await getOrCreateJournal('CA', 'Journal de Caisse', 'CAISSE')
   const compteFournisseur = await getOrCreateCompte(
@@ -363,24 +411,23 @@ export async function comptabiliserReglementAchat(data: {
     utilisateurId: data.utilisateurId,
   })
 
-  // === AJOUT : Enregistrement dans ReglementAchat ===
-  const achat = await prisma.achat.findUnique({
-    where: { id: data.achatId },
-    select: { fournisseurId: true }
-  })
 
-  if (achat?.fournisseurId) {
-    await prisma.reglementAchat.create({
-      data: {
-        date: data.date,
-        montant: data.montant,
-        modePaiement: data.modePaiement,
-        achatId: data.achatId,
-        fournisseurId: achat.fournisseurId,
-        utilisateurId: data.utilisateurId,
-        observation: `Règlement achat ${data.numeroAchat}`,
-      }
+  // === AJOUT : Enregistrement automatique en Caisse/Banque ===
+  const a = await prisma.achat.findUnique({ where: { id: data.achatId }, select: { magasinId: true } })
+  const magasinId = a?.magasinId
+
+  if (data.modePaiement === 'ESPECES' && magasinId) {
+    await prisma.caisse.create({
+      data: { date: data.date, magasinId, type: 'SORTIE', motif: `Règlement Achat ${data.numeroAchat}`, montant: data.montant, utilisateurId: data.utilisateurId }
     })
+  } else if (['CHEQUE', 'VIREMENT', 'MOBILE_MONEY'].includes(data.modePaiement)) {
+    const banque = await prisma.banque.findFirst({ where: { actif: true } })
+    if (banque) {
+      await prisma.banque.update({
+        where: { id: banque.id },
+        data: { soldeActuel: { decrement: data.montant } }
+      })
+    }
   }
 }
 
@@ -395,6 +442,7 @@ export async function comptabiliserDepense(data: {
   libelle: string
   modePaiement: string
   utilisateurId: number
+  magasinId?: number | null
 }) {
   const journal = await getOrCreateJournal('OD', 'Journal des Opérations Diverses', 'OD')
   
@@ -473,6 +521,28 @@ export async function comptabiliserDepense(data: {
     referenceId: data.depenseId,
     utilisateurId: data.utilisateurId,
   })
+
+  // === AJOUT : Enregistrement automatique en Caisse/Banque ===
+  const motif = `Dépense: ${data.libelle}`
+  const date = data.date || new Date()
+  
+  if (data.modePaiement === 'ESPECES') {
+    // Utiliser le magasinId fourni
+    const effectiveMagasinId = data.magasinId || null
+    if (effectiveMagasinId) {
+      await prisma.caisse.create({
+        data: { date, magasinId: effectiveMagasinId, type: 'SORTIE', motif, montant: data.montant, utilisateurId: data.utilisateurId }
+      })
+    }
+  } else if (['CHEQUE', 'VIREMENT', 'MOBILE_MONEY'].includes(data.modePaiement)) {
+    const banque = await prisma.banque.findFirst({ where: { actif: true } })
+    if (banque) {
+      await prisma.banque.update({
+        where: { id: banque.id },
+        data: { soldeActuel: { decrement: data.montant } }
+      })
+    }
+  }
 }
 
 /**
@@ -485,6 +555,7 @@ export async function comptabiliserCharge(data: {
   rubrique: string
   libelle?: string | null
   utilisateurId: number
+  magasinId?: number | null
 }) {
   const journal = await getOrCreateJournal('OD', 'Journal des Opérations Diverses', 'OD')
   
@@ -567,6 +638,18 @@ export async function comptabiliserCharge(data: {
     referenceId: data.chargeId,
     utilisateurId: data.utilisateurId,
   })
+
+  // === AJOUT : Enregistrement automatique en Caisse/Banque ===
+  const motifCharge = `Charge: ${data.rubrique}`
+  const dateCharge = data.date || new Date()
+  
+  // Par défaut en ESPECES/Caisse
+  const effectiveMagasinId = data.magasinId
+  if (effectiveMagasinId) {
+    await prisma.caisse.create({
+      data: { date: dateCharge, magasinId: effectiveMagasinId, type: 'SORTIE', motif: motifCharge, montant: data.montant, utilisateurId: data.utilisateurId }
+    })
+  }
 }
 
 /**
@@ -887,7 +970,7 @@ export async function initialiserComptabilite() {
   // Créer les comptes principaux
   await getOrCreateCompte('31', 'Stock de marchandises', '3', 'ACTIF')
   await getOrCreateCompte('401', 'Fournisseurs', '4', 'PASSIF')
-  await getOrCreateCompte('411', 'Clients', '4', 'PASSIF')
+  await getOrCreateCompte('411', 'Clients', '4', 'ACTIF')
   await getOrCreateCompte('512', 'Banque', '5', 'ACTIF')
   await getOrCreateCompte('513', 'Banques - Comptes courants', '5', 'ACTIF')
   await getOrCreateCompte('514', 'Banques - Comptes à terme', '5', 'ACTIF')

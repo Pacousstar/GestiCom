@@ -165,7 +165,7 @@ export async function POST(request: NextRequest) {
       })
       const totalRegsLibres = regsLibres._sum?.montant || 0
       
-      const detteReelle = (detteFactures - totalRegsLibres) - (client.soldeInitial || 0)
+      const detteReelle = (detteFactures + (client.soldeInitial || 0)) - (totalRegsLibres + (client.avoirInitial || 0))
       
       if (detteReelle + (montantTotal - montantPaye) > client.plafondCredit) {
          return NextResponse.json({ error: 'Plafond crédit dépassé.' }, { status: 400 })
@@ -241,9 +241,8 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    // ✅ AUTO-RÈGLEMENT : Si paiement immédiat (non CREDIT), créer un ReglementVente
-    // Sans ça, les soldes clients ne comptabilisent pas les paiements ESPECES/CARTE.
-    if (modePaiement !== 'CREDIT' && montantPaye > 0 && clientId) {
+    // ✅ AUTO-RÈGLEMENT : Si paiement immédiat OU acompte sur crédit, créer un ReglementVente
+    if (montantPaye > 0 && clientId) {
       await prisma.reglementVente.create({
         data: {
           venteId: vente.id,

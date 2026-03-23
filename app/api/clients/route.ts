@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
   const list = await prisma.client.findMany({
     where: { actif: true },
     orderBy: { nom: 'asc' },
-    select: { id: true, code: true, nom: true, telephone: true, type: true, plafondCredit: true, ncc: true, localisation: true, soldeInitial: true },
+    select: { id: true, code: true, nom: true, telephone: true, type: true, plafondCredit: true, ncc: true, localisation: true, soldeInitial: true, avoirInitial: true },
   })
   const filtered = q
     ? list.filter(
@@ -68,10 +68,8 @@ export async function GET(request: NextRequest) {
   const result = await Promise.all(paginated.map(async (c) => {
     const base = { ...c } as any
     const totalVentes = detteByClient[c.id] ?? 0
-    // Solde = (Dette Factures) - (Solde Initial/Dépôt)
-    // Si Solde > 0 => Dette réelle
-    // Si Solde < 0 => Avoir (Le client a trop payé ou a un dépôt)
-    base.dette = totalVentes - (c.soldeInitial || 0)
+    // Dette Totale = (Impayés Factures) + (Dette Initiale) - (Avoir Initial)
+    base.dette = totalVentes + (c.soldeInitial || 0) - (c.avoirInitial || 0)
     
     // Récupérer le numéro de la dernière facture
     const derniereVente = await prisma.vente.findFirst({
@@ -116,6 +114,7 @@ export async function POST(request: NextRequest) {
     const ncc = body?.ncc != null ? String(body.ncc).trim() || null : null
     const localisation = body?.localisation != null ? String(body.localisation).trim() || null : null
     const soldeInitial = body?.soldeInitial != null ? Number(body.soldeInitial) || 0 : 0
+    const avoirInitial = body?.avoirInitial != null ? Number(body.avoirInitial) || 0 : 0
 
     if (!nom) {
       return NextResponse.json({ error: 'Nom du client requis.' }, { status: 400 })
@@ -129,7 +128,7 @@ export async function POST(request: NextRequest) {
     }
 
     const c = await prisma.client.create({
-      data: { code, nom, telephone, email, adresse, localisation, type, plafondCredit, ncc, soldeInitial, actif: true },
+      data: { code, nom, telephone, email, adresse, localisation, type, plafondCredit, ncc, soldeInitial, avoirInitial, actif: true },
     })
 
     // Invalider le cache pour affichage immédiat

@@ -3,6 +3,7 @@ import { revalidatePath } from 'next/cache'
 import { getSession } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 import { requirePermission } from '@/lib/require-role'
+import { comptabiliserReglementVente } from '@/lib/comptabilisation'
 
 export async function POST(request: NextRequest) {
   const session = await getSession()
@@ -12,33 +13,25 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json()
-    const venteId = Number(body.venteId)
+    const venteId = body.venteId ? Number(body.venteId) : null
+    const clientId = body.clientId ? Number(body.clientId) : (body.venteId ? null : null)
     const montant = Math.max(0, Number(body.montant))
     const modePaiement = body.modePaiement || 'ESPECES'
-    const observation = body.observation || `Règlement partiel`
+    const observation = body.observation || (venteId ? `Règlement vente` : `Acompte client`)
 
-    if (!venteId || !montant) {
-      return NextResponse.json({ error: 'Vente et montant requis.' }, { status: 400 })
+    if (!montant || (!venteId && !clientId)) {
+      return NextResponse.json({ error: 'Montant et (Vente ou Client) requis.' }, { status: 400 })
     }
 
-    const vente = await prisma.vente.findUnique({
-      where: { id: venteId },
-      include: { client: true }
-    })
-
-    if (!vente) return NextResponse.json({ error: 'Vente introuvable.' }, { status: 404 })
-    
-    const resteAPayer = vente.montantTotal - (vente.montantPaye || 0)
-    if (montant > resteAPayer + 0.01) {
-      return NextResponse.json({ error: `Le montant dépasse le reste à payer (${resteAPayer}).` }, { status: 400 })
-    }
-
-    // Transaction Prisma : Créer règlement + Mettre à jour vente
+    // Transaction Prisma
     const res = await prisma.$transaction(async (tx) => {
+      const targetClientId = venteId ? (await tx.vente.findUnique({ where: { id: venteId } }))?.clientId : clientId
+      if (!targetClientId) throw new Error('Client introuvable')
+
       const reglement = await tx.reglementVente.create({
         data: {
           venteId,
-          clientId: vente.clientId!,
+          clientId: targetClientId,
           montant,
           modePaiement,
           utilisateurId: session.userId,
@@ -47,27 +40,39 @@ export async function POST(request: NextRequest) {
         }
       })
 
-      const nouveauMontantPaye = (vente.montantPaye || 0) + montant
-      const nouveauStatutPaiement = nouveauMontantPaye >= vente.montantTotal - 0.01 ? 'PAYE' : 'PARTIEL'
-
-      await tx.vente.update({
-        where: { id: venteId },
-        data: {
-          montantPaye: nouveauMontantPaye,
-          statutPaiement: nouveauStatutPaiement
+      if (venteId) {
+        const vente = await tx.vente.findUnique({ where: { id: venteId } })
+        if (vente) {
+          const nouveauMontantPaye = (vente.montantPaye || 0) + montant
+          const nouveauStatutPaiement = nouveauMontantPaye >= vente.montantTotal - 0.01 ? 'PAYE' : 'PARTIEL'
+          await tx.vente.update({
+            where: { id: venteId },
+            data: { montantPaye: nouveauMontantPaye, statutPaiement: nouveauStatutPaiement }
+          })
         }
-      })
-
-      // Points de fidélité si applicable
-      if (vente.clientId) {
-        await tx.client.update({
-          where: { id: vente.clientId },
-          data: { pointsFidelite: { increment: Math.floor(montant) } }
-        })
       }
+
+      // Points de fidélité
+      await tx.client.update({
+        where: { id: targetClientId },
+        data: { pointsFidelite: { increment: Math.floor(montant) } }
+      })
 
       return reglement
     })
+
+    // Comptabilisation automatique
+    try {
+      const v = await prisma.vente.findUnique({ where: { id: venteId! }, select: { numero: true } })
+      await comptabiliserReglementVente({
+        venteId: venteId!,
+        numeroVente: v?.numero || String(venteId),
+        date: new Date(),
+        montant,
+        modePaiement,
+        utilisateurId: session.userId,
+      })
+    } catch (e) { console.error('Erreur compta règlement:', e) }
 
     revalidatePath('/dashboard/ventes')
     revalidatePath('/dashboard/clients')

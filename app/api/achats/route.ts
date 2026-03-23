@@ -246,6 +246,21 @@ export async function POST(request: NextRequest) {
       })
     }
 
+    // ✅ AUTO-RÈGLEMENT : Si un acompte est versé, créer un ReglementAchat
+    if (montantPaye > 0 && fournisseurId) {
+      await prisma.reglementAchat.create({
+        data: {
+          achatId: achat.id,
+          fournisseurId,
+          montant: montantPaye,
+          modePaiement,
+          utilisateurId: session.userId,
+          observation: `Acompte automatique - Achat ${num}`,
+          date: dateAchat,
+        }
+      })
+    }
+
     // Comptabilisation automatique
     try {
       await comptabiliserAchat({
